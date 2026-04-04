@@ -196,11 +196,30 @@ textarea{resize:vertical;min-height:80px}
   .sidebar{display:none}
   .mobile-nav{display:block}
   .content{height:calc(100vh - 65px);padding-bottom:10px}
-  .page{padding:14px}
+  .page{padding:12px}
   .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .page-header{margin-bottom:14px}
-  .modal{max-height:95vh}
+  .g2{grid-template-columns:1fr}
+  .page-header{margin-bottom:12px;flex-wrap:wrap;gap:8px}
+  .page-header .btn{width:100%}
+  .modal{max-height:96vh;padding:16px;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%!important}
+  .filter-bar{flex-wrap:wrap}
+  .filter-bar .filter-input{min-width:0!important;flex:1}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tbl td,.tbl th{padding:8px 10px;font-size:12px}
+  .section{padding:12px}
+  .section-header{flex-wrap:wrap;gap:8px}
+  .stat-val{font-size:20px}
+  .btn-sm{padding:5px 10px;font-size:11px}
+  .chip{font-size:11px;padding:2px 8px}
+  .pin-grid{max-width:260px}
+  .pin-btn{padding:16px;font-size:20px}
+}
+@media(max-width:400px){
+  .g4{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .user-grid{grid-template-columns:1fr}
+  .user-card.admin-card{grid-column:1}
 }
 </style>
 </head>
@@ -284,7 +303,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="nav-sep"></div>
       <button class="nav-item admin-only" onclick="goPage('aprovacoes',this)"><span class="nav-icon">🧠</span>Análise<span id="badge-aprov" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item admin-only" onclick="goPage('clientes',this)"><span class="nav-icon">◷</span>Clientes<span id="badge-manut" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
-      <button class="nav-item admin-only" onclick="goPage('tecnicos',this)"><span class="nav-icon">◉</span>Técnicos</button>
+      <button class="nav-item" onclick="goPage('tecnicos',this)"><span class="nav-icon">◉</span>Técnicos</button>
       <div class="nav-sep admin-only"></div>
       <button class="nav-item admin-only" onclick="goPage('relatorios',this)"><span class="nav-icon">📊</span>Relatórios PDF</button>
       <button class="nav-item admin-only" onclick="goPage('config',this)"><span class="nav-icon">◌</span>Configurações</button>
@@ -584,8 +603,9 @@ textarea{resize:vertical;min-height:80px}
     <div class="mob-nav-items">
       <button class="mob-nav-item active" onclick="goPage('dashboard',this)"><span class="mob-nav-icon">◈</span>Dashboard</button>
       <button class="mob-nav-item" onclick="goPage('os',this)"><span class="mob-nav-icon">◫</span>OS</button>
-      <button class="mob-nav-item" onclick="goPage('lancamentos',this)"><span class="mob-nav-icon">⊞</span>Lançamentos</button>
-      <button class="mob-nav-item admin-mob" onclick="goPage('aprovacoes',this)"><span class="mob-nav-icon">🧠</span>Análise</button>
+      <button class="mob-nav-item" onclick="goPage('lancamentos',this)"><span class="mob-nav-icon">⊞</span>Lanc.</button>
+      <button class="mob-nav-item" onclick="goPage('tecnicos',this)"><span class="mob-nav-icon">◉</span>Equipe</button>
+      <button class="mob-nav-item admin-mob" onclick="goPage('aprovacoes',this)"><span class="mob-nav-icon">🧠</span>Analise</button>
       <button class="mob-nav-item admin-mob" onclick="goPage('clientes',this)"><span class="mob-nav-icon">◷</span>Clientes</button>
       <button class="mob-nav-item" onclick="logout()" style="color:var(--text3)"><span class="mob-nav-icon">⎋</span>Sair</button>
     </div>
@@ -1093,8 +1113,10 @@ function renderLancamentos() {
       <td class="muted">${r.preenchedor||'-'}</td>
       <td style="font-weight:600;color:var(--green)">${fmtMon(r.total_gastos)}</td>
       <td>${statusBadge(r.status)}</td>
-      <td onclick="event.stopPropagation()">
+      <td onclick="event.stopPropagation()" style="white-space:nowrap">
         ${isAdmin(currentUser)?`<button class="btn btn-sm" onclick="openNota('${r.id}')">Msg</button>`:''}
+        ${r.status!=='ok'?`<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirLancamento('${r.id}')">Concluir</button>`:''}
+        ${isAdmin(currentUser)?`<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarLancamento('${r.id}')">Excluir</button>`:''}
       </td>
     </tr>`
   ).join('') || '<tr><td colspan="7" class="empty">Nenhum lancamento encontrado</td></tr>';
@@ -2038,6 +2060,7 @@ function renderOS() {
         (isGestor ? '<button class="btn btn-sm" onclick="openEditarOS(\'' + os.id + '\')">Editar</button>' : '') +
         (os.status === 'agendado' || os.status === 'em_andamento' ? '<button class="btn btn-sm" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(59,130,246,.3)" onclick="openExecOS(\'' + os.id + '\')">Executar</button>' : '') +
         (isGestor && os.status !== 'concluido' ? '<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirOS(\'' + os.id + '\')">Concluir</button>' : '') +
+        (isGestor ? '<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarOS(\'' + os.id + '\')">Excluir</button>' : '') +
       '</div>' +
     '</div>';
   }).join('');
@@ -2147,11 +2170,33 @@ async function salvarOS() {
       showToast('OS atualizada (ok)');
     } else {
       const res = await sbPost('ordens_servico', payload);
-      ordens.unshift(res[0] || payload);
-      showToast('OS criada (ok)');
+      const novaOS = res[0] || payload;
+      ordens.unshift(novaOS);
+      // Criar lancamento automaticamente para os tecnicos preencherem gastos
+      const lancPayload = {
+        data_servico: payload.data_agendada,
+        hora_inicio: payload.horario_agendado || null,
+        hora_fim: null,
+        cliente: payload.cliente,
+        endereco: payload.endereco || '',
+        tecnicos: payload.tecnicos || [],
+        relato: payload.descricao || '',
+        gastos: [],
+        total_gastos: 0,
+        preenchedor: currentUser.nome,
+        status: 'revisao',
+        notas: [],
+        valor_venda: null,
+        os_id: novaOS.id || null,
+      };
+      const lancRes = await sbPost('lancamentos', lancPayload);
+      const novoLanc = lancRes[0] || lancPayload;
+      lancamentos.unshift(novoLanc);
+      showToast('OS criada e lancamento gerado (ok)');
     }
     document.getElementById('ov-os').classList.remove('on');
     renderOS();
+    renderLancamentos();
   } catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
@@ -2219,7 +2264,7 @@ async function salvarExecOS() {
   let custoMO = 0;
   tecs.forEach(nome => {
     const user = USERS.find(u => u.nome === nome);
-    custoMO += horas * (+user?.valor_hora || 0);
+    custoMO += horas * (user ? (+user.valor_hora || 0) : 0);
   });
 
   // Calcular pontuacao de pontualidade
@@ -2259,6 +2304,48 @@ async function concluirOS(id) {
     showToast('OS concluida (ok)');
     renderOS();
     renderTecnicos(); // atualiza caixinha e pontos
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function deletarOS(id) {
+  if (!confirm('Excluir esta OS permanentemente?')) return;
+  try {
+    await sbDel('ordens_servico?id=eq.' + id);
+    ordens = ordens.filter(o => o.id !== id);
+    showToast('OS excluida');
+    renderOS();
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function deletarLancamento(id) {
+  if (!confirm('Excluir este lancamento permanentemente?')) return;
+  try {
+    await sbDel('lancamentos?id=eq.' + id);
+    lancamentos = lancamentos.filter(l => l.id !== id);
+    showToast('Lancamento excluido');
+    renderLancamentos();
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function concluirLancamento(id) {
+  if (!confirm('Confirmar conclusao deste servico?')) return;
+  try {
+    await sbPatch('lancamentos?id=eq.' + id, {status: 'ok'});
+    const i = lancamentos.findIndex(l => l.id === id);
+    if (i >= 0) lancamentos[i].status = 'ok';
+
+    // Se tem OS vinculada, atualiza status dela tambem
+    const lanc = lancamentos[i];
+    if (lanc && lanc.os_id) {
+      await sbPatch('ordens_servico?id=eq.' + lanc.os_id, {status: 'concluido'});
+      const oi = ordens.findIndex(o => o.id === lanc.os_id);
+      if (oi >= 0) ordens[oi].status = 'concluido';
+      renderOS();
+    }
+
+    showToast('Servico concluido (ok)');
+    renderLancamentos();
+    renderTecnicos();
   } catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
