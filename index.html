@@ -305,6 +305,7 @@ textarea{resize:vertical;min-height:80px}
       <button class="nav-item admin-only" onclick="goPage('clientes',this)"><span class="nav-icon">◷</span>Clientes<span id="badge-manut" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item" onclick="goPage('tecnicos',this)"><span class="nav-icon">◉</span>Técnicos</button>
       <div class="nav-sep admin-only"></div>
+      <button class="nav-item admin-only" onclick="goPage('demandas',this)"><span class="nav-icon">◻</span>Demandas<span id="badge-demandas" style="margin-left:auto;font-size:10px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item admin-only" onclick="goPage('relatorios',this)"><span class="nav-icon">📊</span>Relatórios PDF</button>
       <button class="nav-item admin-only" onclick="goPage('config',this)"><span class="nav-icon">◌</span>Configurações</button>
     </nav>
@@ -354,8 +355,7 @@ textarea{resize:vertical;min-height:80px}
           <select class="filter-input" id="os-filtro-status" onchange="renderOS()" style="min-width:130px">
             <option value="">Todos os status</option>
             <option value="agendado">Agendados</option>
-            <option value="em_andamento">Em andamento</option>
-            <option value="concluido">Concluidos</option>
+            <option value="cancelado">Cancelados</option>
           </select>
           <button class="btn btn-primary admin-only" onclick="openNovaOS()">+ Nova OS</button>
         </div>
@@ -397,8 +397,6 @@ textarea{resize:vertical;min-height:80px}
           <div class="field admin-only"><div class="field-label">Status</div>
             <select id="os-status">
               <option value="agendado">Agendado</option>
-              <option value="em_andamento">Em andamento</option>
-              <option value="concluido">Concluido</option>
               <option value="cancelado">Cancelado</option>
             </select>
           </div>
@@ -563,6 +561,94 @@ textarea{resize:vertical;min-height:80px}
     </div>
 
     <!-- RELATÓRIOS PDF -->
+    <!-- DEMANDAS -->
+    <div class="page" id="page-demandas">
+      <div class="page-header">
+        <div><div class="page-title">Demandas</div><div class="page-sub" id="demandas-count"></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <select class="filter-input" id="demandas-filtro" onchange="renderDemandas()" style="min-width:130px">
+            <option value="">Todas</option>
+            <option value="aberta">Abertas</option>
+            <option value="em_andamento">Em andamento</option>
+            <option value="concluida">Concluidas</option>
+          </select>
+          <button class="btn btn-primary" onclick="openNovaDemanda()">+ Nova Demanda</button>
+        </div>
+      </div>
+      <div id="demandas-lista"></div>
+    </div>
+
+    <!-- MODAL DEMANDA -->
+    <div class="overlay" id="ov-demanda" onclick="if(event.target===this)this.classList.remove('on')">
+      <div class="modal" style="max-width:520px" onclick="event.stopPropagation()">
+        <div class="modal-hd">
+          <div class="modal-title" id="demanda-modal-title">Nova Demanda</div>
+          <button class="close-btn" onclick="document.getElementById('ov-demanda').classList.remove('on')">x</button>
+        </div>
+
+        <!-- Upload foto + IA -->
+        <div style="background:var(--bg3);border:1px dashed var(--border2);border-radius:8px;padding:12px;margin-bottom:14px;text-align:center">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Foto opcional — IA preenche os campos automaticamente</div>
+          <input type="file" id="demanda-foto-input" accept="image/*" capture="environment" style="display:none" onchange="processarFotoDemanda(this)">
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="document.getElementById('demanda-foto-input').click()">Tirar / Enviar Foto</button>
+            <button class="btn btn-sm" id="demanda-btn-ia" style="display:none;background:var(--blue-bg);color:var(--blue);border-color:rgba(59,130,246,.3)" onclick="analisarFotoDemanda()">Analisar com IA</button>
+          </div>
+          <div id="demanda-foto-preview" style="margin-top:10px"></div>
+          <div id="demanda-ia-status" style="font-size:11px;color:var(--blue);margin-top:6px"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div class="field" style="grid-column:1/-1">
+            <div class="field-label">Titulo *</div>
+            <input type="text" id="demanda-titulo" placeholder="Resumo rapido da demanda">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <div class="field-label">Cliente / Apartamento</div>
+            <input type="text" id="demanda-cliente" placeholder="Ex: APT 2801, Edificio Ocean...">
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <div class="field-label">Descricao</div>
+            <textarea id="demanda-descricao" rows="3" placeholder="Detalhe o problema ou tarefa..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+          </div>
+          <div class="field">
+            <div class="field-label">Prioridade</div>
+            <select id="demanda-prioridade">
+              <option value="baixa">Baixa</option>
+              <option value="media" selected>Media</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+          <div class="field">
+            <div class="field-label">Responsavel</div>
+            <select id="demanda-responsavel"></select>
+          </div>
+          <div class="field">
+            <div class="field-label">Data limite</div>
+            <input type="date" id="demanda-data-limite">
+          </div>
+          <div class="field">
+            <div class="field-label">Status</div>
+            <select id="demanda-status">
+              <option value="aberta">Aberta</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="concluida">Concluida</option>
+            </select>
+          </div>
+          <div class="field" style="grid-column:1/-1">
+            <div class="field-label">Observacoes</div>
+            <textarea id="demanda-obs" rows="2" placeholder="Anotacoes adicionais..." style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:10px;color:var(--text);font-family:inherit;font-size:13px;resize:vertical"></textarea>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;margin-top:16px">
+          <button class="btn" style="flex:1" onclick="document.getElementById('ov-demanda').classList.remove('on')">Cancelar</button>
+          <button class="btn btn-primary" style="flex:1" onclick="salvarDemanda()">Salvar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="page" id="page-relatorios">
       <div class="page-header"><div><div class="page-title">Exportar Relatório</div><div class="page-sub">Gere um PDF do período</div></div></div>
       <div class="section" style="max-width:480px">
@@ -642,12 +728,15 @@ textarea{resize:vertical;min-height:80px}
 
     <!-- Gastos -->
     <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Gastos do Dia</div>
-    <div style="display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-bottom:6px;align-items:end">
+    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:6px;align-items:end">
       <div class="field" style="margin:0"><div class="field-label">Tipo de gasto</div>
         <select id="gasto-tipo" onchange="toggleNovoTipo(this.value)"><option value="">Selecionar...</option></select>
       </div>
       <div class="field" style="margin:0"><div class="field-label">Valor ($)</div>
         <input type="number" id="gasto-valor" placeholder="0.00" step="0.01" min="0" style="width:90px">
+      </div>
+      <div class="field" style="margin:0"><div class="field-label">Data</div>
+        <input type="date" id="gasto-data" style="width:130px">
       </div>
       <button class="btn btn-primary btn-sm" onclick="addGasto()" style="margin-bottom:0;white-space:nowrap">+ Add</button>
     </div>
@@ -809,8 +898,8 @@ function inPeriod(dateStr, period) {
 function isAdmin(u) { return u && (u.funcao==='Gestor'||u.role==='admin'); }
 
 function statusBadge(s) {
-  if(s==='revisao') return '<span class="status st-rev">(!) Revisao</span>';
-  if(s==='aprovado') return '<span class="status st-aprov">(ok) Aprovado</span>';
+  if(s==='revisao'||s==='aberto') return '<span class="status st-rev">Em aberto</span>';
+  if(s==='aprovado'||s==='ok'||s==='concluido') return '<span class="status st-ok">(ok) Concluido</span>';
   return '<span class="status st-ok">(ok) OK</span>';
 }
 
@@ -938,6 +1027,7 @@ function goPage(id, btn) {
     allBtns.forEach(b => { if(b.getAttribute('onclick')===btn.getAttribute('onclick')&&b!==btn) b.classList.add('active'); });
   }
   document.getElementById('page-'+id).classList.add('on');
+  if(id==='demandas') renderDemandas();
   if(id==='os') renderOS();
   if(id==='lancamentos') renderLancamentos();
   if(id==='clientes') renderClientes();
@@ -956,12 +1046,13 @@ function goPage(id, btn) {
 // ================================================
 async function loadAll() {
   try {
-    const [lancs, tipos, funcs, clientes, ordens_data] = await Promise.all([
+    const [lancs, tipos, funcs, clientes, ordens_data, demandas_data] = await Promise.all([
       sbGet('lancamentos?order=data_servico.desc,created_at.desc'),
       sbGet('tipos_gasto?order=nome'),
       sbGet('funcoes?order=nome'),
       sbGet('clientes?ativo=eq.true&order=nome'),
       sbGet('ordens_servico?order=data_agendada.desc,created_at.desc'),
+      sbGet('demandas?order=created_at.desc'),
     ]);
     lancamentos = lancs||[];
     TIPOS_GASTO = (tipos&&tipos.length>0) ? tipos : [
@@ -975,6 +1066,7 @@ async function loadAll() {
     FUNCOES = funcs||[];
     clientesCRM = clientes||[];
     ordens = ordens_data||[];
+    demandas = demandas_data||[];
   } catch(e) { console.log('Erro ao carregar dados:', e); }
   populateSelects();
   renderDashboard();
@@ -1046,7 +1138,7 @@ function renderDashboard() {
 
   // Recentes
   document.getElementById('dash-recent').innerHTML = rows.slice(0,8).map(r=>
-    `<tr class="clickable" onclick="openDetail('${r.id}')">
+    `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td>${r.cliente||'-'}</td>
       <td class="muted">${r.preenchedor||'-'}</td>
@@ -1106,7 +1198,7 @@ function renderLancamentos() {
   const rows = getFiltered();
   document.getElementById('lanc-count').textContent = `${rows.length} registro(s)`;
   document.getElementById('lanc-table').innerHTML = rows.map(r=>
-    `<tr class="clickable" onclick="openDetail('${r.id}')">
+    `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td><div style="font-weight:500">${r.cliente||'-'}</div></td>
       <td class="muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.endereco||'-'}</td>
@@ -1125,6 +1217,30 @@ function renderLancamentos() {
 // ================================================
 // NOVO / EDITAR LANCAMENTO
 // ================================================
+function openEditLancamento(id) {
+  const r = lancamentos.find(l => l.id === id);
+  if (!r) return;
+  editLancId = id;
+  gastosForm = Array.isArray(r.gastos) ? [...r.gastos] : [];
+  tecnicosForm = Array.isArray(r.tecnicos) ? [...r.tecnicos] : [];
+  document.getElementById('lanc-modal-title').textContent = 'Editar Lancamento';
+  document.getElementById('lf-cliente').value = r.cliente || '';
+  document.getElementById('lf-endereco').value = r.endereco || '';
+  document.getElementById('lf-relato').value = r.relato || '';
+  document.getElementById('lf-data').value = r.data_servico || new Date().toISOString().split('T')[0];
+  document.getElementById('lf-inicio').value = r.hora_inicio || '';
+  document.getElementById('lf-fim').value = r.hora_fim || '';
+  document.getElementById('lf-preenchedor').value = r.preenchedor || currentUser.nome;
+  document.getElementById('lf-valor-venda').value = r.valor_venda || '';
+  document.getElementById('field-valor-venda').style.display = isAdmin(currentUser) ? '' : 'none';
+  document.getElementById('lf-tec-select').value = '';
+  document.getElementById('gasto-data').value=new Date().toISOString().split('T')[0];
+  populateSelects();
+  renderTecChips();
+  renderGastos();
+  document.getElementById('ov-lanc').classList.add('on');
+}
+
 function openNovoLancamento() {
   editLancId = null;
   gastosForm = []; tecnicosForm = [];
@@ -1139,6 +1255,7 @@ function openNovoLancamento() {
   document.getElementById('lf-valor-venda').value='';
   document.getElementById('field-valor-venda').style.display=isAdmin(currentUser)?'':'none';
   document.getElementById('lf-tec-select').value='';
+  document.getElementById('gasto-data').value=new Date().toISOString().split('T')[0];
   populateSelects();
   renderTecChips(); renderGastos();
   document.getElementById('ov-lanc').classList.add('on');
@@ -1239,9 +1356,10 @@ async function salvarNovoTipo() {
 function addGasto() {
   const tipo=document.getElementById('gasto-tipo').value;
   const valor=parseFloat(document.getElementById('gasto-valor').value);
+  const data=document.getElementById('gasto-data').value||new Date().toISOString().split('T')[0];
   if(!tipo){showToast('Selecione o tipo de gasto','err');return;}
   if(!valor||valor<=0){showToast('Informe um valor valido','err');return;}
-  gastosForm.push({tipo,valor});
+  gastosForm.push({tipo,valor,data});
   document.getElementById('gasto-tipo').value='';
   document.getElementById('gasto-valor').value='';
   renderGastos();
@@ -1249,13 +1367,27 @@ function addGasto() {
 function removeGasto(i) { gastosForm.splice(i,1); renderGastos(); }
 function renderGastos() {
   const total=gastosForm.reduce((s,g)=>s+(+g.valor||0),0);
-  document.getElementById('gastos-lista').innerHTML=gastosForm.map((g,i)=>
-    `<div class="gasto-item">
-      <div class="gasto-tipo">${g.tipo}</div>
-      <div class="gasto-val">${fmtMon(g.valor)}</div>
-      <button class="gasto-del" onclick="removeGasto(${i})">x</button>
-    </div>`
-  ).join('');
+  // Agrupar por data
+  const porData={};
+  gastosForm.forEach((g,i)=>{
+    const d=g.data||'Sem data';
+    if(!porData[d]) porData[d]=[];
+    porData[d].push({...g,idx:i});
+  });
+  const datas=Object.keys(porData).sort();
+  document.getElementById('gastos-lista').innerHTML=datas.map(d=>{
+    const itens=porData[d];
+    const subtotal=itens.reduce((s,g)=>s+(+g.valor||0),0);
+    return `<div style="margin-bottom:8px">
+      <div style="font-size:10px;color:var(--text3);font-weight:600;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px">${d==='Sem data'?d:new Date(d+'T12:00:00').toLocaleDateString('pt-BR')}</div>
+      ${itens.map(g=>`<div class="gasto-item">
+        <div class="gasto-tipo">${g.tipo}</div>
+        <div class="gasto-val">${fmtMon(g.valor)}</div>
+        <button class="gasto-del" onclick="removeGasto(${g.idx})">x</button>
+      </div>`).join('')}
+      ${datas.length>1?`<div style="text-align:right;font-size:11px;color:var(--text3);padding:2px 4px">subtotal: ${fmtMon(subtotal)}</div>`:''}
+    </div>`;
+  }).join('');
   document.getElementById('gastos-total').textContent=fmtMon(total);
 }
 
@@ -1350,9 +1482,11 @@ function openDetail(id) {
     </div>`:''}
     ${notasHtml}
     <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
-      ${isAdmin(currentUser)?`<button class="btn btn-sm" onclick="openNota('${r.id}');closeDetail()">Msg Comentar</button>`:''}
-      ${isAdmin(currentUser)&&r.status==='revisao'?`<button class="btn btn-sm st-ok" style="background:var(--green-bg);color:var(--green);border-color:var(--green)" onclick="aprovar('${r.id}');closeDetail()">(ok) Aprovar</button>`:''}
-      <button class="btn btn-sm btn-primary" onclick="closeDetail()">Fechar</button>
+      <button class="btn btn-sm btn-primary" onclick="closeDetail();openEditLancamento('${r.id}')">Editar / Lancar Gastos</button>
+      ${isAdmin(currentUser)?`<button class="btn btn-sm" onclick="openNota('${r.id}');closeDetail()">Comentar</button>`:''}
+      ${r.status!=='ok'?`<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirLancamento('${r.id}');closeDetail()">Concluir</button>`:''}
+      ${isAdmin(currentUser)?`<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarLancamento('${r.id}');closeDetail()">Excluir</button>`:''}
+      <button class="btn btn-sm" onclick="closeDetail()">Fechar</button>
     </div>
   `;
   document.getElementById('ov-detail').classList.add('on');
@@ -1460,7 +1594,7 @@ function renderAnalise() {
   // Tabela
   document.getElementById('analise-table').innerHTML = ranked.map(r=>{
     const sc=scoreRentabilidade(r._margem);
-    return `<tr class="clickable" onclick="openDetail('${r.id}')">
+    return `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td><div style="font-weight:500">${r.cliente||'-'}</div><div style="font-size:11px;color:var(--text3)">${r.preenchedor||''}</div></td>
       <td style="color:var(--blue);font-weight:600">${fmtMon(r.valor_venda)}</td>
@@ -1791,17 +1925,17 @@ function calcCaixinha() {
   let osLucrativas = 0;
   let osPrejuizo = 0;
 
-  // Usa lancamentos com valor_venda E ordens_servico concluidas com valor_venda
-  const fontes = [
-    ...lancamentos.filter(r => r.valor_venda > 0).map(r => ({
-      venda: +r.valor_venda||0,
-      custo: (+r.total_gastos||0)
-    })),
-    ...ordens.filter(o => o.status === 'concluido' && o.valor_venda > 0).map(o => ({
-      venda: +o.valor_venda||0,
-      custo: (+o.custo_mao_obra||0) + (+o.total_gastos||0)
-    }))
-  ];
+  // Usa OS com valor_venda, somando custos de todos lancamentos vinculados
+  const fontes = ordens.filter(o => o.valor_venda > 0).map(o => {
+    const lancsOS = lancamentos.filter(l => l.os_id === o.id);
+    const totalGastos = lancsOS.reduce((s,l) => s + (+l.total_gastos||0), 0);
+    const totalMO = lancsOS.reduce((s,l) => s + (+l.custo_mao_obra||0), 0);
+    return { venda: +o.valor_venda||0, custo: totalGastos + totalMO };
+  });
+  // Tambem lançamentos avulsos (sem OS) com valor_venda
+  const lancsAvulsos = lancamentos.filter(r => r.valor_venda > 0 && !r.os_id);
+  lancsAvulsos.forEach(r => fontes.push({venda: +r.valor_venda||0, custo: +r.total_gastos||0}));
+
   fontes.forEach(r => {
     const lucro = r.venda - r.custo;
     if (lucro > 0) {
@@ -1997,12 +2131,20 @@ function renderOS() {
 
   const STATUS_LABEL = {
     agendado: {label:'Agendado', color:'var(--blue)', bg:'var(--blue-bg)'},
-    em_andamento: {label:'Em andamento', color:'var(--amber)', bg:'var(--amber-bg)'},
-    concluido: {label:'Concluido', color:'var(--green)', bg:'var(--green-bg)'},
     cancelado: {label:'Cancelado', color:'var(--text3)', bg:'var(--bg3)'},
   };
 
   const isGestor = isAdmin(currentUser);
+
+  // Pre-calcular custo/lucro de cada OS somando lancamentos vinculados
+  const custosPorOS = {};
+  lancamentos.forEach(l => {
+    if (!l.os_id) return;
+    if (!custosPorOS[l.os_id]) custosPorOS[l.os_id] = {gastos:0, mo:0, temConcluido:false};
+    custosPorOS[l.os_id].gastos += (+l.total_gastos||0);
+    custosPorOS[l.os_id].mo += (+l.custo_mao_obra||0);
+    if (l.status === 'ok' || l.status === 'concluido') custosPorOS[l.os_id].temConcluido = true;
+  });
 
   if (lista.length === 0) {
     document.getElementById('os-lista').innerHTML = '<div class="section" style="text-align:center;color:var(--text3);padding:40px">Nenhuma ordem de servico encontrada.</div>';
@@ -2015,23 +2157,26 @@ function renderOS() {
     const dataFmt = os.data_agendada ? new Date(os.data_agendada+'T12:00:00').toLocaleDateString('pt-BR') : '-';
     const horario = os.horario_agendado ? os.horario_agendado.substring(0,5) : '';
     const venda = +os.valor_venda || 0;
-    const custoMO = +os.custo_mao_obra || 0;
-    const custoGastos = +os.total_gastos || 0;
-    const custoTotal = custoMO + custoGastos;
+    const cx = custosPorOS[os.id] || {gastos:0, mo:0, temConcluido:false};
+    const custoTotal = cx.gastos + cx.mo;
     const lucro = venda > 0 ? venda - custoTotal : null;
+    const numLancs = lancamentos.filter(l => l.os_id === os.id).length;
 
-    // Verificar pontualidade (horario_inicio vs horario_agendado)
+    // Pontualidade - verificar no primeiro lancamento vinculado
     let pontualidadeHtml = '';
-    if (os.horario_agendado && os.horario_inicio && os.status === 'concluido') {
-      const [ah, am] = os.horario_agendado.split(':').map(Number);
-      const [ih, im] = os.horario_inicio.split(':').map(Number);
-      const diffMin = (ih * 60 + im) - (ah * 60 + am);
-      if (diffMin <= 0) {
-        pontualidadeHtml = '<span style="font-size:10px;color:var(--green);background:var(--green-bg);padding:2px 7px;border-radius:99px">+ Pontual</span>';
-      } else if (diffMin <= 15) {
-        pontualidadeHtml = '<span style="font-size:10px;color:var(--amber);background:var(--amber-bg);padding:2px 7px;border-radius:99px">~ ' + diffMin + 'min atraso</span>';
-      } else {
-        pontualidadeHtml = '<span style="font-size:10px;color:var(--red);background:var(--red-bg);padding:2px 7px;border-radius:99px">Atraso ' + diffMin + 'min</span>';
+    if (os.horario_agendado) {
+      const primLanc = lancamentos.find(l => l.os_id === os.id && l.hora_inicio);
+      if (primLanc) {
+        const [ah, am] = os.horario_agendado.split(':').map(Number);
+        const [ih, im] = primLanc.hora_inicio.split(':').map(Number);
+        const diffMin = (ih * 60 + im) - (ah * 60 + am);
+        if (diffMin <= 0) {
+          pontualidadeHtml = '<span style="font-size:10px;color:var(--green);background:var(--green-bg);padding:2px 7px;border-radius:99px">+ Pontual</span>';
+        } else if (diffMin <= 15) {
+          pontualidadeHtml = '<span style="font-size:10px;color:var(--amber);background:var(--amber-bg);padding:2px 7px;border-radius:99px">~ ' + diffMin + 'min atraso</span>';
+        } else {
+          pontualidadeHtml = '<span style="font-size:10px;color:var(--red);background:var(--red-bg);padding:2px 7px;border-radius:99px">Atraso ' + diffMin + 'min</span>';
+        }
       }
     }
 
@@ -2050,23 +2195,23 @@ function renderOS() {
             '<span>Tecnico(s): <strong style="color:var(--text)">' + tecs + '</strong></span>' +
           '</div>' +
         '</div>' +
-        (venda > 0 || custoTotal > 0 ? '<div style="text-align:right;min-width:140px">' +
+        '<div style="text-align:right;min-width:140px">' +
+          '<div style="font-size:10px;color:var(--text3);margin-bottom:4px">' + numLancs + ' lancamento(s)</div>' +
           (venda > 0 ? '<div style="font-size:12px;color:var(--text3)">Venda: <span style="color:var(--green);font-weight:600">$' + venda.toFixed(2) + '</span></div>' : '') +
           (custoTotal > 0 ? '<div style="font-size:12px;color:var(--text3)">Custo: <span style="color:var(--red);font-weight:600">$' + custoTotal.toFixed(2) + '</span></div>' : '') +
           (lucro !== null ? '<div style="font-size:13px;font-weight:700;margin-top:4px;color:' + (lucro >= 0 ? 'var(--green)' : 'var(--red)') + '">' + (lucro >= 0 ? 'Lucro' : 'Prejuizo') + ': $' + Math.abs(lucro).toFixed(2) + '</div>' : '') +
-        '</div>' : '') +
+        '</div>' +
       '</div>' +
       '<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">' +
         (isGestor ? '<button class="btn btn-sm" onclick="openEditarOS(\'' + os.id + '\')">Editar</button>' : '') +
-        (os.status === 'agendado' || os.status === 'em_andamento' ? '<button class="btn btn-sm" style="background:var(--blue-bg);color:var(--blue);border-color:rgba(59,130,246,.3)" onclick="openExecOS(\'' + os.id + '\')">Executar</button>' : '') +
-        (isGestor && os.status !== 'concluido' ? '<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirOS(\'' + os.id + '\')">Concluir</button>' : '') +
+
         (isGestor ? '<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarOS(\'' + os.id + '\')">Excluir</button>' : '') +
       '</div>' +
     '</div>';
   }).join('');
 
   // Badge no nav
-  const agendados = ordens.filter(o => o.status === 'agendado' || o.status === 'em_andamento').length;
+  const agendados = ordens.filter(o => o.status === 'agendado').length;
   const badge = document.getElementById('badge-os');
   if (badge) { badge.textContent = agendados; badge.style.display = agendados > 0 ? '' : 'none'; }
 }
@@ -2081,7 +2226,7 @@ function openNovaOS() {
   document.getElementById('os-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('os-horario').value = '';
   document.getElementById('os-valor-venda').value = '';
-  document.getElementById('os-status').value = 'agendado';
+  if(document.getElementById('os-status')) document.getElementById('os-status').value = 'agendado';
   renderOSTecChips();
   populateOSSelects();
   document.getElementById('ov-os').classList.add('on');
@@ -2158,7 +2303,7 @@ async function salvarOS() {
     horario_agendado: document.getElementById('os-horario').value || null,
     tecnicos: osTecnicos,
     valor_venda: parseFloat(document.getElementById('os-valor-venda').value) || null,
-    status: document.getElementById('os-status').value,
+    status: editOSId ? document.getElementById('os-status').value : 'agendado',
     criado_por: currentUser.nome,
   };
 
@@ -2173,26 +2318,27 @@ async function salvarOS() {
       const novaOS = res[0] || payload;
       ordens.unshift(novaOS);
       // Criar lancamento automaticamente para os tecnicos preencherem gastos
+      // Buscar o id real da OS criada
+      const osId = (novaOS && novaOS.id) ? novaOS.id : null;
       const lancPayload = {
         data_servico: payload.data_agendada,
-        hora_inicio: payload.horario_agendado || null,
+        hora_inicio: null,
         hora_fim: null,
         cliente: payload.cliente,
-        endereco: payload.endereco || '',
+        endereco: payload.endereco || null,
         tecnicos: payload.tecnicos || [],
-        relato: payload.descricao || '',
+        relato: payload.descricao || null,
         gastos: [],
         total_gastos: 0,
         preenchedor: currentUser.nome,
         status: 'revisao',
         notas: [],
-        valor_venda: null,
-        os_id: novaOS.id || null,
+        os_id: osId,
       };
       const lancRes = await sbPost('lancamentos', lancPayload);
-      const novoLanc = lancRes[0] || lancPayload;
+      const novoLanc = lancRes && lancRes[0] ? lancRes[0] : lancPayload;
       lancamentos.unshift(novoLanc);
-      showToast('OS criada e lancamento gerado (ok)');
+      showToast('OS criada! Lancamento gerado para os tecnicos.');
     }
     document.getElementById('ov-os').classList.remove('on');
     renderOS();
@@ -2281,7 +2427,6 @@ async function salvarExecOS() {
     horario_fim: fim,
     horas_trabalhadas: Math.round(horas * 100) / 100,
     custo_mao_obra: Math.round(custoMO * 100) / 100,
-    status: 'em_andamento',
     pontualidade_pts: pontualidade,
   };
 
@@ -2304,6 +2449,34 @@ async function concluirOS(id) {
     showToast('OS concluida (ok)');
     renderOS();
     renderTecnicos(); // atualiza caixinha e pontos
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function novoDiaOS(id) {
+  const os = ordens.find(o => o.id === id);
+  if (!os) return;
+  // Criar novo lancamento vinculado à mesma OS
+  const lancPayload = {
+    data_servico: new Date().toISOString().split('T')[0],
+    hora_inicio: null,
+    hora_fim: null,
+    cliente: os.cliente,
+    endereco: os.endereco || null,
+    tecnicos: Array.isArray(os.tecnicos) ? os.tecnicos : [],
+    relato: os.descricao || null,
+    gastos: [],
+    total_gastos: 0,
+    preenchedor: currentUser.nome,
+    status: 'revisao',
+    notas: [],
+    os_id: os.id,
+  };
+  try {
+    const res = await sbPost('lancamentos', lancPayload);
+    const novoLanc = res && res[0] ? res[0] : lancPayload;
+    lancamentos.unshift(novoLanc);
+    showToast('Novo dia criado em Lancamentos');
+    renderLancamentos();
   } catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
@@ -2334,18 +2507,259 @@ async function concluirLancamento(id) {
     const i = lancamentos.findIndex(l => l.id === id);
     if (i >= 0) lancamentos[i].status = 'ok';
 
-    // Se tem OS vinculada, atualiza status dela tambem
-    const lanc = lancamentos[i];
-    if (lanc && lanc.os_id) {
-      await sbPatch('ordens_servico?id=eq.' + lanc.os_id, {status: 'concluido'});
-      const oi = ordens.findIndex(o => o.id === lanc.os_id);
-      if (oi >= 0) ordens[oi].status = 'concluido';
-      renderOS();
-    }
+    // Atualizar renderOS para refletir custo acumulado
+    renderOS();
 
     showToast('Servico concluido (ok)');
     renderLancamentos();
     renderTecnicos();
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+
+// ================================================
+// DEMANDAS
+// ================================================
+let demandas = [];
+let editDemandaId = null;
+let demandaFotoBase64 = null;
+
+async function loadDemandas() {
+  try {
+    const data = await sbGet('demandas?order=created_at.desc');
+    demandas = data || [];
+  } catch(e) { demandas = []; }
+}
+
+function renderDemandas() {
+  const filtro = document.getElementById('demandas-filtro').value;
+  const lista = filtro ? demandas.filter(d => d.status === filtro) : demandas;
+
+  // Badge
+  const abertas = demandas.filter(d => d.status === 'aberta' || d.status === 'em_andamento').length;
+  const urgentes = demandas.filter(d => d.prioridade === 'urgente' && d.status !== 'concluida').length;
+  const badge = document.getElementById('badge-demandas');
+  if (badge) {
+    badge.textContent = urgentes > 0 ? urgentes + ' urgente(s)' : abertas;
+    badge.style.display = abertas > 0 ? '' : 'none';
+    badge.style.background = urgentes > 0 ? 'var(--red-bg)' : 'var(--amber-bg)';
+    badge.style.color = urgentes > 0 ? 'var(--red)' : 'var(--amber)';
+  }
+
+  document.getElementById('demandas-count').textContent = lista.length + ' demanda(s)';
+
+  const PRIO = {
+    urgente: {label:'Urgente', color:'var(--red)', bg:'var(--red-bg)'},
+    alta:    {label:'Alta',    color:'var(--amber)', bg:'var(--amber-bg)'},
+    media:   {label:'Media',   color:'var(--blue)', bg:'var(--blue-bg)'},
+    baixa:   {label:'Baixa',   color:'var(--text3)', bg:'var(--bg3)'},
+  };
+  const ST = {
+    aberta:       {label:'Aberta',       color:'var(--blue)'},
+    em_andamento: {label:'Em andamento', color:'var(--amber)'},
+    concluida:    {label:'Concluida',    color:'var(--green)'},
+  };
+
+  if (lista.length === 0) {
+    document.getElementById('demandas-lista').innerHTML =
+      '<div class="section" style="text-align:center;color:var(--text3);padding:40px">Nenhuma demanda encontrada.</div>';
+    return;
+  }
+
+  document.getElementById('demandas-lista').innerHTML = lista.map(d => {
+    const prio = PRIO[d.prioridade] || PRIO.media;
+    const st = ST[d.status] || ST.aberta;
+    const vencida = d.data_limite && new Date(d.data_limite) < new Date() && d.status !== 'concluida';
+    return '<div class="section" style="margin-bottom:10px;border-left:3px solid ' + prio.color + '">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
+            '<span style="font-size:14px;font-weight:700">' + d.titulo + '</span>' +
+            '<span style="font-size:10px;color:' + prio.color + ';background:' + prio.bg + ';padding:2px 8px;border-radius:99px;font-weight:600">' + prio.label + '</span>' +
+            '<span style="font-size:10px;color:' + st.color + ';font-weight:600">' + st.label + '</span>' +
+            (vencida ? '<span style="font-size:10px;color:var(--red);background:var(--red-bg);padding:2px 8px;border-radius:99px">Vencida</span>' : '') +
+          '</div>' +
+          (d.cliente ? '<div style="font-size:12px;color:var(--text3);margin-bottom:4px">' + d.cliente + '</div>' : '') +
+          (d.descricao ? '<div style="font-size:12px;color:var(--text2);margin-bottom:6px;white-space:pre-wrap">' + d.descricao + '</div>' : '') +
+          '<div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;color:var(--text3)">' +
+            (d.responsavel ? '<span>Resp: <strong style="color:var(--text)">' + d.responsavel + '</strong></span>' : '') +
+            (d.data_limite ? '<span style="color:' + (vencida?'var(--red)':'var(--text3)') + '">Limite: <strong>' + new Date(d.data_limite+'T12:00:00').toLocaleDateString('pt-BR') + '</strong></span>' : '') +
+            '<span>Por: <strong style="color:var(--text)">' + (d.criado_por||'-') + '</strong></span>' +
+          '</div>' +
+          (d.obs ? '<div style="margin-top:8px;font-size:11px;color:var(--text3);background:var(--bg3);border-radius:6px;padding:6px 8px">' + d.obs + '</div>' : '') +
+        '</div>' +
+        (d.foto ? '<img src="' + d.foto + '" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0;cursor:pointer" onclick="window.open(this.src)">' : '') +
+      '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">' +
+        '<button class="btn btn-sm" onclick="openEditarDemanda(\'' + d.id + '\')">Editar</button>' +
+        (d.status !== 'concluida' ? '<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirDemanda(\'' + d.id + '\')">Concluir</button>' : '') +
+        '<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarDemanda(\'' + d.id + '\')">Excluir</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function openNovaDemanda() {
+  editDemandaId = null;
+  demandaFotoBase64 = null;
+  document.getElementById('demanda-modal-title').textContent = 'Nova Demanda';
+  document.getElementById('demanda-titulo').value = '';
+  document.getElementById('demanda-cliente').value = '';
+  document.getElementById('demanda-descricao').value = '';
+  document.getElementById('demanda-prioridade').value = 'media';
+  document.getElementById('demanda-data-limite').value = '';
+  document.getElementById('demanda-status').value = 'aberta';
+  document.getElementById('demanda-obs').value = '';
+  document.getElementById('demanda-foto-preview').innerHTML = '';
+  document.getElementById('demanda-ia-status').textContent = '';
+  document.getElementById('demanda-btn-ia').style.display = 'none';
+  document.getElementById('demanda-foto-input').value = '';
+  // Preencher responsavel com gestores
+  const sel = document.getElementById('demanda-responsavel');
+  const gestores = USERS.filter(u => isAdmin(u) && u.ativo !== false);
+  sel.innerHTML = '<option value="">Sem responsavel</option>' +
+    gestores.map(u => '<option value="' + u.nome + '">' + u.nome + '</option>').join('');
+  sel.value = currentUser.nome;
+  document.getElementById('ov-demanda').classList.add('on');
+}
+
+function openEditarDemanda(id) {
+  const d = demandas.find(x => x.id === id);
+  if (!d) return;
+  editDemandaId = id;
+  demandaFotoBase64 = d.foto || null;
+  document.getElementById('demanda-modal-title').textContent = 'Editar Demanda';
+  document.getElementById('demanda-titulo').value = d.titulo || '';
+  document.getElementById('demanda-cliente').value = d.cliente || '';
+  document.getElementById('demanda-descricao').value = d.descricao || '';
+  document.getElementById('demanda-prioridade').value = d.prioridade || 'media';
+  document.getElementById('demanda-data-limite').value = d.data_limite || '';
+  document.getElementById('demanda-status').value = d.status || 'aberta';
+  document.getElementById('demanda-obs').value = d.obs || '';
+  document.getElementById('demanda-foto-preview').innerHTML = d.foto ?
+    '<img src="' + d.foto + '" style="max-height:100px;border-radius:6px;margin-top:6px">' : '';
+  document.getElementById('demanda-ia-status').textContent = '';
+  document.getElementById('demanda-btn-ia').style.display = 'none';
+  const sel = document.getElementById('demanda-responsavel');
+  const gestores = USERS.filter(u => isAdmin(u) && u.ativo !== false);
+  sel.innerHTML = '<option value="">Sem responsavel</option>' +
+    gestores.map(u => '<option value="' + u.nome + '"' + (u.nome === d.responsavel ? ' selected' : '') + '>' + u.nome + '</option>').join('');
+  document.getElementById('ov-demanda').classList.add('on');
+}
+
+function processarFotoDemanda(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    demandaFotoBase64 = e.target.result;
+    document.getElementById('demanda-foto-preview').innerHTML =
+      '<img src="' + demandaFotoBase64 + '" style="max-height:120px;border-radius:6px;margin-top:6px">';
+    document.getElementById('demanda-btn-ia').style.display = '';
+    document.getElementById('demanda-ia-status').textContent = 'Foto carregada. Clique em "Analisar com IA" para preencher os campos.';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analisarFotoDemanda() {
+  if (!demandaFotoBase64) return;
+  document.getElementById('demanda-ia-status').textContent = 'Analisando imagem...';
+  document.getElementById('demanda-btn-ia').disabled = true;
+
+  try {
+    // Extrair base64 puro
+    const base64 = demandaFotoBase64.split(',')[1];
+    const mediaType = demandaFotoBase64.split(';')[0].split(':')[1];
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: mediaType, data: base64 }
+            },
+            {
+              type: 'text',
+              text: 'Analise esta imagem e extraia informacoes para criar uma demanda de servico. Responda APENAS em JSON valido com os campos: titulo (string curta), cliente (string ou null), descricao (string detalhada), prioridade (baixa/media/alta/urgente). Sem texto fora do JSON.'
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await response.json();
+    const text = data.content && data.content[0] ? data.content[0].text : '';
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    if (parsed.titulo) document.getElementById('demanda-titulo').value = parsed.titulo;
+    if (parsed.cliente) document.getElementById('demanda-cliente').value = parsed.cliente;
+    if (parsed.descricao) document.getElementById('demanda-descricao').value = parsed.descricao;
+    if (parsed.prioridade) document.getElementById('demanda-prioridade').value = parsed.prioridade;
+
+    document.getElementById('demanda-ia-status').textContent = 'Campos preenchidos pela IA. Revise e salve.';
+  } catch(e) {
+    document.getElementById('demanda-ia-status').textContent = 'Erro ao analisar: ' + e.message;
+  }
+  document.getElementById('demanda-btn-ia').disabled = false;
+}
+
+async function salvarDemanda() {
+  const titulo = document.getElementById('demanda-titulo').value.trim();
+  if (!titulo) { showToast('Informe o titulo', 'err'); return; }
+
+  const payload = {
+    titulo,
+    cliente: document.getElementById('demanda-cliente').value.trim() || null,
+    descricao: document.getElementById('demanda-descricao').value.trim() || null,
+    prioridade: document.getElementById('demanda-prioridade').value,
+    responsavel: document.getElementById('demanda-responsavel').value || null,
+    data_limite: document.getElementById('demanda-data-limite').value || null,
+    status: document.getElementById('demanda-status').value,
+    obs: document.getElementById('demanda-obs').value.trim() || null,
+    foto: demandaFotoBase64 || null,
+    criado_por: currentUser.nome,
+  };
+
+  try {
+    if (editDemandaId) {
+      await sbPatch('demandas?id=eq.' + editDemandaId, payload);
+      const i = demandas.findIndex(d => d.id === editDemandaId);
+      if (i >= 0) demandas[i] = {...demandas[i], ...payload};
+      showToast('Demanda atualizada');
+    } else {
+      const res = await sbPost('demandas', payload);
+      demandas.unshift(res[0] || payload);
+      showToast('Demanda criada');
+    }
+    document.getElementById('ov-demanda').classList.remove('on');
+    renderDemandas();
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function concluirDemanda(id) {
+  try {
+    await sbPatch('demandas?id=eq.' + id, {status: 'concluida'});
+    const i = demandas.findIndex(d => d.id === id);
+    if (i >= 0) demandas[i].status = 'concluida';
+    showToast('Demanda concluida');
+    renderDemandas();
+  } catch(e) { showToast('Erro: ' + e.message, 'err'); }
+}
+
+async function deletarDemanda(id) {
+  if (!confirm('Excluir esta demanda?')) return;
+  try {
+    await sbDel('demandas?id=eq.' + id);
+    demandas = demandas.filter(d => d.id !== id);
+    showToast('Demanda excluida');
+    renderDemandas();
   } catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
