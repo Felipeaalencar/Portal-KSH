@@ -79,7 +79,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── CONTENT ── */
 .content{flex:1;min-width:0;overflow-y:auto;height:100vh}
-.page{display:none;padding:20px}.page.on{display:block}
+.page{display:none;padding:24px 28px}.page.on{display:block}
 .page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
 .page-title{font-size:18px;font-weight:600}
 .page-sub{font-size:12px;color:var(--text3);margin-top:2px}
@@ -197,6 +197,35 @@ textarea{resize:vertical;min-height:80px}
 ::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
 
 /* ── RESPONSIVE ── */
+
+/* Desktop largo (>1280px) - aproveitar mais espaço */
+@media(min-width:1280px){
+  .sidebar{width:230px}
+  .page{padding:28px 32px}
+  .page-title{font-size:20px}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .stat-val{font-size:28px}
+  .section{padding:18px 20px}
+}
+
+/* Desktop médio (1024-1279px) */
+@media(min-width:1024px) and (max-width:1279px){
+  .sidebar{width:215px}
+  .page{padding:22px 26px}
+  .g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+
+/* Tablet (769-1023px) */
+@media(min-width:769px) and (max-width:1023px){
+  .sidebar{width:190px}
+  .nav-item{font-size:12px;padding:7px 8px}
+  .page{padding:16px 18px}
+  .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .page-title{font-size:17px}
+}
+
+/* Mobile (<768px) */
 @media(max-width:768px){
   .sidebar{display:none}
   .mobile-nav{display:block}
@@ -219,6 +248,8 @@ textarea{resize:vertical;min-height:80px}
   .chip{font-size:11px;padding:2px 8px}
   .pin-grid{max-width:260px}
   .pin-btn{padding:16px;font-size:20px}
+  #bi-kpis{grid-template-columns:repeat(2,1fr)!important}
+  #bi-chart-receita,#bi-os-hoje{grid-column:1/-1!important}
 }
 @media(max-width:400px){
   .g4{grid-template-columns:1fr 1fr}
@@ -808,7 +839,7 @@ textarea{resize:vertical;min-height:80px}
         <div id="ac-cliente" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:0 0 8px 8px;z-index:10;max-height:160px;overflow-y:auto"></div>
       </div>
     </div>
-    <div class="field"><div class="field-label">Endereço</div><input type="text" id="lf-endereco" placeholder="Ex: 590 Ocean Dr, Miami, FL"></div>
+    <div class="field"><div class="field-label">Endereço *</div><input type="text" id="lf-endereco" placeholder="Ex: 590 Ocean Dr, Miami, FL"></div>
     <div class="field"><div class="field-label">Técnico(s) *</div>
       <select id="lf-tec-select" onchange="addTecChip()"><option value="">Selecionar técnico...</option></select>
       <div class="chips-wrap" id="lf-tec-chips"></div>
@@ -833,6 +864,9 @@ textarea{resize:vertical;min-height:80px}
         <input type="date" id="gasto-data" style="width:130px">
       </div>
       <button class="btn btn-primary btn-sm" onclick="addGasto()" style="margin-bottom:0;white-space:nowrap">+ Add</button>
+    </div>
+    <div style="margin-bottom:10px">
+      <input type="text" id="gasto-obs" placeholder="Observacao (ex: APT 2801 - cabo HDMI)" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:8px 10px;color:var(--text);font-family:inherit;font-size:12px">
     </div>
     <div id="novo-tipo-wrap" style="display:none;margin-bottom:10px">
       <div class="field" style="margin:0"><div class="field-label">Nome do novo tipo</div>
@@ -879,7 +913,7 @@ textarea{resize:vertical;min-height:80px}
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="field" style="grid-column:1/-1"><div class="field-label">Nome *</div><input type="text" id="cl-nome" placeholder="Nome completo ou empresa"></div>
-      <div class="field"><div class="field-label">Telefone</div><input type="text" id="cl-telefone" placeholder="+1 (305) 000-0000"></div>
+      <div class="field"><div class="field-label">Telefone *</div><input type="text" id="cl-telefone" placeholder="+1 (305) 000-0000"></div>
       <div class="field"><div class="field-label">Email</div><input type="text" id="cl-email" placeholder="email@exemplo.com"></div>
       <div class="field" style="grid-column:1/-1"><div class="field-label">Endereço</div><input type="text" id="cl-endereco" placeholder="590 Ocean Dr, Miami, FL"></div>
       <div class="field"><div class="field-label">Contato / Responsável</div><input type="text" id="cl-contato" placeholder="Nome do responsável"></div>
@@ -1622,11 +1656,13 @@ function addGasto() {
   const tipo=document.getElementById('gasto-tipo').value;
   const valor=parseFloat(document.getElementById('gasto-valor').value);
   const data=document.getElementById('gasto-data').value||new Date().toISOString().split('T')[0];
+  const obs=document.getElementById('gasto-obs').value.trim();
   if(!tipo){showToast('Selecione o tipo de gasto','err');return;}
   if(!valor||valor<=0){showToast('Informe um valor valido','err');return;}
-  gastosForm.push({tipo,valor,data});
+  gastosForm.push({tipo,valor,data,obs:obs||null});
   document.getElementById('gasto-tipo').value='';
   document.getElementById('gasto-valor').value='';
+  document.getElementById('gasto-obs').value='';
   renderGastos();
 }
 function removeGasto(i) { gastosForm.splice(i,1); renderGastos(); }
@@ -1645,10 +1681,13 @@ function renderGastos() {
     const subtotal=itens.reduce((s,g)=>s+(+g.valor||0),0);
     return `<div style="margin-bottom:8px">
       <div style="font-size:10px;color:var(--text3);font-weight:600;padding:4px 0;border-bottom:1px solid var(--border);margin-bottom:4px">${d==='Sem data'?d:new Date(d+'T12:00:00').toLocaleDateString('pt-BR')}</div>
-      ${itens.map(g=>`<div class="gasto-item">
-        <div class="gasto-tipo">${g.tipo}</div>
-        <div class="gasto-val">${fmtMon(g.valor)}</div>
-        <button class="gasto-del" onclick="removeGasto(${g.idx})">x</button>
+      ${itens.map(g=>`<div style="margin-bottom:4px">
+        <div class="gasto-item" style="margin-bottom:0">
+          <div class="gasto-tipo">${g.tipo}</div>
+          <div class="gasto-val">${fmtMon(g.valor)}</div>
+          <button class="gasto-del" onclick="removeGasto(${g.idx})">x</button>
+        </div>
+        ${g.obs?`<div style="font-size:10px;color:var(--text3);padding:3px 10px 2px;background:var(--bg4);border-radius:0 0 6px 6px;border:1px solid var(--border);border-top:none">${g.obs}</div>`:''}
       </div>`).join('')}
       ${datas.length>1?`<div style="text-align:right;font-size:11px;color:var(--text3);padding:2px 4px">subtotal: ${fmtMon(subtotal)}</div>`:''}
     </div>`;
@@ -1960,6 +1999,11 @@ async function renderClientes() {
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
               <div style="font-size:15px;font-weight:600">${c.nome}</div>
               ${manutencaoBadge(c.proxima_manutencao)}
+              ${(function(){
+                var pct = calcCompletude(c);
+                var cor = pct===100?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+                return '<span style="font-size:10px;font-weight:700;color:'+cor+';background:'+cor+'20;padding:2px 7px;border-radius:99px">'+pct+'% completo</span>';
+              })()}
             </div>
             <div style="font-size:11px;color:var(--text3);display:flex;flex-wrap:wrap;gap:12px;margin-top:4px">
               ${c.telefone?`<span> ${c.telefone}</span>`:''}
@@ -2808,8 +2852,55 @@ async function reabrirLancamento() {
   } catch(e) { showToast('Erro: ' + e.message, 'err'); }
 }
 
+
+// ================================================
+// VERIFICACAO CADASTRO CLIENTE
+// ================================================
+function cadastroClienteCompleto(nomeCliente) {
+  if (!nomeCliente) return {completo: false, campos: ['nome']};
+  const c = clientesCRM.find(function(x) {
+    return (x.nome||'').toLowerCase().trim() === nomeCliente.toLowerCase().trim();
+  });
+  if (!c) return {completo: false, naoEncontrado: true, campos: ['cadastro']};
+  const faltando = [];
+  if (!c.endereco || !c.endereco.trim()) faltando.push('Endereço');
+  if (!c.telefone || !c.telefone.trim()) faltando.push('Telefone');
+  if (!c.equipamentos || !c.equipamentos.trim()) faltando.push('Equipamentos');
+  return {completo: faltando.length === 0, campos: faltando, id: c.id};
+}
+
+function calcCompletude(c) {
+  var total = 4; // nome, endereco, telefone, equipamentos
+  var preenchidos = 0;
+  if (c.nome && c.nome.trim()) preenchidos++;
+  if (c.endereco && c.endereco.trim()) preenchidos++;
+  if (c.telefone && c.telefone.trim()) preenchidos++;
+  if (c.equipamentos && c.equipamentos.trim()) preenchidos++;
+  return Math.round((preenchidos / total) * 100);
+}
+
 async function finalizarLancamento() {
   if (!editLancId) return;
+
+  // Verificar cadastro do cliente antes de finalizar
+  const lancAtual = lancamentos.find(function(l){ return l.id === editLancId; });
+  if (lancAtual && lancAtual.cliente) {
+    const check = cadastroClienteCompleto(lancAtual.cliente);
+    if (!check.completo) {
+      const msg = check.naoEncontrado
+        ? 'Cliente "' + lancAtual.cliente + '" nao esta cadastrado no CRM.\nCadastre o cliente antes de finalizar.'
+        : 'Cadastro do cliente incompleto.\nCampos faltando: ' + check.campos.join(', ') + '.\n\nDeseja ir ao cadastro agora?';
+      const ir = confirm(msg);
+      if (ir) {
+        closeLanc();
+        goPage('clientes', null);
+        if (check.id) setTimeout(function(){ abrirFicha(check.id); }, 300);
+        else setTimeout(function(){ openNovoCliente(); }, 300);
+      }
+      return;
+    }
+  }
+
   if (!confirm('Confirmar finalizacao do servico? Esta acao nao pode ser desfeita.')) return;
 
   // Primeiro salvar os dados atuais
@@ -3373,34 +3464,47 @@ function renderBI() {
     );
 
   // === FINANCEIRO POR TECNICO ===
+  // MO = horas x valor/hora de cada tecnico individualmente
+  // Gastos sao do servico, nao do tecnico
   const tecnicos = USERS.filter(u=>u.ativo!==false&&(u.funcao==='Tecnico'||u.funcao==='Técnico'));
   const tecData = tecnicos.map(t=>{
     const meus = rows.filter(r=>(r.tecnicos||[]).includes(t.nome)||(r.preenchedor===t.nome));
-    const gastos = meus.reduce((s,r)=>s+(+r.total_gastos||0),0);
-    const mo = meus.reduce((s,r)=>s+(+r.custo_mao_obra||0),0);
-    const horas = meus.reduce((s,r)=>s+(+r.horas_trabalhadas||0),0);
-    return {nome:t.nome.split(' ')[0], gastos, mo, total:gastos+mo, horas, servicos:meus.length};
-  }).sort((a,b)=>b.total-a.total);
+    // Calcular horas em tempo real: usa horas_trabalhadas se finalizado,
+    // senao calcula direto do hora_inicio / hora_fim
+    const horas = meus.reduce((s,r) => {
+      if (r.horas_trabalhadas > 0) return s + (+r.horas_trabalhadas);
+      if (r.hora_inicio && r.hora_fim) {
+        const [hi,mi] = r.hora_inicio.split(':').map(Number);
+        const [hf,mf] = r.hora_fim.split(':').map(Number);
+        const diff = ((hf*60+mf)-(hi*60+mi))/60;
+        return s + (diff > 0 ? diff : 0);
+      }
+      return s;
+    }, 0);
+    const valorHora = +( (USERS.find(u=>u.nome===t.nome)||{}).valor_hora||0 );
+    const mo = Math.round(horas * valorHora * 100) / 100;
+    return {nome:t.nome.split(' ')[0], mo, horas:Math.round(horas*100)/100, servicos:meus.length, valorHora};
+  }).sort((a,b)=>b.mo-a.mo);
 
-  const maxTec = Math.max(...tecData.map(t=>t.total),1);
+  const maxTec = Math.max(...tecData.map(t=>t.mo),1);
   document.getElementById('bi-tec-financeiro').innerHTML =
-    '<div class="section-title" style="margin-bottom:14px">Custo por Tecnico</div>' +
+    '<div class="section-title" style="margin-bottom:14px">Custo por Tecnico (Mao de Obra)</div>' +
     (tecData.length===0
       ? '<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px">Sem dados</div>'
       : tecData.map(t=>{
-          const pct = Math.round((t.total/maxTec)*100);
+          const pct = Math.round((t.mo/maxTec)*100);
           return '<div style="margin-bottom:14px">' +
             '<div style="display:flex;justify-content:space-between;margin-bottom:5px">' +
               '<span style="font-size:13px;font-weight:600">'+t.nome+'</span>' +
-              '<span style="font-size:12px;color:var(--red);font-weight:700">'+fmtMon(t.total)+'</span>' +
+              '<span style="font-size:12px;color:var(--amber);font-weight:700">'+fmtMon(t.mo)+'</span>' +
             '</div>' +
             '<div style="height:6px;background:var(--bg4);border-radius:3px;margin-bottom:4px;overflow:hidden">' +
-              '<div style="height:6px;width:'+pct+'%;background:linear-gradient(90deg,var(--red),var(--amber));border-radius:3px;transition:width .5s"></div>' +
+              '<div style="height:6px;width:'+pct+'%;background:linear-gradient(90deg,var(--amber),var(--green));border-radius:3px;transition:width .5s"></div>' +
             '</div>' +
             '<div style="display:flex;gap:12px;font-size:10px;color:var(--text3)">' +
-              '<span>'+t.servicos+' servicos</span>' +
+              '<span>'+t.servicos+' servico(s)</span>' +
               '<span>'+t.horas.toFixed(1)+'h trabalhadas</span>' +
-              '<span>MO: '+fmtMon(t.mo)+'</span>' +
+              '<span>$'+t.valorHora+'/h</span>' +
             '</div>' +
           '</div>';
         }).join('')
@@ -3534,8 +3638,18 @@ function renderBI() {
     todosUsers.map(u=>{
       const meus = rows.filter(r=>(r.tecnicos||[]).includes(u.nome)||(r.preenchedor===u.nome));
       const gastos = meus.reduce((s,r)=>s+(+r.total_gastos||0),0);
-      const mo = meus.reduce((s,r)=>s+(+r.custo_mao_obra||0),0);
-      const horas = meus.reduce((s,r)=>s+(+r.horas_trabalhadas||0),0);
+      const horas = meus.reduce((s,r) => {
+        if (r.horas_trabalhadas > 0) return s + (+r.horas_trabalhadas);
+        if (r.hora_inicio && r.hora_fim) {
+          const [hi,mi] = r.hora_inicio.split(':').map(Number);
+          const [hf,mf] = r.hora_fim.split(':').map(Number);
+          const diff = ((hf*60+mf)-(hi*60+mi))/60;
+          return s + (diff > 0 ? diff : 0);
+        }
+        return s;
+      }, 0);
+      const valorHora = +( (USERS.find(u2=>u2.nome===u.nome)||{}).valor_hora||0 );
+      const mo = Math.round(horas * valorHora * 100) / 100;
       const servicos = meus.length;
       const ini = u.ini||(u.nome||'').substring(0,2).toUpperCase();
       return '<div style="background:var(--bg3);border-radius:10px;padding:14px">' +
