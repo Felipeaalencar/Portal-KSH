@@ -4171,6 +4171,11 @@ window.addEventListener('message', function(e) {
     document.getElementById('crm-iframe-wrap').style.display='none';
     document.getElementById('app-wrap').classList.add('on');
   }
+  if(e.data && e.data.type === 'voltarSeletor') {
+    document.getElementById('crm-iframe-wrap').style.display='none';
+    document.getElementById('app-wrap').classList.remove('on');
+    document.getElementById('selector-wrap').style.display='flex';
+  }
 });
 
 
