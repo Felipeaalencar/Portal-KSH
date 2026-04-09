@@ -347,6 +347,27 @@ textarea{resize:vertical;min-height:80px}
 </div>
 
 <!-- ══ APP ════════════════════════════════════ -->
+<!-- SELETOR PORTAL/CRM (só gestores) -->
+<div id="selector-wrap" style="display:none;min-height:100vh;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:32px">
+  <div style="text-align:center;margin-bottom:8px">
+    <div style="font-size:24px;font-weight:800;letter-spacing:-0.5px">Kilian Smart Homes</div>
+    <div style="font-size:13px;color:var(--text3);margin-top:4px">Selecione o sistema</div>
+  </div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:0 20px">
+    <div onclick="entrarPortal()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">🏠</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Portal</div>
+      <div style="font-size:12px;color:var(--text3)">OS, Lançamentos,<br>BI e Equipe</div>
+    </div>
+    <div onclick="entrarCRM()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">👥</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">CRM</div>
+      <div style="font-size:12px;color:var(--text3)">Pipeline, Leads,<br>Comissões e MRR</div>
+    </div>
+  </div>
+  <button onclick="logoutSelector()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:inherit;margin-top:8px">← Trocar usuário</button>
+</div>
+
 <div class="app-wrap" id="app-wrap">
 
   <!-- SIDEBAR (desktop) -->
@@ -361,7 +382,7 @@ textarea{resize:vertical;min-height:80px}
       <div><div class="s-logo-text">Kilian Smart Homes</div><div class="s-logo-sub">Portal</div></div>
     </div>
     <nav class="nav">
-      <button class="nav-item active" onclick="goPage('dashboard',this)"><span class="nav-icon">◈</span>Dashboard</button>
+      <button class="nav-item active" onclick="crmGoPage('dashboard',this)"><span class="nav-icon">◈</span>Dashboard</button>
       <button class="nav-item" onclick="goPage('os',this)"><span class="nav-icon">◫</span>Ordens de Serviço<span id="badge-os" style="margin-left:auto;font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item" onclick="goPage('lancamentos',this)"><span class="nav-icon">⊞</span>Lançamentos</button>
       <button class="nav-item admin-only" onclick="goPage('demandas',this)"><span class="nav-icon">◻</span>Demandas<span id="badge-demandas" style="margin-left:auto;font-size:10px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:9px;display:none"></span></button>
@@ -378,6 +399,9 @@ textarea{resize:vertical;min-height:80px}
       <button onclick="openNotifs()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;position:relative" title="Notificacoes">
         &#9901;
         <span id="notif-badge" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:var(--red);border-radius:50%"></span>
+      </button>
+      <button class="admin-only" onclick="irParaCRM()" style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);color:var(--blue);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit" title="Abrir CRM">
+        CRM →
       </button>
       <span style="font-size:10px;color:var(--text3)">v2.0</span>
     </div>
@@ -812,7 +836,7 @@ textarea{resize:vertical;min-height:80px}
   <!-- MOBILE NAV -->
   <div class="mobile-nav">
     <div class="mob-nav-items">
-      <button class="mob-nav-item active" onclick="goPage('dashboard',this)"><span class="mob-nav-icon">◈</span>Dashboard</button>
+      <button class="mob-nav-item active" onclick="crmGoPage('dashboard',this)"><span class="mob-nav-icon">◈</span>Dashboard</button>
       <button class="mob-nav-item" onclick="goPage('os',this)"><span class="mob-nav-icon">◫</span>OS</button>
       <button class="mob-nav-item" onclick="goPage('lancamentos',this)"><span class="mob-nav-icon">⊞</span>Lanc.</button>
       <button class="mob-nav-item" onclick="goPage('tecnicos',this)"><span class="mob-nav-icon">◉</span>Equipe</button>
@@ -1025,7 +1049,7 @@ textarea{resize:vertical;min-height:80px}
 // SUPABASE
 // ================================================
 const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
-const SB_KEY = 'sb_publishable_mFhdnCcKC8OZnc1BK5SB6A_srgVU4UP';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
 const H = {'Content-Type':'application/json','apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY};
 
 async function sb(path, opts={}) {
@@ -1170,6 +1194,19 @@ function checkPin() {
 }
 function enterApp() {
   document.getElementById('login-wrap').style.display='none';
+  // Gestor vê o seletor, tecnico entra direto no portal
+  if (isAdmin(currentUser)) {
+    const sel = document.getElementById('selector-wrap');
+    sel.style.display = 'flex';
+    return;
+  }
+  entrarPortal();
+}
+// irParaCRM via iframe bridge abaixo
+// irParaPortal via postMessage bridge abaixo
+function entrarPortal() {
+  document.getElementById('selector-wrap').style.display='none';
+  document.getElementById('crm-wrap') && (document.getElementById('crm-wrap').style.display='none');
   document.getElementById('app-wrap').classList.add('on');
   const av=document.getElementById('sidebar-av');
   av.textContent=currentUser.ini||currentUser.nome.substring(0,2).toUpperCase();
@@ -1182,11 +1219,22 @@ function enterApp() {
   document.getElementById('dash-date').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   loadAll().then(function(){ atualizarBadgeNotifs(); });
 }
+function logoutSelector() {
+  // Voltar ao login sem fazer logout completo
+  document.getElementById('selector-wrap').style.display='none';
+  document.getElementById('login-wrap').style.display='flex';
+  currentUser=null; selectedUser=null; pinInput='';
+  updateDots();
+  document.getElementById('step-user').style.display='block';
+  document.getElementById('step-pin').classList.remove('on');
+}
 function logout() {
   currentUser=null; selectedUser=null; pinInput='';
   updateDots();
   document.getElementById('login-wrap').style.display='flex';
+  document.getElementById('selector-wrap').style.display='none';
   document.getElementById('app-wrap').classList.remove('on');
+  if(document.getElementById('crm-wrap')) document.getElementById('crm-wrap').style.display='none';
   document.getElementById('step-user').style.display='block';
   document.getElementById('step-pin').classList.remove('on');
 }
@@ -4073,6 +4121,59 @@ function init() {
   });
 }
 init();
+</script>
+
+<!-- CRM via iframe -->
+<div id="crm-iframe-wrap" style="display:none;position:fixed;inset:0;z-index:500">
+  <iframe id="crm-iframe" src="crm.html" style="width:100%;height:100%;border:none" allow="*"></iframe>
+</div>
+
+<script>
+
+// ================================================
+// BRIDGE PORTAL <-> CRM
+// ================================================
+function entrarCRM() {
+  document.getElementById('selector-wrap').style.display='none';
+  const wrap = document.getElementById('crm-iframe-wrap');
+  const iframe = document.getElementById('crm-iframe');
+  wrap.style.display='block';
+  // Guardar usuário para enviar quando CRM avisar que está pronto
+  window._pendingCRMUser = {
+    id: currentUser.id,
+    nome: currentUser.nome || currentUser.name,
+    ini: currentUser.ini,
+    funcao: currentUser.funcao,
+    av_style: currentUser.av_style,
+    pin: currentUser.pin
+  };
+  // Recarregar iframe
+  iframe.src = 'crm.html?' + Date.now();
+}
+
+function irParaCRM() {
+  document.getElementById('app-wrap').classList.remove('on');
+  entrarCRM();
+}
+
+// Receber mensagens do CRM
+window.addEventListener('message', function(e) {
+  if(e.data && e.data.type === 'crmPronto' && window._pendingCRMUser) {
+    // CRM está pronto - enviar usuário
+    var iframe = document.getElementById('crm-iframe');
+    iframe.contentWindow.postMessage({
+      type: 'entrarCRM',
+      user: window._pendingCRMUser
+    }, '*');
+    window._pendingCRMUser = null;
+  }
+  if(e.data && e.data.type === 'voltarPortal') {
+    document.getElementById('crm-iframe-wrap').style.display='none';
+    document.getElementById('app-wrap').classList.add('on');
+  }
+});
+
+
 </script>
 </body>
 </html>
