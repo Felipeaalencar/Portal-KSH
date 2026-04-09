@@ -611,29 +611,60 @@ function checkPin(){
 async function criarOSdoLead(lead) {
   if (!lead) return;
   try {
+    // Montar descrição com serviço completo (inclui itens do pacote)
+    const servico = lead.service || 'Serviço contratado via CRM';
+    const empresa = lead.empresa ? ' [' + lead.empresa + ']' : '';
+    const formaPgto = lead.acordo ? ' | Pgto: ' + lead.acordo : '';
+
     const osPayload = {
       cliente: lead.name,
-      descricao: lead.service || 'Serviço contratado via CRM',
+      descricao: servico + empresa + formaPgto,
       data_agendada: new Date().toISOString().split('T')[0],
       valor_venda: lead.ticket || null,
       status: 'agendado',
-      criado_por: currentUser ? currentUser.name : 'CRM',
+      criado_por: (currentUser ? currentUser.name : 'CRM'),
       tecnicos: [],
       total_gastos: 0,
     };
-    await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/ordens_servico', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
-        'Prefer': 'return=representation'
-      },
-      body: JSON.stringify(osPayload)
+
+    const headers = {
+      'Content-Type': 'application/json',
+      'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
+      'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
+      'Prefer': 'return=representation'
+    };
+
+    // 1. Criar OS
+    const osResp = await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/ordens_servico', {
+      method: 'POST', headers, body: JSON.stringify(osPayload)
     });
-    toast('✅ OS criada no Portal para ' + lead.name);
+    if (!osResp.ok) throw new Error('Erro ao criar OS');
+    const osData = await osResp.json();
+    const osId = osData && osData[0] ? osData[0].id : null;
+
+    // 2. Criar Lançamento vinculado à OS
+    const lancPayload = {
+      data_servico: osPayload.data_agendada,
+      cliente: lead.name,
+      endereco: lead.endereco || null,
+      tecnicos: [],
+      relato: osPayload.descricao,
+      gastos: [],
+      total_gastos: 0,
+      preenchedor: osPayload.criado_por,
+      status: 'revisao',
+      notas: [],
+      os_id: osId,
+      valor_venda: lead.ticket || null,
+    };
+    await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/lancamentos', {
+      method: 'POST', headers, body: JSON.stringify(lancPayload)
+    });
+
+    toast('✅ OS + Lançamento criados no Portal para ' + lead.name);
   } catch(e) {
     console.error('Erro ao criar OS:', e);
+    toast('⚠️ Erro ao criar OS: ' + e.message, 'err');
   }
 }
 
@@ -892,7 +923,7 @@ function rPipeline(){
             <div class="card-foot">
               <div class="av" style="${avStyle(v)}" title="${v.name}">${v.ini}</div>
               ${canEdit
-                ?`<span class="card-ticket" onclick="event.stopPropagation();editTicket(${l.id},this)" title="Clique para definir o valor">${l.ticket?fmt(l.ticket):'<span style="opacity:.5">R$ ---</span>'}</span>`
+                ?`<span class="card-ticket" onclick="event.stopPropagation();editTicket(${l.id},this)" title="Clique para definir o valor">${l.ticket?fmt(l.ticket):'<span style="opacity:.5">$ ---</span>'}</span>`
                 :`<span style="font-size:10px;color:var(--text3)">${l.ticket?fmt(l.ticket):''}</span>`
               }
               <span class="card-days${urg?' urg':stl?' warn':''}">${l.days===0?'hoje':'há '+l.days+'d'}</span>
@@ -1046,7 +1077,7 @@ function openLead(id){
     ${l.empresa==='AKG'?`
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 AKG — Mensalidade</div>
-      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor da mensalidade (R$)</div>
+      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor da mensalidade ($)</div>
         <input id="l-vprod" type="text" inputmode="decimal"
           value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
           onfocus="parseMoeda(this)" onblur="maskMoeda(this)" ${canEdit?'':'disabled'}>
@@ -1058,7 +1089,7 @@ function openLead(id){
     </div>`:`
     <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:12px;margin-bottom:14px">
       <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 KSH — Projeto</div>
-      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor do projeto (R$)</div>
+      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor do projeto ($)</div>
         <input id="l-vprod" type="text" inputmode="decimal"
           value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
           onfocus="parseMoeda(this)" onblur="maskMoeda(this)" ${canEdit?'':'disabled'}>
@@ -1150,7 +1181,7 @@ async function saveLead(id){
     const ini=document.getElementById('ac-inicio')?.value||'';
     const obs=document.getElementById('ac-obs')?.value||'';
     const acordo=[
-      val?'Valor: R$'+parseInt(val).toLocaleString('pt-BR')+'/mês':'',
+      val?'Valor: $'+parseInt(val).toLocaleString('pt-BR')+'/mês':'',
       desc?'Desconto: '+desc:'',
       pgto?'Pagamento: '+pgto:'',
       parcelas?'Parcelas: '+parcelas+'x':'',
@@ -1221,13 +1252,13 @@ function openNew(){
     </div>
     <div class="field"><div class="field-label">Origem</div>
       <select id="no">${ORIGINS.map(o=>`<option>${o}</option>`).join('')}</select></div>
-    <div class="field"><div class="field-label">Ticket estimado (R$)</div>
+    <div class="field"><div class="field-label">Ticket estimado ($)</div>
       <input id="nt2" type="text" inputmode="decimal" placeholder="Ex: 50.000,00" onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()"></div>
 
     <!-- AKG: Mensalidade + Tempo de contrato -->
     <div id="n-shl-section" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 AKG — Mensalidade</div>
-      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor da mensalidade (R$)</div>
+      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor da mensalidade ($)</div>
         <input id="n-vprod" type="text" inputmode="decimal"
           onfocus="parseMoeda(this)" onblur="maskMoeda(this)"
           placeholder="Ex: 2.500,00">
@@ -1240,7 +1271,7 @@ function openNew(){
     <!-- KSH: Valor do projeto + Forma de pagamento -->
     <div id="n-cnn-section" style="display:none;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:12px;margin-bottom:12px">
       <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 KSH — Projeto</div>
-      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor do projeto (R$)</div>
+      <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor do projeto ($)</div>
         <input id="n-vprod-ksh" type="text" inputmode="decimal"
           onfocus="parseMoeda(this)" onblur="maskMoeda(this)"
           placeholder="Ex: 50.000,00">
@@ -1280,7 +1311,7 @@ function openClient(id){
   const c=clients.find(x=>x.id===id),v=gv(c.vendor_id);
   document.getElementById('modal3').innerHTML=`
     <div class="modal-hd"><div><div class="modal-title">${c.name}</div><div class="modal-sub">${c.service} · ${v.name}</div></div><button class="close-btn" onclick="cm('ov3')">✕</button></div>
-    <div class="field"><div class="field-label">Ticket (R$/mês)</div><input type="number" id="ct" value="${c.ticket}"></div>
+    <div class="field"><div class="field-label">Ticket ($/mês)</div><input type="number" id="ct" value="${c.ticket}"></div>
     <div class="field"><div class="field-label">Meses p/ renovação</div><input type="number" min="0" max="24" id="cr" value="${c.renew_in}"></div>
     <div class="field"><div class="field-label">Responsável</div><select id="cv">${vendors.map(vv=>`<option value="${vv.id}"${vv.id===c.vendor_id?' selected':''}>${vv.name}</option>`).join('')}</select></div>
     <button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveClient(${id})">Salvar</button>`;
@@ -1575,7 +1606,7 @@ const BADGES_DEF=[
   {id:'first_close',icon:'🥇',name:'Primeiro Fechamento',desc:'Primeiro contrato fechado'},
   {id:'hat_trick',icon:'🎩',name:'Hat Trick',desc:'3 fechamentos no mês'},
   {id:'top_month',icon:'👑',name:'Rei do Mês',desc:'Maior pontuação do mês'},
-  {id:'big_deal',icon:'💎',name:'Diamante',desc:'Contrato acima de R$3k'},
+  {id:'big_deal',icon:'💎',name:'Diamante',desc:'Contrato acima de $3k'},
   {id:'hunter',icon:'🎯',name:'Caçador',desc:'5 leads cadastrados'},
   {id:'proposal_pro',icon:'📄',name:'Proposta Pro',desc:'3 propostas na semana'},
   {id:'consistent',icon:'🔥',name:'Em Chamas',desc:'5 ações em um dia'},
@@ -1905,7 +1936,7 @@ function _rFinChart(forecast, mrrReal){
       plugins:{legend:{display:false}},
       scales:{
         x:{grid:{display:false},ticks:{color:'#888',font:{size:11}}},
-        y:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#888',font:{size:10},callback:function(v){return 'R$'+Math.round(v/1000)+'k';}}}
+        y:{grid:{color:'rgba(128,128,128,.1)'},ticks:{color:'#888',font:{size:10},callback:function(v){return '$'+Math.round(v/1000)+'k';}}}
       }
     }
   });

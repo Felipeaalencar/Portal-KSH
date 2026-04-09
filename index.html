@@ -3882,9 +3882,12 @@ function openNotifs() {
 // Polling notificacoes a cada 60s
 setInterval(function() {
   if (document.getElementById('app-wrap').classList.contains('on')) {
-    atualizarBadgeNotifs();
+    // Recarregar dados silenciosamente a cada 30s
+    loadAll().then(function() {
+      atualizarBadgeNotifs();
+    }).catch(function(){});
   }
-}, 60000);
+}, 30000);
 
 // ================================================
 // LOG DE AUDITORIA
