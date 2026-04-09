@@ -312,6 +312,9 @@ textarea{resize:vertical;min-height:65px}
       <button class="nav-item" id="nav-comissoes" onclick="goPage('comissoes',this)"><span class="nav-icon">💵</span>Comissões</button>
       <div class="nav-sep admin-only" id="nav-sep2"></div>
       <button class="nav-item admin-only" id="nav-settings" onclick="goPage('settings',this)"><span class="nav-icon">◌</span>Configurações</button>
+      <div class="nav-sep" style="margin:8px 0"></div>
+      <button class="nav-item" onclick="voltarPortal()" style="color:var(--text3)"><span class="nav-icon">⊞</span>Ir ao Portal</button>
+      <button class="nav-item" onclick="voltarSeletor()" style="color:var(--text3)"><span class="nav-icon">⇄</span>Trocar sistema</button>
     </nav>
     <div class="s-bottom">
       <div class="s-user" onclick="logout()">
@@ -603,18 +606,32 @@ function checkPin(){
 }
 
 
-function voltarPortal(){window.parent.postMessage({type:'voltarPortal'},'*');}
-function voltarSeletor(){window.parent.postMessage({type:'voltarSeletor'},'*');}
-window.addEventListener('load',function(){if(window.parent!==window)window.parent.postMessage({type:'crmPronto'},'*');});
-window.addEventListener('message',function(e){
-  if(e.data&&e.data.type==='entrarCRM'&&e.data.user){
-    var u=e.data.user;
-    currentUser={id:u.id,name:u.nome||u.name||'',ini:u.ini||(u.nome||'').substring(0,2).toUpperCase(),
-      role:(u.funcao==='Gestor')?'admin':'vendor',vendor_id:u.id,
-      avStyle:u.av_style||'background:rgba(59,130,246,.2);color:#60a5fa',pin:u.pin||'0000',active:true};
-    enterApp();
+function voltarPortal(){ window.close(); }
+function voltarSeletor(){ window.close(); }
+
+window.addEventListener('load', function() {
+  var userData = sessionStorage.getItem('ksh_user');
+  if (userData) {
+    try {
+      var u = JSON.parse(userData);
+      currentUser = {
+        id: u.id,
+        name: u.nome || u.name || '',
+        ini: u.ini || (u.nome||'').substring(0,2).toUpperCase(),
+        role: (u.funcao === 'Gestor') ? 'admin' : 'vendor',
+        vendor_id: u.id,
+        avStyle: u.av_style || 'background:rgba(59,130,246,.2);color:#60a5fa',
+        pin: u.pin || '0000',
+        active: true
+      };
+      enterApp();
+      return;
+    } catch(e) {}
   }
+  document.getElementById('login-wrap').style.display = 'flex';
+  renderLogin();
 });
+
 
 function enterApp(){
   document.getElementById('login-wrap').style.display='none';
@@ -795,7 +812,7 @@ function rDashboard(){
     const al=vl.filter(isStale).sort((a,b)=>b.days-a.days).slice(0,4);
     document.getElementById('dash-alerts').innerHTML=al.length?al.map(l=>{
       const v=gv(l.vendor_id),urg=isUrgent(l);
-      return `<div class="alert-item ${urg?'urg':'warn'}" onclick="openLead(${l.id})">
+      return `<div class="alert-item ${urg?'urg':'warn'}" onclick="openLead('${l.id}')">
         <div class="alert-dot" style="background:${urg?'var(--red)':'var(--amber)'}"></div>
         <div class="alert-info"><div class="alert-name">${l.name}</div><div class="alert-desc">${l.service} · ${l.stage}</div></div>
         <div class="alert-right"><div class="alert-days" style="color:${urg?'var(--red)':'var(--amber)'}">há ${l.days}d</div><div class="alert-vendor">${v.name}</div></div>
@@ -831,9 +848,9 @@ function rPipeline(){
           return `<div class="card${urg?' urgent':stl?' stale':isLostCard?' lost':''}${canEdit?'':' card-readonly'}"
             draggable="${canEdit}"
             data-id="${l.id}"
-            ondragstart="${canEdit?`dragStart(event,${l.id})`:'noEdit(event)'}"
+            ondragstart="${canEdit?`dragStart(event,'${l.id}')`:'noEdit(event)'}"
             ondragend="${canEdit?'dragEnd(event)':''}"
-            onclick="openLead(${l.id})">
+            onclick="openLead('${l.id}')">
             <div class="card-name">${l.name}</div>
             <div class="card-service">
               <div class="origin-dot" style="background:${ORIGIN_COLORS[l.origin]||'#666'}"></div>
@@ -893,7 +910,7 @@ function rAlerts(){
   const mkA=(l,type)=>{
     const v=gv(l.vendor_id);
     const waBtn=isAdmin?mkWaLink(l.vendor_id,l):'';
-    return `<div class="alert-item ${type}" onclick="openLead(${l.id})">
+    return `<div class="alert-item ${type}" onclick="openLead('${l.id}')">
       <div class="alert-dot" style="background:${type==='urg'?'var(--red)':'var(--amber)'}"></div>
       <div class="alert-info">
         <div class="alert-name">${l.name}</div>
@@ -1056,7 +1073,14 @@ function openLead(id){
         return '<div class="hist-item" style="'+extra+'"><span class="hist-type '+(ACT_CLS[n.type]||'ht-note')+'">'+(isClosed?'🤝 Fechado':isLoss?'❌ Perda':n.type)+'</span><span class="hist-text">'+n.text+'</span></div>';
       }).join('')}</div>`:''}`;
   document.getElementById('ov1').classList.add('on');
-  setTimeout(function(){onServiceChange(document.getElementById('lsvc')?.value||'');},50);
+  setTimeout(function(){
+    onServiceChange(document.getElementById('lsvc')?.value||'');
+    var emp = document.getElementById('le')?.value||'AKG';
+    var shlSec = document.getElementById('shl-section');
+    var cnnSec = document.getElementById('cnn-section');
+    if(shlSec) shlSec.style.display = emp==='AKG' ? 'block' : 'none';
+    if(cnnSec) cnnSec.style.display = emp==='KSH' ? 'block' : 'none';
+  },50);
 }
 
 async function saveCollabNote(id){
@@ -1289,7 +1313,7 @@ function noEdit(e){e.preventDefault();}
 function dragStart(e,id){
   const l=leads.find(x=>x.id===id);
   if(!canEditLead(l)){e.preventDefault();toast('Você só pode mover leads atribuídos a você','err');return;}
-  draggingId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',id);
+  draggingId=id;e.dataTransfer.effectAllowed='move';e.dataTransfer.setData('text/plain',String(id));
   setTimeout(()=>{const el=document.querySelector('[data-id="'+id+'"]');if(el)el.classList.add('dragging');},0);
 }
 function dragEnd(e){
@@ -1302,7 +1326,7 @@ function dragLeave(e){if(!e.currentTarget.contains(e.relatedTarget))e.currentTar
 async function drop(e,stage){
   e.preventDefault();
   const col=e.currentTarget;col.classList.remove('drag-over');
-  const id=parseInt(e.dataTransfer.getData('text/plain'));
+  const id=e.dataTransfer.getData('text/plain');
   if(!id)return;
   const l=leads.find(x=>x.id===id);
   if(!l||l.stage===stage)return;
@@ -1621,7 +1645,7 @@ function rGame(){
 
 // ─── GESTÃO DE VENDEDORES ────────────────────────────
 function openNewVendor(){
-  document.getElementById('modal2').innerHTML='<div class="modal-hd"><div class="modal-title">Novo vendedor</div><button class="close-btn" onclick="cm(\'ov2\')">✕</button></div><div class="field"><div class="field-label">Nome completo</div><input id="nv-name" placeholder="Ex: João Silva"></div><div class="field"><div class="field-label">Iniciais (2 letras)</div><input id="nv-ini" maxlength="2" placeholder="JS" style="text-transform:uppercase"></div><div class="field"><div class="field-label">Perfil</div><select id="nv-role"><option value="vendor">Vendedor</option><option value="admin">Gestor — acesso total</option></select></div><div class="field"><div class="field-label">Meta mensal</div><input id="nv-meta" type="number" value="5" min="1"></div><div class="field"><div class="field-label">PIN (4 dígitos)</div><input id="nv-pin" type="text" maxlength="4" placeholder="5678"></div><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📱 Contato</div><div class="field" style="margin:0"><div class="field-label">WhatsApp (com DDD, só números)</div><input id="nv-tel" type="text" placeholder="Ex: 48999999999"></div></div><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Regras de comissão</div><div class="field" style="margin-bottom:8px"><div class="field-label">Comissão AKG</div><select id="nv-com-shl"><option value="primeira_parcela">1ª parcela integral</option><option value="sem_comissao">Sem comissão</option></select></div><div class="field" style="margin:0"><div class="field-label">Comissão KSH %</div><div style="display:flex;align-items:center;gap:8px"><input id="nv-com-cnn" type="number" min="0" max="100" step="0.5" value="5" style="width:80px"><span style="font-size:12px;color:var(--text3)">% &nbsp;(0 = sem comissão)</span></div></div><div class="field" style="margin-top:8px"><div class="field-label">Base de cálculo da comissão</div><select id="nv-com-base"><option value="ticket_total">Ticket total (produtos + mão de obra)</option><option value="valor_produtos">Somente produtos (sem mão de obra)</option></select></div></div><button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveNewVendor()">Criar vendedor</button>';
+  document.getElementById('modal2').innerHTML='<div class="modal-hd"><div class="modal-title">Novo vendedor</div><button class="close-btn" onclick="cm(\'ov2\')">✕</button></div><div class="field"><div class="field-label">Nome completo</div><input id="nv-name" placeholder="Ex: João Silva"></div><div class="field"><div class="field-label">Iniciais (2 letras)</div><input id="nv-ini" maxlength="2" placeholder="JS" style="text-transform:uppercase"></div><div class="field"><div class="field-label">Perfil</div><select id="nv-role"><option value="vendor">Vendedor</option><option value="admin">Gestor — acesso total</option></select></div><div class="field"><div class="field-label">Meta mensal</div><input id="nv-meta" type="number" value="5" min="1"></div><div class="field"><div class="field-label">PIN (4 dígitos)</div><input id="nv-pin" type="text" maxlength="4" placeholder="5678"></div><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">📱 Contato</div><div class="field" style="margin:0"><div class="field-label">Telefone / WhatsApp</div><input id="nv-tel" type="text" placeholder="Ex: (48) 99999-9999 ou (555) 123-4567"></div></div><div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px"><div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Regras de comissão</div><div class="field" style="margin-bottom:8px"><div class="field-label">Comissão AKG</div><select id="nv-com-shl"><option value="primeira_parcela">1ª parcela integral</option><option value="sem_comissao">Sem comissão</option></select></div><div class="field" style="margin:0"><div class="field-label">Comissão KSH %</div><div style="display:flex;align-items:center;gap:8px"><input id="nv-com-cnn" type="number" min="0" max="100" step="0.5" value="5" style="width:80px"><span style="font-size:12px;color:var(--text3)">% &nbsp;(0 = sem comissão)</span></div></div><div class="field" style="margin-top:8px"><div class="field-label">Base de cálculo da comissão</div><select id="nv-com-base"><option value="ticket_total">Ticket total (produtos + mão de obra)</option><option value="valor_produtos">Somente produtos (sem mão de obra)</option></select></div></div><button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveNewVendor()">Criar vendedor</button>';
   document.getElementById('ov2').classList.add('on');
 }
 async function saveNewVendor(){
@@ -1637,7 +1661,7 @@ async function saveNewVendor(){
   const colorIdx=USERS.filter(u=>u.vendor_id).length%COLORS_POOL.length;
   const cd=COLORS_POOL[colorIdx];
   try{
-    const telefone=(document.getElementById('nv-tel')?.value||'').trim().replace(/\D/g,'');
+    const telefone=(document.getElementById('nv-tel')?.value||'').trim();
       const comissao_shl=document.getElementById('nv-com-shl')?.value||'primeira_parcela';
       const comissao_cnn=parseFloat(document.getElementById('nv-com-cnn')?.value)||0;
       const comissao_base=document.getElementById('nv-com-base')?.value||'ticket_total';
@@ -1668,8 +1692,8 @@ function openEditVendor(uid){
       <input id="ev-meta" type="number" value="${v.meta}" min="1"></div>
     <div class="field"><div class="field-label">PIN</div>
       <input id="ev-pin" type="text" maxlength="4" value="${u.pin}"></div>
-    <div class="field"><div class="field-label">WhatsApp (com DDD, só números)</div>
-      <input id="ev-tel" type="text" placeholder="Ex: 48999999999" value="${v.telefone||''}"></div>
+    <div class="field"><div class="field-label">Telefone / WhatsApp</div>
+      <input id="ev-tel" type="text" placeholder="Ex: (48) 99999-9999 ou (555) 123-4567" value="${v.telefone||''}"></div>
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
       <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Regras de comissão</div>
       <div class="field" style="margin-bottom:8px">
@@ -1696,6 +1720,7 @@ function openEditVendor(uid){
     </div>
     <button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveEditVendor('${uid}')">Salvar</button>`;
   document.getElementById('ov2').classList.add('on');
+  setTimeout(function(){ onNovoEmpresaChange(document.getElementById('ne')?.value||'AKG'); },50);
 }
 async function saveEditVendor(uid){
   const name=document.getElementById('ev-name').value.trim();
@@ -2053,12 +2078,27 @@ function parseMoeda(el){
 
 // ─── CNN TOTAL ───────────────────────────────────────
 function calcCnnTotal(){
-  const entrada=parseFloat(document.getElementById('l-entrada')?.value)||0;
-  const vparcela=parseFloat(document.getElementById('l-vparcela')?.value)||0;
+  // Pegar ticket do lead atual
+  const ticketEl=document.getElementById('lt');
+  const ticket=ticketEl?parseFloat(ticketEl.value)||0:0;
+  const entradaRaw=(document.getElementById('l-entrada')?.value||'').replace(/\./g,'').replace(',','.');
+  const entrada=parseFloat(entradaRaw)||0;
   const nparcelas=parseInt(document.getElementById('l-prazo')?.value)||0;
+  const vparcelaEl=document.getElementById('l-vparcela');
+
+  // Recalcular parcela automaticamente: (ticket - entrada) / parcelas
+  let vparcela=0;
+  if(nparcelas>0 && ticket>0){
+    const restante=ticket-entrada;
+    vparcela=restante>0?Math.round((restante/nparcelas)*100)/100:0;
+    if(vparcelaEl) vparcelaEl.value=vparcela.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  } else {
+    vparcela=parseFloat((vparcelaEl?.value||'').replace(/\./g,'').replace(',','.'))||0;
+  }
+
   const total=entrada+(vparcela*nparcelas);
   const el=document.getElementById('cnn-total-display');
-  if(el) el.innerHTML='Total: <strong style="color:var(--purple)">'+fmt(total)+'</strong> (entrada + '+nparcelas+'x de '+fmt(vparcela)+')';
+  if(el) el.innerHTML='Total: <strong style="color:var(--purple)">'+fmt(Math.round(total))+'</strong>'+(nparcelas>0?' (entrada '+fmt(entrada)+' + '+nparcelas+'x de '+fmt(vparcela)+')':'');
 }
 
 // ─── PRAZO / PARCELAMENTO DINÂMICO ──────────────────
@@ -2093,7 +2133,7 @@ function calcNovoTotal(){
     if(nparcelas>0 && ticket>0){
       const restante=ticket-entrada;
       vparcela=restante>0?Math.round((restante/nparcelas)*100)/100:0;
-      vparcelaEl.value=vparcela;
+      vparcelaEl.value=vparcela.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
     }
     const total=entrada+(vparcela*nparcelas);
     const el=document.getElementById('n-cnn-total');
@@ -2246,8 +2286,7 @@ function mostrarAvisoFechamento(faltando){
   }catch(e){
     console.log('Users sync error:',e.message);
   }
-  window._crmReady=true;
-  setTimeout(function(){if(!currentUser){document.getElementById('login-wrap').style.display='flex';renderLogin();}},1000);
+  // Init via sessionStorage
 })();
 
 </script>

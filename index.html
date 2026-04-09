@@ -4123,10 +4123,6 @@ function init() {
 init();
 </script>
 
-<!-- CRM via iframe -->
-<div id="crm-iframe-wrap" style="display:none;position:fixed;inset:0;z-index:500">
-  <iframe id="crm-iframe" src="crm.html" style="width:100%;height:100%;border:none" allow="*"></iframe>
-</div>
 
 <script>
 
@@ -4135,20 +4131,18 @@ init();
 // ================================================
 function entrarCRM() {
   document.getElementById('selector-wrap').style.display='none';
-  const wrap = document.getElementById('crm-iframe-wrap');
-  const iframe = document.getElementById('crm-iframe');
-  wrap.style.display='block';
-  // Guardar usuário para enviar quando CRM avisar que está pronto
-  window._pendingCRMUser = {
+  // Salvar usuario no sessionStorage para o CRM ler
+  sessionStorage.setItem('ksh_user', JSON.stringify({
     id: currentUser.id,
     nome: currentUser.nome || currentUser.name,
     ini: currentUser.ini,
     funcao: currentUser.funcao,
     av_style: currentUser.av_style,
     pin: currentUser.pin
-  };
-  // Recarregar iframe
-  iframe.src = 'crm.html?' + Date.now();
+  }));
+  window.open('crm.html', '_blank');
+  // Voltar ao portal (nao fica na tela do seletor)
+  document.getElementById('app-wrap').classList.add('on');
 }
 
 function irParaCRM() {
@@ -4156,29 +4150,13 @@ function irParaCRM() {
   entrarCRM();
 }
 
-// Receber mensagens do CRM
+// Listener para voltar do CRM (nao usado mais com nova aba, mas mantido por segurança)
 window.addEventListener('message', function(e) {
-  if(e.data && e.data.type === 'crmPronto' && window._pendingCRMUser) {
-    // CRM está pronto - enviar usuário
-    var iframe = document.getElementById('crm-iframe');
-    iframe.contentWindow.postMessage({
-      type: 'entrarCRM',
-      user: window._pendingCRMUser
-    }, '*');
-    window._pendingCRMUser = null;
-  }
-  if(e.data && e.data.type === 'voltarPortal') {
-    document.getElementById('crm-iframe-wrap').style.display='none';
-    document.getElementById('app-wrap').classList.add('on');
-  }
   if(e.data && e.data.type === 'voltarSeletor') {
-    document.getElementById('crm-iframe-wrap').style.display='none';
-    document.getElementById('app-wrap').classList.remove('on');
     document.getElementById('selector-wrap').style.display='flex';
+    document.getElementById('app-wrap').classList.remove('on');
   }
 });
-
-
 </script>
 </body>
 </html>
