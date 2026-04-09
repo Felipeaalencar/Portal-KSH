@@ -1075,7 +1075,7 @@ async function saveCollabNote(id){
 async function saveLead(id){
   const stage=document.getElementById('ls').value;
   const next=document.getElementById('ln')?.value||'';
-  const vendor_id=document.getElementById('lv').value;
+  const vendor_id=document.getElementById('lv').value||null;
   if(stage==='Fechado'){
     const l=leads.find(x=>x.id===id);
     if(l){
@@ -1240,7 +1240,7 @@ async function createLead(){
     const nParcelas=nPrazoSel==='outro'?(document.getElementById('n-parcelas-outro')?.value||'outro'):nPrazoSel;
     const nEntrada=parseVal('n-entrada');
     const nVparcela=parseVal('n-vparcela');
-    const r=await POST('crm_leads',{name:nm,service,empresa,origin:document.getElementById('no').value,ticket:parseInt(document.getElementById('nt2').value)||1800,vendor_id:document.getElementById('nv').value,stage:'Novo lead',days:0,next_contact:'',valor_produtos:vprod,valor_mao_obra:vmob,parcelas:nParcelas,entrada:nEntrada,valor_parcela:nVparcela});
+    const r=await POST('crm_leads',{name:nm,service,empresa,origin:document.getElementById('no').value,ticket:parseInt(document.getElementById('nt2').value)||1800,vendor_id:document.getElementById('nv').value||null,stage:'Novo lead',days:0,next_contact:'',valor_produtos:vprod,valor_mao_obra:vmob,parcelas:nParcelas,entrada:nEntrada,valor_parcela:nVparcela});
     leads.unshift(r[0]);cm('ov2');render();toast('Lead criado!');
   }catch(e){toast('Erro: '+e.message,'err');}
 }
@@ -1633,7 +1633,7 @@ async function saveNewVendor(){
   if(!name){toast('Digite o nome','err');return;}
   if(ini.length!==2){toast('Digite 2 iniciais','err');return;}
   if(!/^\d{4}$/.test(pin)){toast('PIN deve ter 4 dígitos','err');return;}
-  const id=name.toLowerCase().replace(/\s+/g,'').slice(0,4)+Date.now().toString().slice(-3);
+  const id=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));
   const colorIdx=USERS.filter(u=>u.vendor_id).length%COLORS_POOL.length;
   const cd=COLORS_POOL[colorIdx];
   try{
