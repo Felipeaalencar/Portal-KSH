@@ -424,7 +424,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="page on" id="page-dashboard">
       <div class="page-header">
         <div><div class="page-title">Dashboard</div><div class="page-sub" id="dash-date"></div></div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;position:relative;z-index:10">
           <button class="btn btn-sm active" style="border-color:var(--red);color:var(--red)" onclick="setDashPeriod('today',this)">Hoje</button>
           <button class="btn btn-sm" onclick="setDashPeriod('week',this)">Semana</button>
           <button class="btn btn-sm" onclick="setDashPeriod('month',this)">Mês</button>
@@ -432,7 +432,7 @@ textarea{resize:vertical;min-height:80px}
         </div>
       </div>
       <!-- ALERTAS DO DIA - proeminente -->
-      <div id="dash-alertas-top" style="margin-bottom:14px"></div>
+      <div id="dash-alertas-top" style="margin-bottom:14px;position:relative;z-index:1"></div>
 
       <div class="stat-grid g4" id="dash-kpis"></div>
 

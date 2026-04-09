@@ -606,6 +606,37 @@ function checkPin(){
 }
 
 
+
+// ─── CRIAR OS NO PORTAL AO FECHAR LEAD ──────────────
+async function criarOSdoLead(lead) {
+  if (!lead) return;
+  try {
+    const osPayload = {
+      cliente: lead.name,
+      descricao: lead.service || 'Serviço contratado via CRM',
+      data_agendada: new Date().toISOString().split('T')[0],
+      valor_venda: lead.ticket || null,
+      status: 'agendado',
+      criado_por: currentUser ? currentUser.name : 'CRM',
+      tecnicos: [],
+      total_gastos: 0,
+    };
+    await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/ordens_servico', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY',
+        'Prefer': 'return=representation'
+      },
+      body: JSON.stringify(osPayload)
+    });
+    toast('✅ OS criada no Portal para ' + lead.name);
+  } catch(e) {
+    console.error('Erro ao criar OS:', e);
+  }
+}
+
 function voltarPortal(){ window.close(); }
 function voltarSeletor(){ window.close(); }
 
@@ -942,7 +973,7 @@ function rClients(){
   document.getElementById('client-list').innerHTML=[...clients].sort((a,b)=>a.renew_in-b.renew_in).map(c=>{
     const v=gv(c.vendor_id);let rc='renew-ok',rt=`Renova em ${c.renew_in}m`;
     if(c.renew_in===0){rc='renew-now';rt='Renovar agora';}else if(c.renew_in<=2){rc='renew-soon';}
-    return `<div class="client-row" onclick="openClient(${c.id})"><div><div class="client-name">${c.name}</div><div class="client-service">${c.service} · ${v.name} · desde ${c.started}</div></div><div class="client-ticket">${fmt(c.ticket)}/mês</div><span class="client-renew ${rc}">${rt}</span></div>`;
+    return `<div class="client-row" onclick="openClient('${c.id}')"><div><div class="client-name">${c.name}</div><div class="client-service">${c.service} · ${v.name} · desde ${c.started}</div></div><div class="client-ticket">${fmt(c.ticket)}/mês</div><span class="client-renew ${rc}">${rt}</span></div>`;
   }).join('');
 }
 
@@ -978,11 +1009,12 @@ async function updatePin(uid,val){
 
 // ─── LEAD MODAL ──────────────────────────────────────
 function openLead(id){
+  window._openLeadId = id; // guardar para os botões
   const l=leads.find(x=>x.id===id);const ln=notes[id]||[];
   const canEdit=canEditLead(l);
   const v=gv(l.vendor_id);
   document.getElementById('modal1').innerHTML=`
-    <div class="modal-hd"><div><div class="modal-title" id="lead-name-display" onclick="editLeadName(${l.id})" title="Clique para editar" style="cursor:pointer">${l.name} <span style="font-size:11px;color:var(--text3)">✏️</span></div><div class="modal-sub">${l.empresa?l.empresa+' · ':''}${l.service} · ${l.origin} · ${fmt(l.ticket)}/mês${l.created_at?' · desde '+new Date(l.created_at).toLocaleDateString('pt-BR'):''}</div></div>
+    <div class="modal-hd"><div><div class="modal-title" id="lead-name-display" onclick="editLeadName(window._openLeadId)" title="Clique para editar" style="cursor:pointer">${l.name} <span style="font-size:11px;color:var(--text3)">✏️</span></div><div class="modal-sub">${l.empresa?l.empresa+' · ':''}${l.service} · ${l.origin} · ${fmt(l.ticket)}/mês${l.created_at?' · desde '+new Date(l.created_at).toLocaleDateString('pt-BR'):''}</div></div>
     <button class="close-btn" onclick="cm('ov1')">✕</button></div>
     ${canEdit?`
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
@@ -1063,7 +1095,7 @@ function openLead(id){
       <select id="lat">${ACT_TYPES.map(t=>`<option>${t}</option>`).join('')}</select></div>
     <div class="field"><div class="field-label">Anotação</div>
       <textarea id="lnt" placeholder="O que aconteceu?"></textarea></div>
-    <button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveLead(${id})">Salvar</button><button class="btn" style="width:100%;padding:9px;margin-top:8px;color:var(--green)" onclick="exportHistorico(${id})">📋 Exportar PDF</button>${currentUser&&currentUser.role==='admin'?'<button class="btn" style="width:100%;padding:9px;margin-top:8px;color:var(--red)" onclick="deleteLead('+id+')">🗑️ Deletar lead</button>':''}`
+    <button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveLead(window._openLeadId)">Salvar</button><button class="btn" style="width:100%;padding:9px;margin-top:8px;color:var(--green)" onclick="exportHistorico(window._openLeadId)">📋 Exportar PDF</button>${currentUser&&currentUser.role==='admin'?'<button class="btn" style="width:100%;padding:9px;margin-top:8px;color:var(--red)" onclick="deleteLead(window._openLeadId)">🗑️ Deletar lead</button>':''}`
     :`<div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><div class="av" style="${avStyle(v)}">${v.ini}</div><div><div style="font-size:12px;font-weight:500">Lead de ${v.name}</div><div style="font-size:11px;color:var(--text3);margin-top:1px">Fase: ${l.stage} · ${l.days===0?'Atualizado hoje':'Há '+l.days+' dias'}</div></div></div><div style="height:1px;background:var(--border);margin-bottom:13px"></div><div class="field"><div class="field-label">💬 Deixar uma dica ou observação</div><select id="lat-collab" style="margin-bottom:8px">${ACT_TYPES.filter(t=>t!=='Proposta enviada'&&t!=='Pedido Fechado').map(t=>'<option>'+t+'</option>').join('')}</select><textarea id="lnt-collab" placeholder="Ex: já atendi esse cliente antes, ele é cuidadoso com preço..." style="min-height:80px"></textarea></div><button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveCollabNote(${id})">Salvar anotação</button>`}
     ${ln.length?`<div class="history"><div class="hist-label">Histórico (${ln.length})</div>${ln.slice().reverse().map(n=>{
         const isCollab=n.text&&n.text.startsWith('[')&&n.text.includes(']');
@@ -1348,7 +1380,7 @@ async function drop(e,stage){
 // ─── MODAL DE PERDA ──────────────────────────────────
 function openLossModal(id){
   const l=leads.find(x=>x.id===id);
-  document.getElementById('modal2').innerHTML='<div class="modal-hd"><div><div class="modal-title">❌ Marcar como Perdido</div><div class="modal-sub">'+l.name+'</div></div><button class="close-btn" onclick="cm(\'ov2\')">✕</button></div><div style="padding:10px 0 14px;font-size:12px;color:var(--text3)">Por que este lead foi perdido?</div><div class="field"><div class="field-label">Motivo <span style="color:var(--red)">*</span></div><select id="lm-reason" onchange="document.getElementById(\'lm-other\').style.display=this.value===\'Outro\'?\'block\':\'none\'">'+LOSS_REASONS.map(r=>'<option>'+r+'</option>').join('')+'</select></div><div class="field" id="lm-other" style="display:none"><div class="field-label">Especifique</div><input id="lm-other-txt" placeholder="Descreva o motivo..."></div><div class="field"><div class="field-label">Observação (opcional)</div><textarea id="lm-obs" placeholder="Algum detalhe importante..."></textarea></div><button class="btn btn-primary" style="width:100%;padding:10px;background:var(--red);border-color:var(--red)" onclick="confirmLoss('+id+')">Confirmar perda</button>';
+  document.getElementById('modal2').innerHTML='<div class="modal-hd"><div><div class="modal-title">❌ Marcar como Perdido</div><div class="modal-sub">'+l.name+'</div></div><button class="close-btn" onclick="cm(\'ov2\')">✕</button></div><div style="padding:10px 0 14px;font-size:12px;color:var(--text3)">Por que este lead foi perdido?</div><div class="field"><div class="field-label">Motivo <span style="color:var(--red)">*</span></div><select id="lm-reason" onchange="document.getElementById(\'lm-other\').style.display=this.value===\'Outro\'?\'block\':\'none\'">'+LOSS_REASONS.map(r=>'<option>'+r+'</option>').join('')+'</select></div><div class="field" id="lm-other" style="display:none"><div class="field-label">Especifique</div><input id="lm-other-txt" placeholder="Descreva o motivo..."></div><div class="field"><div class="field-label">Observação (opcional)</div><textarea id="lm-obs" placeholder="Algum detalhe importante..."></textarea></div><button class="btn btn-primary" style="width:100%;padding:10px;background:var(--red);border-color:var(--red)" onclick="confirmLoss(window._openLeadId)">Confirmar perda</button>';
   document.getElementById('ov2').classList.add('on');
 }
 async function confirmLoss(id){
@@ -2078,9 +2110,16 @@ function parseMoeda(el){
 
 // ─── CNN TOTAL ───────────────────────────────────────
 function calcCnnTotal(){
-  // Pegar ticket do lead atual
+  // Pegar ticket do campo l-vprod (valor mensal visível) OU campo lt (hidden)
+  const vprodEl=document.getElementById('l-vprod');
   const ticketEl=document.getElementById('lt');
-  const ticket=ticketEl?parseFloat(ticketEl.value)||0:0;
+  let ticket=0;
+  if(vprodEl&&vprodEl.value){
+    ticket=parseFloat((vprodEl.value||'').replace(/\./g,'').replace(',','.'))||0;
+  }
+  if(!ticket&&ticketEl){
+    ticket=parseFloat(ticketEl.value)||0;
+  }
   const entradaRaw=(document.getElementById('l-entrada')?.value||'').replace(/\./g,'').replace(',','.');
   const entrada=parseFloat(entradaRaw)||0;
   const nparcelas=parseInt(document.getElementById('l-prazo')?.value)||0;
