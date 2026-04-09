@@ -80,7 +80,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 /* ── CONTENT ── */
 .content{flex:1;min-width:0;overflow-y:auto;height:100vh}
 .page{display:none;padding:24px 28px}.page.on{display:block}
-.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;position:relative;z-index:5}
 .page-title{font-size:18px;font-weight:600}
 .page-sub{font-size:12px;color:var(--text3);margin-top:2px}
 
@@ -235,7 +235,7 @@ textarea{resize:vertical;min-height:80px}
   .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g2{grid-template-columns:1fr}
   .page-header{margin-bottom:12px;flex-wrap:wrap;gap:8px}
-  .page-header .btn{width:100%}
+  .page-header .btn-period{width:auto}
   .modal{max-height:96vh;padding:16px;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%!important}
   .filter-bar{flex-wrap:wrap}
   .filter-bar .filter-input{min-width:0!important;flex:1}
@@ -382,7 +382,7 @@ textarea{resize:vertical;min-height:80px}
       <div><div class="s-logo-text">Kilian Smart Homes</div><div class="s-logo-sub">Portal</div></div>
     </div>
     <nav class="nav">
-      <button class="nav-item active" onclick="crmGoPage('dashboard',this)"><span class="nav-icon">◈</span>Dashboard</button>
+      <button class="nav-item active" onclick="goPage('dashboard',this)"><span class="nav-icon">◈</span>Dashboard</button>
       <button class="nav-item" onclick="goPage('os',this)"><span class="nav-icon">◫</span>Ordens de Serviço<span id="badge-os" style="margin-left:auto;font-size:10px;background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item" onclick="goPage('lancamentos',this)"><span class="nav-icon">⊞</span>Lançamentos</button>
       <button class="nav-item admin-only" onclick="goPage('demandas',this)"><span class="nav-icon">◻</span>Demandas<span id="badge-demandas" style="margin-left:auto;font-size:10px;background:var(--red-bg);color:var(--red);padding:1px 6px;border-radius:9px;display:none"></span></button>
@@ -432,7 +432,7 @@ textarea{resize:vertical;min-height:80px}
         </div>
       </div>
       <!-- ALERTAS DO DIA - proeminente -->
-      <div id="dash-alertas-top" style="margin-bottom:14px;position:relative;z-index:1"></div>
+      <div id="dash-alertas-top" style="margin-bottom:14px;position:relative;z-index:1;clear:both"></div>
 
       <div class="stat-grid g4" id="dash-kpis"></div>
 
@@ -836,7 +836,7 @@ textarea{resize:vertical;min-height:80px}
   <!-- MOBILE NAV -->
   <div class="mobile-nav">
     <div class="mob-nav-items">
-      <button class="mob-nav-item active" onclick="crmGoPage('dashboard',this)"><span class="mob-nav-icon">◈</span>Dashboard</button>
+      <button class="mob-nav-item active" onclick="goPage('dashboard',this)"><span class="mob-nav-icon">◈</span>Dashboard</button>
       <button class="mob-nav-item" onclick="goPage('os',this)"><span class="mob-nav-icon">◫</span>OS</button>
       <button class="mob-nav-item" onclick="goPage('lancamentos',this)"><span class="mob-nav-icon">⊞</span>Lanc.</button>
       <button class="mob-nav-item" onclick="goPage('tecnicos',this)"><span class="mob-nav-icon">◉</span>Equipe</button>
@@ -1433,6 +1433,9 @@ function renderAlertasDashboard() {
 }
 
 function renderDashboard() {
+  try {
+
+  try {
   const rows = lancamentos.filter(r=>inPeriod(r.data_servico,dashPeriod));
   const total = rows.reduce((s,r)=>s+(+r.total_gastos||0),0);
   const gastosPorTipo = {};
@@ -1515,6 +1518,9 @@ function renderDashboard() {
 // ================================================
 // LANCAMENTOS
 // ================================================
+  } catch(e) { console.error("renderDashboard erro:", e); 
+  } catch(e) { console.error("renderDashboard erro:", e); }
+}
 function getFiltered() {
   const search=((document.getElementById('lanc-search')&&document.getElementById('lanc-search').value)||'').toLowerCase();
   const pessoa=(document.getElementById('lanc-pessoa')&&document.getElementById('lanc-pessoa').value)||'';

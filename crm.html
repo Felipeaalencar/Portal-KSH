@@ -1043,18 +1043,18 @@ function openLead(id){
     <div class="field"><div class="field-label">Fase</div>
       <select id="ls" onchange="onStageChange(this.value)" data-prev="${l.stage}">${STAGES.map(s=>`<option${s===l.stage?' selected':''}>${s}</option>`).join('')}</select></div>
 
-    <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Valor da mensalidade (AKG)</div>
+    ${l.empresa!=='KSH'?`
+    <div id="shl-section" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Mensalidade AKG</div>
       <div class="field" style="margin:0"><div class="field-label">Valor mensal (R$)</div>
         <input id="l-vprod" type="text" inputmode="decimal"
           value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
-          onfocus="parseMoeda(this)" onblur="maskMoeda(this)"
-          ${canEdit?'':'disabled'}>
+          onfocus="parseMoeda(this)" onblur="maskMoeda(this)" ${canEdit?'':'disabled'}>
       </div>
     </div>
     <div class="field">
-      <div class="field-label">${l.empresa==='KSH'?'Parcelamento (parcelas)':'Duração do contrato'}</div>
-      <select id="l-prazo" onchange="onModalPrazoChange(this.value);calcCnnTotal('parcelas')" ${canEdit?'':'disabled'}>
+      <div class="field-label">Duração do contrato</div>
+      <select id="l-prazo" onchange="onModalPrazoChange(this.value)" ${canEdit?'':'disabled'}>
         <option value="12" ${(l.parcelas||'12')==='12'?'selected':''}>12 meses</option>
         <option value="24" ${(l.parcelas||'')==='24'?'selected':''}>24 meses</option>
         <option value="36" ${(l.parcelas||'')==='36'?'selected':''}>36 meses</option>
@@ -1066,29 +1066,49 @@ function openLead(id){
         value="${l.parcelas&&!['12','24','36','48','60'].includes(l.parcelas)?l.parcelas:''}"
         style="display:${l.parcelas&&!['12','24','36','48','60'].includes(l.parcelas)?'block':'none'};margin-top:6px;width:100%"
         ${canEdit?'':'disabled'}>
-    </div>
-    ${l.empresa==='KSH'?`
+    </div>`:`
     <div id="cnn-section" style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:12px;margin-bottom:14px">
       <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 Parcelamento KSH</div>
+      <div class="field" style="margin:0;margin-bottom:8px"><div class="field-label">Valor do projeto (R$)</div>
+        <input id="l-vprod" type="text" inputmode="decimal"
+          value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
+          onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcCnnTotal()" ${canEdit?'':'disabled'}>
+      </div>
+      <div class="field" style="margin:0;margin-bottom:8px">
+        <div class="field-label">Número de parcelas</div>
+        <select id="l-prazo" onchange="onModalPrazoChange(this.value);calcCnnTotal()" ${canEdit?'':'disabled'}>
+          <option value="12" ${(l.parcelas||'12')==='12'?'selected':''}>12x</option>
+          <option value="24" ${(l.parcelas||'')==='24'?'selected':''}>24x</option>
+          <option value="36" ${(l.parcelas||'')==='36'?'selected':''}>36x</option>
+          <option value="48" ${(l.parcelas||'')==='48'?'selected':''}>48x</option>
+          <option value="60" ${(l.parcelas||'')==='60'?'selected':''}>60x</option>
+          <option value="outro" ${l.parcelas&&!['12','24','36','48','60'].includes(l.parcelas)?'selected':''}>Outro</option>
+        </select>
+        <input id="l-prazo-outro" type="number" placeholder="Número de parcelas"
+          value="${l.parcelas&&!['12','24','36','48','60'].includes(l.parcelas)?l.parcelas:''}"
+          style="display:${l.parcelas&&!['12','24','36','48','60'].includes(l.parcelas)?'block':'none'};margin-top:6px;width:100%"
+          onchange="calcCnnTotal()" ${canEdit?'':'disabled'}>
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div class="field" style="margin:0"><div class="field-label">Entrada (R$)</div>
           <input id="l-entrada" type="text" inputmode="decimal"
             value="${l.entrada>0?l.entrada.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
             onfocus="parseMoeda(this)"
-            onblur="maskMoeda(this);calcCnnTotal('entrada')"
+            onblur="maskMoeda(this);calcCnnTotal()"
+            oninput="calcCnnTotal()"
             ${canEdit?'':'disabled'}></div>
-        <div class="field" style="margin:0"><div class="field-label">Valor por parcela (R$)</div>
+        <div class="field" style="margin:0"><div class="field-label">Valor por parcela (calculado)</div>
           <input id="l-vparcela" type="text" inputmode="decimal"
-            value="${l.valor_parcela>0?l.valor_parcela.toLocaleString('pt-BR',{minimumFractionDigits:2}):'calculado auto'}"
-            onfocus="parseMoeda(this)"
-            onblur="maskMoeda(this)"
+            placeholder="calculado auto" readonly
+            value="${l.valor_parcela>0?l.valor_parcela.toLocaleString('pt-BR',{minimumFractionDigits:2}):''}"
+            style="background:var(--bg4);opacity:.8"
             ${canEdit?'':'disabled'}></div>
       </div>
       <div style="font-size:12px;color:var(--text2)" id="cnn-total-display">
         Total: <strong style="color:var(--purple)">${fmt(Math.round((l.entrada||0)+((l.valor_parcela||0)*parseInt(l.parcelas||0))))}</strong>
         ${l.parcelas&&l.parcelas!=='0'?' (entrada '+fmt(l.entrada||0)+' + '+l.parcelas+'x de '+fmt(l.valor_parcela||0)+')':''}
       </div>
-    </div>`:''}
+    </div>`}
     <div class="field"><div class="field-label">Próximo contato</div>
       <input id="ln" value="${l.next_contact||''}" placeholder="Ex: Ligar na segunda"></div>
     <div class="field"><div class="field-label">Tipo de atividade</div>
@@ -1187,7 +1207,9 @@ async function saveLead(id){
       const l=leads.find(x=>x.id===id);l.stage=stage;l.next_contact=next;l.vendor_id=vendor_id;l.days=0;if(ticket)l.ticket=ticket;
       const n=await POST('crm_lead_notes',{lead_id:id,type:'Pedido Fechado',text:acordo});
       if(!notes[id])notes[id]=[];notes[id].push(n[0]);
-      cm('ov1');render();toast('🤝 Pedido fechado registrado!');
+      cm('ov1');render();toast('🤝 Pedido fechado! Criando OS no Portal...');
+      const lFechado=leads.find(x=>x.id===id);
+      criarOSdoLead(lFechado);
     }catch(e){toast('Erro: '+e.message,'err');}
     return;
   }
@@ -1240,9 +1262,9 @@ function openNew(){
     <div class="field"><div class="field-label">Ticket estimado (R$)</div>
       <input id="nt2" type="text" inputmode="decimal" placeholder="Ex: 50.000,00" onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()"></div>
 
-    <!-- SHL: Composição de valor -->
+    <!-- AKG: Mensalidade + Duração -->
     <div id="n-shl-section" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px">
-      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Valor da mensalidade (AKG)</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 Mensalidade AKG</div>
       <div class="field" style="margin:0"><div class="field-label">Valor mensal (R$)</div>
         <input id="n-vprod" type="text" inputmode="decimal"
           onfocus="parseMoeda(this)"
@@ -1250,10 +1272,8 @@ function openNew(){
           placeholder="Ex: 2.500,00">
       </div>
     </div>
-
-    <!-- SHL: Duração do contrato / CNN: Parcelamento -->
-    <div class="field">
-      <div class="field-label" id="n-prazo-label">Duração do contrato</div>
+    <div class="field" id="n-shl-prazo-field">
+      <div class="field-label">Duração do contrato</div>
       <select id="n-parcelas" onchange="onNovoPrazoChange(this.value);calcNovoTotal()">
         <option value="12">12 meses</option>
         <option value="24">24 meses</option>
@@ -1265,14 +1285,35 @@ function openNew(){
       <input id="n-parcelas-outro" type="number" placeholder="Digite o prazo em meses" style="display:none;margin-top:6px;width:100%">
     </div>
 
-    <!-- CNN: Entrada + Valor por parcela -->
+    <!-- KSH: Valor do projeto + Parcelas + Entrada + Cálculo automático -->
     <div id="n-cnn-section" style="display:none;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:12px;margin-bottom:12px">
       <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 Parcelamento KSH</div>
+      <div class="field" style="margin:0;margin-bottom:8px"><div class="field-label">Valor do projeto (R$)</div>
+        <input id="n-vprod-ksh" type="text" inputmode="decimal"
+          onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()"
+          placeholder="Ex: 50.000,00" oninput="calcNovoTotal()">
+      </div>
+      <div class="field" style="margin:0;margin-bottom:8px">
+        <div class="field-label">Número de parcelas</div>
+        <select id="n-parcelas-ksh" onchange="calcNovoTotal()">
+          <option value="12">12x</option>
+          <option value="24">24x</option>
+          <option value="36">36x</option>
+          <option value="48">48x</option>
+          <option value="60">60x</option>
+          <option value="outro">Outro</option>
+        </select>
+        <input id="n-parcelas-ksh-outro" type="number" placeholder="Número de parcelas" style="display:none;margin-top:6px;width:100%" onchange="calcNovoTotal()">
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
         <div class="field" style="margin:0"><div class="field-label">Entrada (R$)</div>
-          <input id="n-entrada" type="text" inputmode="decimal" onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()" placeholder="0" oninput="calcNovoTotal()"></div>
-        <div class="field" style="margin:0"><div class="field-label">Valor por parcela (R$)</div>
-          <input id="n-vparcela" type="text" inputmode="decimal" onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()" placeholder="calculado auto" oninput="calcNovoTotal()"></div>
+          <input id="n-entrada" type="text" inputmode="decimal"
+            onfocus="parseMoeda(this)" onblur="maskMoeda(this);calcNovoTotal()"
+            placeholder="0" oninput="calcNovoTotal()"></div>
+        <div class="field" style="margin:0"><div class="field-label">Valor por parcela (calculado)</div>
+          <input id="n-vparcela" type="text" inputmode="decimal"
+            placeholder="calculado auto" readonly
+            style="background:var(--bg4);opacity:.8"></div>
       </div>
       <div style="font-size:11px;color:var(--text3)" id="n-cnn-total">Total: —</div>
     </div>
@@ -1290,13 +1331,21 @@ async function createLead(){
   const service=svcSel==='Pacote de Tecnologia'?getPkgLabel():svcSel;
   const empresa=document.getElementById('ne')?.value||'AKG';
   try{
-    const vprod=parseVal('n-vprod');
-    const vmob=parseVal('n-vmob');
-    const nPrazoSel=document.getElementById('n-parcelas')?.value||'12';
-    const nParcelas=nPrazoSel==='outro'?(document.getElementById('n-parcelas-outro')?.value||'outro'):nPrazoSel;
-    const nEntrada=parseVal('n-entrada');
-    const nVparcela=parseVal('n-vparcela');
-    const r=await POST('crm_leads',{name:nm,service,empresa,origin:document.getElementById('no').value,ticket:parseInt(document.getElementById('nt2').value)||1800,vendor_id:document.getElementById('nv').value||null,stage:'Novo lead',days:0,next_contact:'',valor_produtos:vprod,valor_mao_obra:vmob,parcelas:nParcelas,entrada:nEntrada,valor_parcela:nVparcela});
+    const isKSH = empresa === 'KSH';
+    // AKG: ticket = valor mensal, parcelas = duração
+    // KSH: ticket = valor projeto, parcelas = n parcelas, entrada + parcela calculada
+    const ticket = isKSH
+      ? parseVal('n-vprod-ksh') || parseInt(document.getElementById('nt2').value) || 0
+      : parseVal('n-vprod') || parseInt(document.getElementById('nt2').value) || 0;
+    const nPrazoSel = isKSH
+      ? (document.getElementById('n-parcelas-ksh')?.value || '12')
+      : (document.getElementById('n-parcelas')?.value || '12');
+    const nParcelas = nPrazoSel === 'outro'
+      ? (isKSH ? document.getElementById('n-parcelas-ksh-outro')?.value : document.getElementById('n-parcelas-outro')?.value) || 'outro'
+      : nPrazoSel;
+    const nEntrada = isKSH ? parseVal('n-entrada') : 0;
+    const nVparcela = isKSH ? parseVal('n-vparcela') : 0;
+    const r=await POST('crm_leads',{name:nm,service,empresa,origin:document.getElementById('no').value,ticket:ticket||1800,vendor_id:document.getElementById('nv').value||null,stage:'Novo lead',days:0,next_contact:'',parcelas:nParcelas,entrada:nEntrada,valor_parcela:nVparcela});
     leads.unshift(r[0]);cm('ov2');render();toast('Lead criado!');
   }catch(e){toast('Erro: '+e.message,'err');}
 }
@@ -1374,6 +1423,7 @@ async function drop(e,stage){
     const n=await POST('crm_lead_notes',{lead_id:id,type:'Anotação',text:'Movido de "'+oldStage+'" para "'+stage+'"'});
     if(!notes[id])notes[id]=[];notes[id].push(n[0]);
     toast(l.name+' → '+stage);
+    if(stage==='Fechado') criarOSdoLead(l);
   }catch(err){l.stage=oldStage;render();toast('Erro: '+err.message,'err');console.error('drop error:',err);}
 }
 
@@ -1523,8 +1573,8 @@ function rComissoes(){
     const v=gv(l.vendor_id),n=(notes[l.id]||[]).find(x=>x.type==='Pedido Fechado'),cd=calcComissao(l);
     const isCNN=l.empresa==='KSH';
     const nparcelas=parseInt(l.parcelas)||0;
-    const comEntrada=isCNN&&l.entrada?Math.round((l.entrada)*(com.valor/(l.ticket||1))):'';
-    const comParcela=isCNN&&l.valor_parcela&&nparcelas?Math.round((l.valor_parcela)*(com.valor/(l.ticket||1))):'';
+    const comEntrada=isCNN&&l.entrada?Math.round((l.entrada)*(cd.valor/(l.ticket||1))):'';
+    const comParcela=isCNN&&l.valor_parcela&&nparcelas?Math.round((l.valor_parcela)*(cd.valor/(l.ticket||1))):'';
     return '<div class="com-row"><div style="flex:1;min-width:0"><div class="com-cliente">'+l.name+'</div><div class="com-service">'+(l.empresa?'<span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;margin-right:4px;background:'+(l.empresa==='AKG'?'rgba(59,130,246,.15)':'rgba(168,85,247,.15)')+';color:'+(l.empresa==='AKG'?'#60a5fa':'#c084fc')+'">'+l.empresa+'</span>':'')+l.service+(n?' · '+n.text.split(' · ')[0]:'')+'</div></div>'+(isAdmin?'<span class="com-vendedor-badge">'+v.name+'</span>':'')+'<div style="text-align:right;flex-shrink:0"><div class="com-valor">'+fmt(l.ticket||0)+'/mês</div><div class="com-com">'+(cd.valor>0?cd.label+' = '+fmt(cd.valor):cd.label)+'</div>'+
       (isCNN&&nparcelas>0?'<div style="font-size:10px;color:var(--text3);margin-top:3px">Entrada: <b>'+fmt(l.entrada||0)+'</b> · '+nparcelas+'x de <b>'+fmt(l.valor_parcela||0)+'</b></div>':'')+
     '</div></div>';
@@ -2142,11 +2192,11 @@ function calcCnnTotal(){
 
 // ─── PRAZO / PARCELAMENTO DINÂMICO ──────────────────
 function onNovoEmpresaChange(empresa){
-  const label=document.getElementById('n-prazo-label');
-  if(label) label.textContent=empresa==='AKG'?'Duração do contrato':'Parcelamento (parcelas)';
   const shlSection=document.getElementById('n-shl-section');
+  const shlPrazo=document.getElementById('n-shl-prazo-field');
   const cnnSection=document.getElementById('n-cnn-section');
   if(shlSection) shlSection.style.display=empresa==='AKG'?'block':'none';
+  if(shlPrazo) shlPrazo.style.display=empresa==='AKG'?'block':'none';
   if(cnnSection) cnnSection.style.display=empresa==='KSH'?'block':'none';
   calcNovoTotal();
 }
@@ -2159,15 +2209,16 @@ function parseVal(id){
 }
 function calcNovoTotal(){
   const empresa=document.getElementById('ne')?.value||'AKG';
-  const ticket=parseVal('nt2');
-  const nparcelas=parseInt(document.getElementById('n-parcelas')?.value)||0;
   if(empresa==='KSH'){
+    const ticket=parseVal('n-vprod-ksh') || parseVal('nt2');
+    const prazoEl=document.getElementById('n-parcelas-ksh');
+    const prazoOutro=document.getElementById('n-parcelas-ksh-outro');
+    const nparcelas=prazoEl?.value==='outro'?(parseInt(prazoOutro?.value)||0):(parseInt(prazoEl?.value)||0);
     const entradaEl=document.getElementById('n-entrada');
     const vparcelaEl=document.getElementById('n-vparcela');
     if(!entradaEl||!vparcelaEl) return;
     const entradaRaw=(entradaEl.value||'').replace(/\./g,'').replace(',','.');
     const entrada=Math.min(parseFloat(entradaRaw)||0, ticket);
-    // Sempre recalcular parcela com base no ticket - entrada
     let vparcela=0;
     if(nparcelas>0 && ticket>0){
       const restante=ticket-entrada;
@@ -2176,9 +2227,10 @@ function calcNovoTotal(){
     }
     const total=entrada+(vparcela*nparcelas);
     const el=document.getElementById('n-cnn-total');
-    if(el) el.textContent='Total: '+fmt(Math.round(total))+(nparcelas>0?' (entrada '+fmt(entrada)+' + '+nparcelas+'x de '+fmt(vparcela)+')':'');
+    if(el) el.textContent='Total: '+fmt(Math.round(total))+(nparcelas>0?' (entrada '+fmt(entrada)+' + '+nparcelas+'x de '+fmt(Math.round(vparcela))+')':'');
   }
 }
+
 function onNovoPrazoChange(val){
   const el=document.getElementById('n-parcelas-outro');
   if(el) el.style.display=val==='outro'?'block':'none';
