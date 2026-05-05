@@ -312,9 +312,6 @@ textarea{resize:vertical;min-height:65px}
       <button class="nav-item" id="nav-comissoes" onclick="goPage('comissoes',this)"><span class="nav-icon">💵</span>Comissões</button>
       <div class="nav-sep admin-only" id="nav-sep2"></div>
       <button class="nav-item admin-only" id="nav-settings" onclick="goPage('settings',this)"><span class="nav-icon">◌</span>Configurações</button>
-      <div class="nav-sep" style="margin:8px 0"></div>
-      <button class="nav-item" onclick="voltarPortal()" style="color:var(--text3)"><span class="nav-icon">⊞</span>Ir ao Portal</button>
-      <button class="nav-item" onclick="voltarSeletor()" style="color:var(--text3)"><span class="nav-icon">⇄</span>Trocar sistema</button>
     </nav>
     <div class="s-bottom">
       <div class="s-user" onclick="logout()">
@@ -668,8 +665,8 @@ async function criarOSdoLead(lead) {
   }
 }
 
-function voltarPortal(){ window.close(); }
-function voltarSeletor(){ window.close(); }
+
+
 
 window.addEventListener('load', function() {
   var userData = sessionStorage.getItem('ksh_user');
@@ -695,6 +692,10 @@ window.addEventListener('load', function() {
 });
 
 
+
+function irParaInicioCRM() {
+  window.location.href = 'index.html';
+}
 function enterApp(){
   document.getElementById('login-wrap').style.display='none';
   document.getElementById('app-wrap').classList.add('on');

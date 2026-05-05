@@ -234,6 +234,7 @@ textarea{resize:vertical;min-height:80px}
   .g4{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g3{grid-template-columns:repeat(2,minmax(0,1fr))}
   .g2{grid-template-columns:1fr}
+  .overlay-inner{padding:16px;border-radius:12px}
   .page-header{margin-bottom:12px;flex-wrap:wrap;gap:8px}
   .page-header .btn-period{width:auto}
   .modal{max-height:96vh;padding:16px;border-radius:12px 12px 0 0;position:fixed;bottom:0;left:0;right:0;max-width:100%!important}
@@ -348,7 +349,7 @@ textarea{resize:vertical;min-height:80px}
 
 <!-- ══ APP ════════════════════════════════════ -->
 <!-- SELETOR PORTAL/CRM (só gestores) -->
-<div id="selector-wrap" style="display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:32px;z-index:100;overflow-y:auto">
+<div id="selector-wrap" style="display:none;min-height:100vh;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;gap:32px">
   <div style="text-align:center;margin-bottom:8px">
     <div style="font-size:24px;font-weight:800;letter-spacing:-0.5px">Kilian Smart Homes</div>
     <div style="font-size:13px;color:var(--text3);margin-top:4px">Selecione o sistema</div>
@@ -363,6 +364,11 @@ textarea{resize:vertical;min-height:80px}
       <div style="font-size:40px;margin-bottom:12px">👥</div>
       <div style="font-size:17px;font-weight:700;margin-bottom:6px">CRM</div>
       <div style="font-size:12px;color:var(--text3)">Pipeline, Leads,<br>Comissões e MRR</div>
+    </div>
+    <div onclick="entrarFerramentas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">🧰</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Ferramentas</div>
+      <div style="font-size:12px;color:var(--text3)">Maletas,<br>Conferências</div>
     </div>
   </div>
   <button onclick="logoutSelector()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:inherit;margin-top:8px">← Trocar usuário</button>
@@ -396,12 +402,10 @@ textarea{resize:vertical;min-height:80px}
       <button class="nav-item admin-only" onclick="goPage('config',this)"><span class="nav-icon">◌</span>Configurações</button>
     </nav>
     <div style="padding:8px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <button onclick="irParaInicio()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:inherit;padding:4px 8px;border-radius:6px" title="Página inicial">← Início</button>
       <button onclick="openNotifs()" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:4px;position:relative" title="Notificacoes">
         &#9901;
         <span id="notif-badge" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:var(--red);border-radius:50%"></span>
-      </button>
-      <button class="admin-only" onclick="irParaCRM()" style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);color:var(--blue);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit" title="Abrir CRM">
-        CRM →
       </button>
       <span style="font-size:10px;color:var(--text3)">v2.0</span>
     </div>
@@ -472,7 +476,7 @@ textarea{resize:vertical;min-height:80px}
           <div class="modal-title" id="os-modal-title">Nova Ordem de Servico</div>
           <button class="close-btn" onclick="document.getElementById('ov-os').classList.remove('on')">x</button>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
           <div class="field" style="grid-column:1/-1"><div class="field-label">Cliente *</div>
             <input type="text" id="os-cliente" placeholder="Nome do cliente ou selecione abaixo" list="os-clientes-list" autocomplete="off">
             <datalist id="os-clientes-list"></datalist>
@@ -518,7 +522,7 @@ textarea{resize:vertical;min-height:80px}
           <button class="close-btn" onclick="document.getElementById('ov-os-exec').classList.remove('on')">x</button>
         </div>
         <div id="os-exec-info" style="background:var(--bg3);border-radius:8px;padding:12px;margin-bottom:12px;font-size:13px"></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
           <div class="field"><div class="field-label">Hora inicio</div>
             <input type="time" id="os-exec-inicio">
           </div>
@@ -747,7 +751,7 @@ textarea{resize:vertical;min-height:80px}
           <div id="demanda-foto-preview" style="margin-top:10px"></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">
           <div class="field" style="grid-column:1/-1">
             <div class="field-label">Titulo *</div>
             <input type="text" id="demanda-titulo" placeholder="Resumo rapido da demanda">
@@ -935,7 +939,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="modal-title" id="cliente-modal-title">Novo Cliente</div>
       <button class="close-btn" onclick="document.getElementById('ov-cliente').classList.remove('on')">✕</button>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
       <div class="field" style="grid-column:1/-1"><div class="field-label">Nome *</div><input type="text" id="cl-nome" placeholder="Nome completo ou empresa"></div>
       <div class="field"><div class="field-label">Telefone *</div><input type="text" id="cl-telefone" placeholder="+1 (305) 000-0000"></div>
       <div class="field"><div class="field-label">Email</div><input type="text" id="cl-email" placeholder="email@exemplo.com"></div>
@@ -1198,6 +1202,25 @@ function enterApp() {
   if (isAdmin(currentUser)) {
     const sel = document.getElementById('selector-wrap');
     sel.style.display = 'flex';
+    // Preencher dados do usuário na tela
+    const nomeEl = document.getElementById('sel-user-nome');
+    const funcaoEl = document.getElementById('sel-user-funcao');
+    const avEl = document.getElementById('sel-user-av');
+    const logoEl = document.getElementById('sel-logo');
+    if (nomeEl) nomeEl.textContent = currentUser.nome || currentUser.name || '';
+    if (funcaoEl) funcaoEl.textContent = currentUser.funcao || '';
+    if (avEl) {
+      avEl.textContent = currentUser.ini || '';
+      avEl.style.cssText = currentUser.av_style || 'background:rgba(59,130,246,.2);color:#60a5fa';
+    }
+    // Logo do portal
+    const logoImg = document.querySelector('#sel-logo');
+    const portalLogo = document.querySelector('.s-logo img');
+    if (logoImg && portalLogo) logoImg.src = portalLogo.src;
+    // Esconder módulo CRM para técnicos sênior se necessário
+    document.querySelectorAll('.admin-module').forEach(el => {
+      el.style.display = isAdmin(currentUser) ? '' : 'none';
+    });
     return;
   }
   entrarPortal();
@@ -1205,6 +1228,8 @@ function enterApp() {
 // irParaCRM via iframe bridge abaixo
 // irParaPortal via postMessage bridge abaixo
 function entrarPortal() {
+  // Salvar usuário no sessionStorage para restaurar ao voltar do CRM
+  if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
   document.getElementById('selector-wrap').style.display='none';
   document.getElementById('crm-wrap') && (document.getElementById('crm-wrap').style.display='none');
   document.getElementById('app-wrap').classList.add('on');
@@ -1227,6 +1252,16 @@ function logoutSelector() {
   updateDots();
   document.getElementById('step-user').style.display='block';
   document.getElementById('step-pin').classList.remove('on');
+}
+
+
+function entrarFerramentas() {
+  sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
+  window.location.href = 'ferramentas.html';
+}
+function irParaInicio() {
+  document.getElementById('app-wrap').classList.remove('on');
+  document.getElementById('selector-wrap').style.display = 'flex';
 }
 function logout() {
   currentUser=null; selectedUser=null; pinInput='';
@@ -1817,7 +1852,7 @@ function openDetail(id) {
     <div class="field"><div class="field-label">Cliente</div><div class="field-val">${r.cliente||'-'}</div></div>
     <div class="field"><div class="field-label">Endereco</div><div class="field-val">${r.endereco||'-'}</div></div>
     <div class="field"><div class="field-label">Tecnico(s)</div><div class="field-val">${tecs}</div></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
       <div class="field"><div class="field-label">Horario</div><div class="field-val">${r.hora_inicio||'-'}  ${r.hora_fim||'-'}</div></div>
       <div class="field"><div class="field-label">Status</div><div class="field-val">${statusBadge(r.status)}</div></div>
     </div>
@@ -3707,7 +3742,7 @@ function renderBI() {
           '<div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;'+( u.av_style||'background:var(--bg4);color:var(--text)')+'">'+ini+'</div>' +
           '<div><div style="font-size:13px;font-weight:700">'+u.nome+'</div><div style="font-size:10px;color:var(--text3)">'+(u.funcao||'')+'</div></div>' +
         '</div>' +
-        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px">' +
           '<div style="text-align:center;background:var(--bg4);border-radius:6px;padding:8px"><div style="font-size:18px;font-weight:800;color:var(--blue)">'+servicos+'</div><div style="font-size:10px;color:var(--text3)">Servicos</div></div>' +
           '<div style="text-align:center;background:var(--bg4);border-radius:6px;padding:8px"><div style="font-size:18px;font-weight:800;color:var(--amber)">'+horas.toFixed(1)+'</div><div style="font-size:10px;color:var(--text3)">Horas</div></div>' +
           '<div style="text-align:center;background:var(--bg4);border-radius:6px;padding:8px;grid-column:1/-1"><div style="font-size:16px;font-weight:800;color:var(--red)">'+fmtMon(gastos+mo)+'</div><div style="font-size:10px;color:var(--text3)">Custo total gerado</div></div>' +
@@ -3888,6 +3923,322 @@ setInterval(function() {
     }).catch(function(){});
   }
 }, 30000);
+
+
+// ================================================
+// MALETAS
+// ================================================
+let maletasFiltro = 'todos';
+let maletasData = [];
+let conferenciasData = [];
+let confAtual = { tecnico_id:'', tecnico_nome:'', items:[] };
+
+async function loadMaletas() {
+  try {
+    const [m, c] = await Promise.all([
+      sbGet('maletas?order=tecnico_nome,nome'),
+      sbGet('maleta_conferencias?order=data_conferencia.desc')
+    ]);
+    maletasData = m || [];
+    conferenciasData = c || [];
+  } catch(e) {
+    maletasData = [];
+    conferenciasData = [];
+  }
+}
+
+function renderMaletas() {
+  const isGestor = isAdmin(currentUser);
+  // Botão adicionar só para gestor
+  const btnAdd = document.getElementById('btn-nova-ferramenta');
+  if (btnAdd) btnAdd.style.display = isGestor ? '' : 'none';
+  // Sub-título diferente por perfil
+  const sub = document.getElementById('maletas-sub');
+  if (sub) sub.textContent = isGestor ? 'Maletas da equipe' : 'Suas ferramentas';
+
+  loadMaletas().then(() => {
+    renderMaletasFiltro();
+    renderMaletasLista();
+  });
+}
+
+function renderMaletasFiltro() {
+  const el = document.getElementById('maletas-filtro');
+  if (!el) return;
+  const isGestor = isAdmin(currentUser);
+  // Técnico não vê filtro - só as próprias ferramentas
+  if (!isGestor) { el.innerHTML = ''; return; }
+
+  const tecnicos = [...new Set(maletasData.map(m => m.tecnico_id))];
+  const all = [{id:'todos', nome:'Todos'}].concat(
+    tecnicos.map(id => {
+      const m = maletasData.find(x => x.tecnico_id === id);
+      return {id, nome: m ? m.tecnico_nome : id};
+    })
+  );
+  el.innerHTML = all.map(t =>
+    `<button class="btn btn-sm${maletasFiltro===t.id?' active':''}" 
+     style="font-size:12px${maletasFiltro===t.id?';border-color:var(--red);color:var(--red)':''}"
+     onclick="setMaletasFiltro('${t.id}')">${t.nome}</button>`
+  ).join('');
+}
+
+function setMaletasFiltro(id) {
+  maletasFiltro = id;
+  renderMaletasFiltro();
+  renderMaletasLista();
+}
+
+function renderMaletasLista() {
+  const el = document.getElementById('maletas-lista');
+  if (!el) return;
+  const isGestor = isAdmin(currentUser);
+
+  // Agrupar por técnico
+  const grupos = {};
+  maletasData.forEach(m => {
+    // Técnico só vê as próprias ferramentas
+    if (!isGestor && m.tecnico_id !== currentUser.id) return;
+    if (isGestor && maletasFiltro !== 'todos' && m.tecnico_id !== maletasFiltro) return;
+    if (!grupos[m.tecnico_id]) grupos[m.tecnico_id] = { nome: m.tecnico_nome, items: [] };
+    grupos[m.tecnico_id].items.push(m);
+  });
+
+  if (Object.keys(grupos).length === 0) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text3);font-size:13px">Nenhuma ferramenta cadastrada</div>';
+    return;
+  }
+
+  el.innerHTML = Object.entries(grupos).map(([tid, g]) => {
+    const ini = g.nome.split(' ').map(x=>x[0]).join('').slice(0,2).toUpperCase();
+    const confs = conferenciasData.filter(c => c.tecnico_id === tid);
+    const ultima = confs[0];
+    
+    // Status geral
+    const temFaltando = g.items.some(i => i.status === 'faltando');
+    const temDefeito = g.items.some(i => i.status === 'defeito');
+    const statusBadge = temFaltando
+      ? `<span style="background:var(--red-bg);color:var(--red);font-size:11px;padding:2px 8px;border-radius:5px">${g.items.filter(i=>i.status==='faltando').length} faltando</span>`
+      : temDefeito
+      ? `<span style="background:var(--amber-bg);color:var(--amber);font-size:11px;padding:2px 8px;border-radius:5px">${g.items.filter(i=>i.status==='defeito').length} com defeito</span>`
+      : `<span style="background:var(--green-bg);color:var(--green);font-size:11px;padding:2px 8px;border-radius:5px">Tudo OK</span>`;
+
+    const ferramentas = g.items.map(item => {
+      const statusColor = item.status==='faltando'?'var(--red)':item.status==='defeito'?'var(--amber)':'var(--green)';
+      const statusLabel = item.status==='faltando'?'Faltando':item.status==='defeito'?'Com defeito':'OK';
+      const condBadge = item.condicao==='nova'
+        ? `<span style="background:#E6F1FB;color:#0C447C;font-size:10px;padding:2px 6px;border-radius:4px">Nova</span>`
+        : `<span style="background:var(--bg3);color:var(--text3);font-size:10px;padding:2px 6px;border-radius:4px">Usada</span>`;
+      return `
+        <div style="background:var(--bg3);border-radius:8px;padding:9px 11px;margin-bottom:6px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:3px">
+            <span style="font-size:13px;font-weight:500;color:var(--text)">${item.nome}</span>
+            <div style="display:flex;gap:4px;flex-shrink:0">${condBadge}</div>
+          </div>
+          ${item.descricao ? `<div style="font-size:12px;color:var(--text3);margin-bottom:5px">${item.descricao}</div>` : ''}
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:11px;color:var(--text3)">${item.quantidade} un</span>
+            <span style="font-size:11px;font-weight:500;color:${statusColor}">${statusLabel}</span>
+          </div>
+        </div>`;
+    }).join('');
+
+    const ultimaConf = ultima
+      ? `Última conferência: ${new Date(ultima.data_conferencia).toLocaleDateString('pt-BR')} · por ${ultima.conferido_por||'-'}`
+      : 'Nenhuma conferência ainda';
+
+    return `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:14px;margin-bottom:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:36px;height:36px;border-radius:50%;background:rgba(59,130,246,.15);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">${ini}</div>
+            <div>
+              <div style="font-size:14px;font-weight:600">${g.nome}</div>
+              <div style="font-size:11px;color:var(--text3)">${ultimaConf}</div>
+            </div>
+          </div>
+          ${statusBadge}
+        </div>
+        <div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Ferramentas (${g.items.length})</div>
+        ${ferramentas}
+        <div style="display:flex;gap:6px;margin-top:10px">
+          ${isGestor ? `<button class="btn" style="flex:1;font-size:12px" onclick="abrirConferencia('${tid}','${g.nome}')">Conferir</button>` : ''}
+          <button class="btn" style="flex:1;font-size:12px" onclick="abrirHistorico('${tid}','${g.nome}')">Histórico</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function openNovaFerramenta() {
+  // Popular select de técnicos
+  const sel = document.getElementById('nf-tecnico');
+  const tecnicos = usuarios.filter(u => u.funcao === 'Tecnico' || u.funcao === 'Técnico');
+  sel.innerHTML = tecnicos.map(u => `<option value="${u.id}">${u.nome}</option>`).join('');
+  document.getElementById('nf-nome').value = '';
+  document.getElementById('nf-desc').value = '';
+  document.getElementById('nf-qtd').value = 1;
+  document.getElementById('nf-cond').value = 'nova';
+  om('ov-nova-ferramenta');
+}
+
+async function salvarNovaFerramenta() {
+  const tid = document.getElementById('nf-tecnico').value;
+  const tnome = document.getElementById('nf-tecnico').selectedOptions[0]?.text || tid;
+  const nome = document.getElementById('nf-nome').value.trim();
+  if (!nome) { showToast('Informe o nome da ferramenta','err'); return; }
+  
+  try {
+    await sbPost('maletas', {
+      tecnico_id: tid,
+      tecnico_nome: tnome,
+      nome,
+      descricao: document.getElementById('nf-desc').value.trim(),
+      quantidade: parseInt(document.getElementById('nf-qtd').value)||1,
+      condicao: document.getElementById('nf-cond').value,
+      status: 'ok',
+      data_entrega: new Date().toISOString().split('T')[0],
+      criado_por: currentUser?.nome || currentUser?.name || '-'
+    });
+    cm('ov-nova-ferramenta');
+    renderMaletas();
+    showToast('Ferramenta cadastrada!');
+  } catch(e) { showToast('Erro: '+e.message,'err'); }
+}
+
+function abrirConferencia(tid, tnome) {
+  const ferramentas = maletasData.filter(m => m.tecnico_id === tid);
+  confAtual = { tid, tnome, resultados: {} };
+  
+  document.getElementById('conf-title').textContent = 'Conferência — ' + tnome;
+  document.getElementById('conf-body').innerHTML = `
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Marque o status de cada ferramenta</div>
+    ${ferramentas.map(item => `
+      <div style="padding:10px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:500;margin-bottom:2px">${item.nome}</div>
+        ${item.descricao ? `<div style="font-size:11px;color:var(--text3);margin-bottom:6px">${item.descricao} · ${item.condicao}</div>` : ''}
+        <div style="display:flex;gap:5px;margin-top:6px">
+          <button id="cbtn-ok-${item.id}" onclick="setConfItem('${item.id}','ok')" 
+            style="flex:1;padding:5px;border-radius:6px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--bg3);color:var(--text3)">OK</button>
+          <button id="cbtn-defeito-${item.id}" onclick="setConfItem('${item.id}','defeito')"
+            style="flex:1;padding:5px;border-radius:6px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--bg3);color:var(--text3)">Defeito</button>
+          <button id="cbtn-faltando-${item.id}" onclick="setConfItem('${item.id}','faltando')"
+            style="flex:1;padding:5px;border-radius:6px;border:1px solid var(--border);font-size:11px;cursor:pointer;background:var(--bg3);color:var(--text3)">Faltando</button>
+        </div>
+      </div>`).join('')}
+    <div class="field" style="margin-top:12px"><div class="field-label">Observação</div>
+      <textarea id="conf-obs" rows="2" placeholder="Observações gerais..."></textarea>
+    </div>`;
+  
+  om('ov-maleta-conf');
+}
+
+function setConfItem(id, status) {
+  confAtual.resultados[id] = status;
+  ['ok','defeito','faltando'].forEach(s => {
+    const btn = document.getElementById(`cbtn-${s}-${id}`);
+    if (!btn) return;
+    if (s === status) {
+      const colors = {ok:'var(--green)',defeito:'var(--amber)',faltando:'var(--red)'};
+      const bgs = {ok:'var(--green-bg)',defeito:'var(--amber-bg)',faltando:'var(--red-bg)'};
+      btn.style.background = bgs[s];
+      btn.style.color = colors[s];
+      btn.style.borderColor = colors[s];
+      btn.style.fontWeight = '600';
+    } else {
+      btn.style.background = 'var(--bg3)';
+      btn.style.color = 'var(--text3)';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.fontWeight = '400';
+    }
+  });
+}
+
+async function salvarConferencia() {
+  const ferramentas = maletasData.filter(m => m.tecnico_id === confAtual.tid);
+  const resultado = ferramentas.map(item => ({
+    id: item.id,
+    nome: item.nome,
+    descricao: item.descricao,
+    status: confAtual.resultados[item.id] || 'ok'
+  }));
+  
+  const tot_ok = resultado.filter(r=>r.status==='ok').length;
+  const tot_def = resultado.filter(r=>r.status==='defeito').length;
+  const tot_fal = resultado.filter(r=>r.status==='faltando').length;
+
+  try {
+    // Salvar conferência
+    await sbPost('maleta_conferencias', {
+      tecnico_id: confAtual.tid,
+      tecnico_nome: confAtual.tnome,
+      data_conferencia: new Date().toISOString(),
+      conferido_por: currentUser?.nome || currentUser?.name || '-',
+      resultado: resultado,
+      total_ok: tot_ok,
+      total_defeito: tot_def,
+      total_faltando: tot_fal,
+      observacao: document.getElementById('conf-obs')?.value || ''
+    });
+
+    // Atualizar status das ferramentas
+    for (const item of resultado) {
+      await fetch(`https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/maletas?id=eq.${item.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type':'application/json','apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY','Prefer':'return=representation' },
+        body: JSON.stringify({ status: item.status })
+      });
+    }
+
+    cm('ov-maleta-conf');
+    renderMaletas();
+    showToast(`Conferência salva! ${tot_ok} OK · ${tot_def} defeito · ${tot_fal} faltando`);
+  } catch(e) { showToast('Erro: '+e.message,'err'); }
+}
+
+function abrirHistorico(tid, tnome) {
+  const confs = conferenciasData.filter(c => c.tecnico_id === tid);
+  document.getElementById('hist-title').textContent = 'Histórico — ' + tnome;
+  
+  if (confs.length === 0) {
+    document.getElementById('hist-body').innerHTML = '<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Nenhuma conferência registrada</div>';
+    om('ov-maleta-hist');
+    return;
+  }
+
+  document.getElementById('hist-body').innerHTML = `
+    <div style="position:relative;padding-left:20px">
+      <div style="position:absolute;left:6px;top:4px;bottom:4px;width:1px;background:var(--border)"></div>
+      ${confs.map(c => {
+        const data = new Date(c.data_conferencia);
+        const dotColor = c.total_faltando>0?'var(--red)':c.total_defeito>0?'var(--amber)':'var(--green)';
+        const badge = c.total_faltando>0
+          ? `<span style="background:var(--red-bg);color:var(--red);font-size:10px;padding:2px 7px;border-radius:4px">${c.total_faltando} faltando</span>`
+          : c.total_defeito>0
+          ? `<span style="background:var(--amber-bg);color:var(--amber);font-size:10px;padding:2px 7px;border-radius:4px">${c.total_defeito} defeito</span>`
+          : `<span style="background:var(--green-bg);color:var(--green);font-size:10px;padding:2px 7px;border-radius:4px">Tudo OK</span>`;
+        
+        const itens = (c.resultado||[]).filter(r=>r.status!=='ok');
+        
+        return `
+          <div style="position:relative;margin-bottom:14px">
+            <div style="position:absolute;left:-17px;top:5px;width:8px;height:8px;border-radius:50%;background:${dotColor};border:2px solid var(--bg2)"></div>
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:5px">
+              <div>
+                <div style="font-size:13px;font-weight:500">${data.toLocaleDateString('pt-BR')}</div>
+                <div style="font-size:11px;color:var(--text3)">${data.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})} · por ${c.conferido_por||'-'}</div>
+              </div>
+              ${badge}
+            </div>
+            ${itens.length>0 ? `<div style="background:var(--bg3);border-radius:6px;padding:7px 9px">
+              ${itens.map(r=>`<div style="font-size:12px;color:var(--text3);padding:2px 0">${r.nome} — <span style="color:${r.status==='faltando'?'var(--red)':'var(--amber)'};">${r.status==='faltando'?'Faltando':'Com defeito'}</span></div>`).join('')}
+            </div>` : ''}
+            ${c.observacao ? `<div style="font-size:11px;color:var(--text3);margin-top:4px;font-style:italic">${c.observacao}</div>` : ''}
+          </div>`;
+      }).join('')}
+    </div>`;
+  
+  om('ov-maleta-hist');
+}
 
 // ================================================
 // LOG DE AUDITORIA
@@ -4111,6 +4462,30 @@ function init() {
   document.getElementById('logo-login').src = LOGO;
   document.getElementById('logo-sidebar').src = LOGO;
 
+  // Se veio de outro módulo (CRM, Ferramentas), restaurar sessão direto no seletor
+  var saved = sessionStorage.getItem('ksh_user');
+  if (saved) {
+    try {
+      var u = JSON.parse(saved);
+      if (u && u.id) {
+        currentUser = u;
+        document.getElementById('login-wrap').style.display = 'none';
+        var sel = document.getElementById('selector-wrap');
+        sel.style.display = 'flex';
+        sel.style.flexDirection = 'column';
+        var isAdm = (u.funcao === 'Gestor');
+        document.querySelectorAll('.admin-only').forEach(function(el){ el.style.display = isAdm ? '' : 'none'; });
+        var nEl = document.getElementById('sel-user-nome');
+        var fEl = document.getElementById('sel-user-funcao');
+        var aEl = document.getElementById('sel-user-av');
+        if(nEl) nEl.textContent = u.nome || u.name || '';
+        if(fEl) fEl.textContent = u.funcao || '';
+        if(aEl) { aEl.textContent = u.ini || ''; aEl.style.cssText = u.av_style || ''; }
+        return;
+      }
+    } catch(e) {}
+  }
+
   // PASSO 1: Mostrar usuarios padrao IMEDIATAMENTE (sem esperar Supabase)
   USERS = USUARIOS_PADRAO;
   renderLogin();
@@ -4150,12 +4525,13 @@ function entrarCRM() {
   document.getElementById('app-wrap').classList.add('on');
 }
 
-function irParaCRM() {
-  document.getElementById('app-wrap').classList.remove('on');
-  entrarCRM();
-}
 
-// Listener para voltar do CRM (nao usado mais com nova aba, mas mantido por segurança)
+
+
+// Detectar quando o CRM fecha e voltar ao início se sinalizado
+// Verificar ao carregar E ao receber foco se deve mostrar o seletor
+
+
 window.addEventListener('message', function(e) {
   if(e.data && e.data.type === 'voltarSeletor') {
     document.getElementById('selector-wrap').style.display='flex';
@@ -4163,5 +4539,77 @@ window.addEventListener('message', function(e) {
   }
 });
 </script>
+
+    <!-- ══════════════════════════════════════════ -->
+    <div class="page" id="page-maletas">
+      <div class="page-header">
+        <div><div class="page-title">Ferramentas</div><div class="page-sub" id="maletas-sub">Maletas da equipe</div></div>
+        <button class="btn btn-primary admin-only" onclick="openNovaFerramenta()" id="btn-nova-ferramenta">+ Adicionar</button>
+      </div>
+
+      <div id="maletas-filtro" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
+      <div id="maletas-lista"></div>
+
+      <!-- MODAL: nova ferramenta (só gestor) -->
+      <div class="overlay" id="ov-nova-ferramenta">
+        <div class="overlay-inner" style="max-width:460px">
+          <div class="ov-header">
+            <div class="ov-title">Nova ferramenta</div>
+            <button class="ov-close" onclick="cm('ov-nova-ferramenta')">✕</button>
+          </div>
+          <div class="field"><div class="field-label">Técnico *</div>
+            <select id="nf-tecnico"></select>
+          </div>
+          <div class="field"><div class="field-label">Nome da ferramenta *</div>
+            <input id="nf-nome" type="text" placeholder="Ex: Multímetro digital">
+          </div>
+          <div class="field"><div class="field-label">Descrição / detalhe</div>
+            <input id="nf-desc" type="text" placeholder="Ex: Vermelho, modelo Fluke 117">
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px">
+            <div class="field"><div class="field-label">Quantidade</div>
+              <input id="nf-qtd" type="number" min="1" value="1">
+            </div>
+            <div class="field"><div class="field-label">Condição</div>
+              <select id="nf-cond">
+                <option value="nova">Nova</option>
+                <option value="usada">Usada</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="btn" style="flex:1" onclick="cm('ov-nova-ferramenta')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="salvarNovaFerramenta()">Salvar</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: conferência (só gestor) -->
+      <div class="overlay" id="ov-maleta-conf">
+        <div class="overlay-inner" style="max-width:500px">
+          <div class="ov-header">
+            <div class="ov-title" id="conf-title">Conferência</div>
+            <button class="ov-close" onclick="cm('ov-maleta-conf')">✕</button>
+          </div>
+          <div id="conf-body"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="btn" style="flex:1" onclick="cm('ov-maleta-conf')">Cancelar</button>
+            <button class="btn btn-primary" style="flex:1" onclick="salvarConferencia()">Salvar conferência</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MODAL: histórico -->
+      <div class="overlay" id="ov-maleta-hist">
+        <div class="overlay-inner" style="max-width:500px">
+          <div class="ov-header">
+            <div class="ov-title" id="hist-title">Histórico</div>
+            <button class="ov-close" onclick="cm('ov-maleta-hist')">✕</button>
+          </div>
+          <div id="hist-body"></div>
+        </div>
+      </div>
+    </div>
+
 </body>
 </html>
