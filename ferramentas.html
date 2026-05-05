@@ -109,7 +109,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
       <div class="page-header">
         <div>
           <div class="page-title">Maletas</div>
-          <div class="page-sub" id="grid-sub">Carregando...</div>
+          <div class="page-sub" id="grid-sub">Nenhuma maleta cadastrada</div>
         </div>
         <button class="btn btn-primary" onclick="abrirNovamaleta()">+ Nova maleta</button>
       </div>
@@ -270,7 +270,7 @@ function showScreen(id){
 
 function voltarInicio(){
   if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
-  window.location.href = 'index.html';
+  window.location.href = '/';
 }
 
 // ── INIT ──────────────────────────────────────
@@ -286,7 +286,7 @@ window.addEventListener('load', async function(){
 
   try{
     const [tecs, mals, confs] = await Promise.all([
-      sbGet('usuarios?funcao=eq.Tecnico&ativo=eq.true&select=id,nome,ini,av_style&order=nome'),
+      sbGet('usuarios?or=(funcao.eq.Tecnico,funcao.eq.Técnico)&ativo=eq.true&select=id,nome,ini,av_style&order=nome'),
       sbGet('maletas?order=tecnico_nome,nome'),
       sbGet('maleta_conferencias?order=data_conferencia.desc')
     ]);
