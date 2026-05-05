@@ -270,7 +270,7 @@ function showScreen(id){
 
 function voltarInicio(){
   if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
-  window.location.href = '/';
+  window.location.href = 'https://portal-ksh.vercel.app';
 }
 
 // ── INIT ──────────────────────────────────────
@@ -360,18 +360,23 @@ function renderGrid(){
 
 // ── NOVA MALETA ────────────────────────────────
 function abrirNovamaleta(){
+  // Se ainda carregando, tentar buscar novamente
+  if(tecnicos.length === 0){
+    sbGet('usuarios?or=(funcao.eq.Técnico,funcao.eq.Tecnico)&ativo=eq.true&select=id,nome,ini,av_style&order=nome')
+      .then(function(data){
+        tecnicos = data || [];
+        abrirNovamaleta();
+      })
+      .catch(function(e){ toast('Erro ao buscar técnicos: '+e.message, true); });
+    return;
+  }
   const semMaleta = tecnicos.filter(t => !maletas[t.id]);
-  const sel = document.getElementById('nm-tecnico');
-  if(semMaleta.length === 0 && tecnicos.length > 0){
+  if(semMaleta.length === 0){
     toast('Todos os técnicos já têm maleta cadastrada');
     return;
   }
-  // Se não carregou técnicos do banco, mostrar mensagem
-  if(tecnicos.length === 0){
-    toast('Nenhum técnico cadastrado no sistema', true);
-    return;
-  }
-  sel.innerHTML = semMaleta.map(t=>`<option value="${t.id}" data-nome="${t.nome}">${t.nome}</option>`).join('');
+  const sel = document.getElementById('nm-tecnico');
+  sel.innerHTML = semMaleta.map(t=>`<option value="${t.id}">${t.nome}</option>`).join('');
   abrirModal('ov-nova-maleta');
 }
 
