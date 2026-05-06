@@ -270,14 +270,25 @@ function showScreen(id){
 
 function voltarInicio(){
   if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
-  window.location.href = 'https://portal-ksh.vercel.app';
+  window.location.href = 'index.html';
 }
 
 // ── INIT ──────────────────────────────────────
 window.addEventListener('load', async function(){
-  // Logo
+  // Verificar sessão — sem sessão, voltar ao seletor
   const saved = sessionStorage.getItem('ksh_user');
-  if(saved){ try{ currentUser = JSON.parse(saved); }catch(e){} }
+  if(!saved){
+    window.location.href = 'index.html';
+    return;
+  }
+  try{ currentUser = JSON.parse(saved); }catch(e){
+    window.location.href = 'index.html';
+    return;
+  }
+  if(!currentUser || !currentUser.id){
+    window.location.href = 'index.html';
+    return;
+  }
 
   // Logo
   const logoEl = document.getElementById('f-logo');

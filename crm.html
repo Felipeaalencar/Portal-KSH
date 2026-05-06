@@ -312,6 +312,8 @@ textarea{resize:vertical;min-height:65px}
       <button class="nav-item" id="nav-comissoes" onclick="goPage('comissoes',this)"><span class="nav-icon">💵</span>Comissões</button>
       <div class="nav-sep admin-only" id="nav-sep2"></div>
       <button class="nav-item admin-only" id="nav-settings" onclick="goPage('settings',this)"><span class="nav-icon">◌</span>Configurações</button>
+      <div style="margin:8px 0;height:1px;background:var(--border)"></div>
+      <button class="nav-item" onclick="irParaInicioCRM()" style="color:var(--text3)"><span class="nav-icon">←</span>Início</button>
     </nav>
     <div class="s-bottom">
       <div class="s-user" onclick="logout()">
@@ -522,12 +524,7 @@ const COLORS_POOL=[
   {color:'#14b8a6',avStyle:'background:rgba(20,184,166,.15);color:#14b8a6'},
   {color:'#ef4444',avStyle:'background:rgba(239,68,68,.15);color:#ef4444'},
 ];
-let USERS = [
-  {id:'f',name:'Felipe', role:'admin', vendor_id:'f',pin:'1111',ini:'FE',color:'#3b82f6',avStyle:'background:rgba(59,130,246,.2);color:#60a5fa',active:true},
-  {id:'m',name:'Matheus',role:'vendor',vendor_id:'m',pin:'2222',ini:'MA',color:'#22c55e',avStyle:'background:rgba(34,197,94,.15);color:#22c55e',active:true},
-  {id:'p',name:'Paulo',  role:'vendor',vendor_id:'p',pin:'3333',ini:'PA',color:'#f59e0b',avStyle:'background:rgba(245,158,11,.15);color:#f59e0b',active:true},
-  {id:'l',name:'Laercio',role:'vendor',vendor_id:'l',pin:'4444',ini:'LA',color:'#a855f7',avStyle:'background:rgba(168,85,247,.15);color:#a855f7',active:true},
-];
+let USERS = [];
 
 let currentUser = null;
 let pipelineFilter = null;
@@ -687,13 +684,14 @@ window.addEventListener('load', function() {
       return;
     } catch(e) {}
   }
-  document.getElementById('login-wrap').style.display = 'flex';
-  renderLogin();
+  // Sem sessão: voltar ao seletor de módulos (index.html)
+  window.location.href = 'index.html';
 });
 
 
 
 function irParaInicioCRM() {
+  if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
   window.location.href = 'index.html';
 }
 function enterApp(){
