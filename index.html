@@ -355,15 +355,15 @@ textarea{resize:vertical;min-height:80px}
     <div style="font-size:13px;color:var(--text3);margin-top:4px">Selecione o sistema</div>
   </div>
   <div style="display:flex;gap:20px;flex-wrap:wrap;justify-content:center;padding:0 20px">
-    <div onclick="entrarPortal()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
-      <div style="font-size:40px;margin-bottom:12px">🏠</div>
-      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Portal</div>
-      <div style="font-size:12px;color:var(--text3)">OS, Lançamentos,<br>BI e Equipe</div>
-    </div>
     <div onclick="entrarCRM()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--blue)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
       <div style="font-size:40px;margin-bottom:12px">👥</div>
       <div style="font-size:17px;font-weight:700;margin-bottom:6px">CRM</div>
       <div style="font-size:12px;color:var(--text3)">Pipeline, Leads,<br>Comissões e MRR</div>
+    </div>
+    <div onclick="entrarPortal()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--red)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">🏠</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Portal</div>
+      <div style="font-size:12px;color:var(--text3)">OS, Lançamentos,<br>BI e Equipe</div>
     </div>
     <div onclick="entrarFerramentas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='var(--amber)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
       <div style="font-size:40px;margin-bottom:12px">🧰</div>
@@ -4510,8 +4510,6 @@ init();
 // BRIDGE PORTAL <-> CRM
 // ================================================
 function entrarCRM() {
-  document.getElementById('selector-wrap').style.display='none';
-  // Salvar usuario no sessionStorage para o CRM ler
   sessionStorage.setItem('ksh_user', JSON.stringify({
     id: currentUser.id,
     nome: currentUser.nome || currentUser.name,
@@ -4520,9 +4518,7 @@ function entrarCRM() {
     av_style: currentUser.av_style,
     pin: currentUser.pin
   }));
-  window.open('crm.html', '_blank');
-  // Voltar ao portal (nao fica na tela do seletor)
-  document.getElementById('app-wrap').classList.add('on');
+  window.location.href = 'crm.html';
 }
 
 
