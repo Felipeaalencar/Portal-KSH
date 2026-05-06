@@ -123,12 +123,13 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
           <button onclick="showScreen('grid')" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1">←</button>
           <div>
             <div class="page-title" id="tec-nome"></div>
-            <div class="page-sub" id="tec-sub"></div>
+            <div class="page-sub" id="tec-sub" onclick="abrirHistoricoConferencias()" style="cursor:pointer;text-decoration:underline dotted" title="Ver histórico de conferências"></div>
           </div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn" onclick="abrirAddFerramenta()">+ Adicionar</button>
           <button class="btn" onclick="abrirConferencia()">✓ Conferir</button>
+          <button class="btn" onclick="abrirReposicao()" id="btn-repos" style="display:none">📦 Reposição</button>
         </div>
       </div>
       <div class="stats-bar" id="tec-stats"></div>
@@ -201,6 +202,52 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   </div>
 </div>
 
+<!-- MODAL: Editar ferramenta -->
+<div class="overlay" id="ov-editar">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Editar ferramenta</div>
+      <button class="close-btn" onclick="fecharModal('ov-editar')">✕</button>
+    </div>
+    <input type="hidden" id="ed-id">
+    <div class="field">
+      <div class="field-label">Nome da ferramenta *</div>
+      <input id="ed-nome" type="text">
+    </div>
+    <div class="field">
+      <div class="field-label">Descrição / detalhe</div>
+      <input id="ed-desc" type="text">
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-label">Quantidade</div>
+        <input id="ed-qtd" type="number" min="1">
+      </div>
+      <div class="field">
+        <div class="field-label">Condição</div>
+        <select id="ed-cond">
+          <option value="nova">Nova</option>
+          <option value="usada">Usada</option>
+        </select>
+      </div>
+    </div>
+    <div class="field-row">
+      <div class="field">
+        <div class="field-label">Valor ($)</div>
+        <input id="ed-valor" type="number" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <div class="field-label">Vida útil (meses)</div>
+        <input id="ed-vida-util" type="number" min="1">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="fecharModal('ov-editar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEdicao()">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Dar baixa -->
 <div class="overlay" id="ov-baixa">
   <div class="modal" style="max-width:400px">
@@ -225,6 +272,20 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   </div>
 </div>
 
+<!-- MODAL: Reposição -->
+<div class="overlay" id="ov-reposicao">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <div class="modal-title">Lista de Reposição</div>
+      <button class="close-btn" onclick="fecharModal('ov-reposicao')">✕</button>
+    </div>
+    <div id="repos-body" style="max-height:400px;overflow-y:auto"></div>
+    <div class="modal-footer" style="margin-top:16px">
+      <button class="btn btn-primary" style="flex:1" onclick="fecharModal('ov-reposicao')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: Conferência -->
 <div class="overlay" id="ov-conf">
   <div class="modal">
@@ -241,6 +302,17 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL: Histórico de conferências -->
+<div class="overlay" id="ov-hist">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="hist-title">Histórico</div>
+      <button class="close-btn" onclick="fecharModal('ov-hist')">✕</button>
+    </div>
+    <div id="hist-body" style="max-height:450px;overflow-y:auto"></div>
+  </div>
+</div>
 
 <script>
 const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
@@ -413,6 +485,7 @@ function abrirTecnico(tid){
   const uc = confs[0] ? 'Última conferência: '+new Date(confs[0].data_conferencia).toLocaleDateString('pt-BR') : 'Sem conferências';
   document.getElementById('tec-sub').textContent = g.items.length + ' ferramentas · ' + uc;
   renderTecnico();
+  atualizarBotaoReposicao();
   showScreen('tecnico');
 }
 
@@ -549,6 +622,7 @@ async function confirmarBaixa(){
     }
     fecharModal('ov-baixa');
     renderTecnico();
+    atualizarBotaoReposicao();
   }catch(e){ toast('Erro: '+e.message, true); }
 }
 
@@ -627,6 +701,136 @@ async function salvarConferencia(){
     renderTecnico();
     toast('Conferência salva! '+tok+' OK · '+tdef+' defeito · '+tfal+' faltando');
   }catch(e){ toast('Erro: '+e.message, true); }
+}
+
+// ── EDITAR FERRAMENTA ─────────────────────────────────
+function abrirEditar(id){
+  const g = maletas[tecAtual];
+  const item = g.items.find(i=>i.id===id);
+  if(!item) return;
+  document.getElementById('ed-id').value = id;
+  document.getElementById('ed-nome').value = item.nome || '';
+  document.getElementById('ed-desc').value = item.descricao || '';
+  document.getElementById('ed-qtd').value = item.quantidade || 1;
+  document.getElementById('ed-cond').value = item.condicao || 'nova';
+  document.getElementById('ed-valor').value = item.valor || '';
+  document.getElementById('ed-vida-util').value = item.vida_util_meses || '';
+  abrirModal('ov-editar');
+}
+
+async function salvarEdicao(){
+  const id = document.getElementById('ed-id').value;
+  const nome = document.getElementById('ed-nome').value.trim();
+  if(!nome){ toast('Informe o nome', true); return; }
+  const dados = {
+    nome,
+    descricao: document.getElementById('ed-desc').value.trim(),
+    quantidade: parseInt(document.getElementById('ed-qtd').value)||1,
+    condicao: document.getElementById('ed-cond').value,
+    valor: parseFloat(document.getElementById('ed-valor').value)||null,
+    vida_util_meses: parseInt(document.getElementById('ed-vida-util').value)||null
+  };
+  try{
+    await fetch(SB_URL+'/rest/v1/maletas?id=eq.'+id,{
+      method:'PATCH',
+      headers:{...H,'Prefer':'return=representation'},
+      body:JSON.stringify(dados)
+    });
+    const item = maletas[tecAtual].items.find(i=>i.id===id);
+    if(item) Object.assign(item, dados);
+    fecharModal('ov-editar');
+    renderTecnico();
+    toast('Ferramenta atualizada!');
+  }catch(e){ toast('Erro: '+e.message, true); }
+}
+
+// ── REPOSIÇÃO ────────────────────────────────────────
+function atualizarBotaoReposicao(){
+  if(!tecAtual) return;
+  const g = maletas[tecAtual];
+  const precisam = g.items.filter(i => i.status === 'baixada' && i.precisa_reposicao);
+  const btn = document.getElementById('btn-repos');
+  if(btn){
+    btn.style.display = precisam.length > 0 ? '' : 'none';
+    btn.textContent = '📦 Reposição (' + precisam.length + ')';
+  }
+}
+
+function abrirReposicao(){
+  const g = maletas[tecAtual];
+  const precisam = g.items.filter(i => i.precisa_reposicao);
+  const todas = g.items.filter(i => i.status === 'baixada');
+  
+  const body = document.getElementById('repos-body');
+  
+  if(todas.length === 0){
+    body.innerHTML = '<div style="color:var(--text3);padding:20px 0;text-align:center">Nenhuma ferramenta baixada</div>';
+  } else {
+    body.innerHTML = `
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Marque as ferramentas que precisam de reposição:</div>
+      ${todas.map(item=>`
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <input type="checkbox" id="rep-${item.id}" ${item.precisa_reposicao?'checked':''} 
+            onchange="toggleReposicao('${item.id}', this.checked)"
+            style="width:18px;height:18px;cursor:pointer;accent-color:var(--red)">
+          <div style="flex:1">
+            <div style="font-size:14px;font-weight:500;text-decoration:line-through;color:var(--text3)">${item.nome}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:2px">${item.baixa_motivo||''} · ${item.baixa_data?new Date(item.baixa_data).toLocaleDateString('pt-BR'):''}</div>
+          </div>
+          ${item.precisa_reposicao ? '<span style="font-size:11px;color:var(--amber);font-weight:500">⚠ Repor</span>' : ''}
+        </div>`).join('')}
+    `;
+  }
+  abrirModal('ov-reposicao');
+}
+
+async function toggleReposicao(id, precisa){
+  try{
+    await fetch(SB_URL+'/rest/v1/maletas?id=eq.'+id,{
+      method:'PATCH',
+      headers:{...H,'Prefer':'return=representation'},
+      body:JSON.stringify({precisa_reposicao: precisa})
+    });
+    const item = maletas[tecAtual].items.find(i=>i.id===id);
+    if(item) item.precisa_reposicao = precisa;
+    atualizarBotaoReposicao();
+    // Atualizar ícone na linha
+    const label = document.querySelector(`#rep-${id}`)?.closest('div[style*="border-bottom"]')?.querySelector('span');
+    if(label) label.textContent = precisa ? '⚠ Repor' : '';
+  }catch(e){ toast('Erro: '+e.message, true); }
+}
+
+// ── HISTÓRICO DE CONFERÊNCIAS ────────────────────────
+function abrirHistoricoConferencias(){
+  const confs = maletasConf.filter(c=>c.tecnico_id===tecAtual);
+  const g = maletas[tecAtual];
+  
+  if(confs.length === 0){
+    toast('Nenhuma conferência registrada');
+    return;
+  }
+  
+  document.getElementById('hist-title').textContent = 'Histórico — ' + g.nome;
+  document.getElementById('hist-body').innerHTML = confs.map((c,i)=>`
+    <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:40px">
+        <div style="width:12px;height:12px;border-radius:50%;background:${i===0?'var(--green)':'var(--border2)'}"></div>
+        ${i<confs.length-1?'<div style="width:2px;flex:1;background:var(--border)"></div>':''}
+      </div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:600">${new Date(c.data_conferencia).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})}</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:2px">Por ${c.conferido_por||'-'}</div>
+        <div style="display:flex;gap:12px;margin-top:6px">
+          <span style="font-size:12px;color:var(--green)">✓ ${c.total_ok||0} OK</span>
+          <span style="font-size:12px;color:var(--amber)">⚠ ${c.total_defeito||0} Defeito</span>
+          <span style="font-size:12px;color:var(--red)">✕ ${c.total_faltando||0} Faltando</span>
+        </div>
+        ${c.observacao?`<div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic">"${c.observacao}"</div>`:''}
+      </div>
+    </div>
+  `).join('');
+  
+  abrirModal('ov-hist');
 }
 </script>
 </body>
