@@ -54,6 +54,8 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .icon-btn.danger:hover{background:var(--red-bg);color:var(--red);border-color:var(--red)}
 .btn-editar{padding:4px 10px;border-radius:7px;border:1px solid var(--blue);background:rgba(59,130,246,.1);color:var(--blue);font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;font-family:inherit;transition:all .15s}
 .btn-editar:hover{background:rgba(59,130,246,.25)}
+.btn-excluir{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-excluir:hover{background:var(--red-bg);border-color:var(--red)}
 .section-sep{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;border-top:1px solid var(--border)}
 .baixada-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
 .baixada-row:last-child{border-bottom:none}
@@ -369,6 +371,9 @@ function renderTecnico(){
     const btnEdit=gestor
       ?'<button class="btn-editar" onclick="abrirEditar(\''+item.id+'\')">✏ Editar</button>'
       :'';
+    const btnDel=gestor
+      ?'<button class="btn-excluir" onclick="confirmarExcluir(\''+item.id+'\',\''+item.nome.replace(/\'/g,\'\\\\\'\')+'\')" title="Excluir">🗑</button>'
+      :'';
     const nomeSafe=item.nome.replace(/'/g,"\\'");
     return '<div class="ferr-card">'
       +'<div class="ferr-row">'
@@ -378,7 +383,7 @@ function renderTecnico(){
       +'<div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div>'
       +'</div>'
       +'<span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span>'
-      +'<div class="ferr-actions">'+btnEdit
+      +'<div class="ferr-actions">'+btnEdit+btnDel
       +'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+nomeSafe+'\')">↓</button>'
       +'</div></div></div>';
   }).join('');
@@ -483,6 +488,22 @@ async function salvarEdicao(){
     renderTecnico();
     toast('Ferramenta atualizada!');
   }catch(e){toast('Erro: '+e.message,true);}
+}
+
+// ── EXCLUIR FERRAMENTA ───────────────────────────────────
+async function confirmarExcluir(id,nome){
+  if(!confirm('Excluir "'+nome+'"?\nEsta ação não pode ser desfeita.'))return;
+  try{
+    await fetch(SB+'/rest/v1/maletas?id=eq.'+id,{method:'DELETE',headers:H});
+    maletas[tecAtual].items=maletas[tecAtual].items.filter(i=>i.id!==id);
+    renderTecnico();
+    atualizarReposicao();
+    toast('Ferramenta excluída!');
+    // Atualizar subtítulo
+    const g=maletas[tecAtual];
+    const uc=conferencias.filter(c=>c.tecnico_id===tecAtual)[0];
+    document.getElementById('tec-sub').textContent=g.items.length+' ferramentas · '+(uc?'Última conf.: '+new Date(uc.data_conferencia).toLocaleDateString('pt-BR'):'Sem conferências');
+  }catch(e){toast('Erro ao excluir: '+e.message,true);}
 }
 
 // ── BAIXA ─────────────────────────────────────────────────
