@@ -246,7 +246,7 @@ window.addEventListener('load',async()=>{
       GET('maletas?order=tecnico_nome,nome'),
       GET('maleta_conferencias?order=data_conferencia.desc')
     ]);
-    tecnicos=(todos||[]).filter(u=>{const f=(u.funcao||'').toLowerCase();return f==='técnico'||f==='tecnico';});
+    tecnicos=(todos||[]).filter(u=>u.ativo!==false); // todos os usuarios ativos
     conferencias=confs||[];
     maletas={};
     (mals||[]).forEach(m=>{
@@ -282,7 +282,7 @@ function renderGrid(){
 function abrirNovaMaleta(){
   if(!tecnicos.length){
     GET('usuarios?ativo=eq.true&select=id,nome,funcao&order=nome')
-      .then(r=>{tecnicos=(r||[]).filter(u=>{const f=(u.funcao||'').toLowerCase();return f==='técnico'||f==='tecnico';});abrirNovaMaleta();})
+      .then(r=>{tecnicos=(r||[]).filter(u=>u.ativo!==false);abrirNovaMaleta();})
       .catch(e=>toast('Erro ao buscar técnicos: '+e.message,true));
     return;
   }
