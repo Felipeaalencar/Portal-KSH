@@ -17,7 +17,6 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .s-nav{padding:10px 8px;flex:1}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;font-size:13px;color:var(--text2);border:none;background:none;width:100%;text-align:left;transition:all .15s}
 .nav-item:hover,.nav-item.active{background:var(--bg3);color:var(--text)}
-.nav-item.active{font-weight:500}
 .s-bottom{padding:10px 8px;border-top:1px solid var(--border)}
 .content{flex:1;overflow-y:auto;padding:28px}
 .screen{display:none}.screen.on{display:block}
@@ -54,11 +53,10 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .icon-btn.danger:hover{background:var(--red-bg);color:var(--red);border-color:var(--red)}
 .btn-editar{padding:4px 10px;border-radius:7px;border:1px solid var(--blue);background:rgba(59,130,246,.1);color:var(--blue);font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap;font-family:inherit;transition:all .15s}
 .btn-editar:hover{background:rgba(59,130,246,.25)}
-.btn-excluir{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.btn-excluir{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:none;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s;font-family:inherit}
 .btn-excluir:hover{background:var(--red-bg);border-color:var(--red)}
 .section-sep{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin:20px 0 10px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:4px 0;border-top:1px solid var(--border)}
 .baixada-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)}
-.baixada-row:last-child{border-bottom:none}
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:none;align-items:center;justify-content:center;padding:20px}
 .overlay.on{display:flex}
 .modal{background:var(--bg2);border-radius:16px;padding:28px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto}
@@ -117,14 +115,12 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   </div>
 </div>
 
-<!-- Nova maleta -->
 <div class="overlay" id="ov-nova"><div class="modal">
   <div class="modal-header"><div class="modal-title">Nova maleta</div><button class="close-btn" onclick="fecharModal('ov-nova')">✕</button></div>
   <div class="field"><div class="field-label">Técnico *</div><select id="nm-tecnico"></select></div>
   <div class="modal-footer"><button class="btn" onclick="fecharModal('ov-nova')">Cancelar</button><button class="btn btn-primary" onclick="salvarNovaMaleta()">Criar maleta</button></div>
 </div></div>
 
-<!-- Adicionar ferramenta -->
 <div class="overlay" id="ov-add"><div class="modal">
   <div class="modal-header"><div class="modal-title">Nova ferramenta</div><button class="close-btn" onclick="fecharModal('ov-add')">✕</button></div>
   <div class="field"><div class="field-label">Nome *</div><input id="af-nome" type="text" placeholder="Ex: Multímetro digital"></div>
@@ -132,7 +128,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
     <div class="field-label">Foto do produto</div>
     <img id="af-foto-prev" class="foto-preview" alt="preview">
     <input id="af-foto-url" class="foto-url-input" type="text" placeholder="Cole o link da imagem aqui..." oninput="previewFoto('af')">
-    <div class="foto-hint" id="af-foto-hint">Dica: clique direito na foto do produto → "Copiar endereço da imagem"</div>
+    <div class="foto-hint" id="af-foto-hint">Dica: clique direito na foto → "Copiar endereço da imagem"</div>
   </div>
   <div class="field"><div class="field-label">Descrição</div><input id="af-desc" type="text" placeholder="Modelo, cor, detalhe..."></div>
   <div class="field-row">
@@ -146,7 +142,6 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   <div class="modal-footer"><button class="btn" onclick="fecharModal('ov-add')">Cancelar</button><button class="btn btn-primary" onclick="salvarFerramenta()">Salvar</button></div>
 </div></div>
 
-<!-- Editar ferramenta -->
 <div class="overlay" id="ov-editar"><div class="modal">
   <div class="modal-header"><div class="modal-title">Editar ferramenta</div><button class="close-btn" onclick="fecharModal('ov-editar')">✕</button></div>
   <input type="hidden" id="ed-id">
@@ -169,7 +164,6 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   <div class="modal-footer"><button class="btn" onclick="fecharModal('ov-editar')">Cancelar</button><button class="btn btn-primary" onclick="salvarEdicao()">Salvar</button></div>
 </div></div>
 
-<!-- Baixa -->
 <div class="overlay" id="ov-baixa"><div class="modal" style="max-width:400px">
   <div class="modal-header"><div class="modal-title">Dar baixa</div><button class="close-btn" onclick="fecharModal('ov-baixa')">✕</button></div>
   <div style="font-size:14px;color:var(--text2);margin-bottom:20px" id="baixa-nome"></div>
@@ -177,21 +171,18 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
   <div class="modal-footer"><button class="btn" onclick="fecharModal('ov-baixa')">Cancelar</button><button class="btn btn-primary" style="background:var(--red);border-color:var(--red)" onclick="confirmarBaixa()">Confirmar baixa</button></div>
 </div></div>
 
-<!-- Reposição -->
 <div class="overlay" id="ov-repos"><div class="modal" style="max-width:420px">
   <div class="modal-header"><div class="modal-title">Lista de Reposição</div><button class="close-btn" onclick="fecharModal('ov-repos')">✕</button></div>
   <div id="repos-body" style="max-height:400px;overflow-y:auto"></div>
   <div class="modal-footer" style="margin-top:16px"><button class="btn btn-primary" style="flex:1" onclick="fecharModal('ov-repos')">Fechar</button></div>
 </div></div>
 
-<!-- Conferência -->
 <div class="overlay" id="ov-conf"><div class="modal">
   <div class="modal-header"><div class="modal-title" id="conf-title">Conferência</div><button class="close-btn" onclick="fecharModal('ov-conf')">✕</button></div>
   <div id="conf-body"></div>
   <div class="modal-footer"><button class="btn" onclick="fecharModal('ov-conf')">Cancelar</button><button class="btn btn-primary" onclick="salvarConferencia()">Salvar conferência</button></div>
 </div></div>
 
-<!-- Histórico -->
 <div class="overlay" id="ov-hist"><div class="modal">
   <div class="modal-header"><div class="modal-title" id="hist-title">Histórico</div><button class="close-btn" onclick="fecharModal('ov-hist')">✕</button></div>
   <div id="hist-body" style="max-height:450px;overflow-y:auto"></div>
@@ -209,6 +200,7 @@ let ME=null,tecnicos=[],maletas={},conferencias=[],tecAtual=null,baixaId=null,co
 async function GET(p){const r=await fetch(SB+'/rest/v1/'+p,{headers:H});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function POST(p,b){const r=await fetch(SB+'/rest/v1/'+p,{method:'POST',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
 async function PATCH(p,b){const r=await fetch(SB+'/rest/v1/'+p,{method:'PATCH',headers:{...H,'Prefer':'return=representation'},body:JSON.stringify(b)});if(!r.ok)throw new Error(await r.text());return r.json();}
+async function DELETE(p){const r=await fetch(SB+'/rest/v1/'+p,{method:'DELETE',headers:H});if(!r.ok)throw new Error(await r.text());}
 
 function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.className='toast on'+(e?' err':'');setTimeout(()=>t.className='toast',3500);}
 function abrirModal(id){document.getElementById(id).classList.add('on');}
@@ -224,12 +216,20 @@ function previewFoto(p){
   if(!url){prev.classList.remove('on');hint.textContent='Dica: clique direito na foto → "Copiar endereço da imagem"';hint.style.color='';return;}
   prev.onerror=()=>{
     const proxy='https://images.weserv.nl/?url='+encodeURIComponent(url)+'&w=400&h=400&fit=cover&output=jpg';
-    prev.onerror=()=>{prev.classList.remove('on');hint.textContent='⚠ Não carregou — tente a URL direto da imagem';hint.style.color='var(--amber)';};
+    prev.onerror=()=>{prev.classList.remove('on');hint.textContent='⚠ Não carregou — tente a URL direta da imagem';hint.style.color='var(--amber)';};
     prev.onload=()=>{prev.classList.add('on');hint.textContent='✓ Foto carregada';hint.style.color='var(--green)';document.getElementById(p+'-foto-url').value=proxy;};
     prev.src=proxy;
   };
   prev.onload=()=>{prev.classList.add('on');hint.textContent='✓ Foto carregada';hint.style.color='var(--green)';};
   prev.src=url;
+}
+
+// ── GESTOR ───────────────────────────────────────────────
+function isGestor(){
+  if(!ME)return false;
+  const f=(ME.funcao||ME.role||ME.tipo||'').toLowerCase().trim();
+  const nome=(ME.nome||'').toLowerCase();
+  return f==='gestor'||f==='admin'||['felippe k','patricia','felipe a'].includes(nome);
 }
 
 // ── INIT ─────────────────────────────────────────────────
@@ -238,22 +238,15 @@ window.addEventListener('load',async()=>{
   if(!saved){window.location.href='index.html';return;}
   try{ME=JSON.parse(saved);}catch(e){window.location.href='index.html';return;}
   if(!ME||!ME.id){window.location.href='index.html';return;}
-
   const logoSaved=sessionStorage.getItem('ksh_logo');
   if(logoSaved){const l=document.querySelector('.s-logo img');if(l)l.src=logoSaved;}
-
-  // Buscar técnicos: buscar TODOS e filtrar no cliente (evita problema com acento na query)
   try{
     const[todos,mals,confs]=await Promise.all([
       GET('usuarios?ativo=eq.true&select=id,nome,funcao&order=nome'),
       GET('maletas?order=tecnico_nome,nome'),
       GET('maleta_conferencias?order=data_conferencia.desc')
     ]);
-    // Filtrar técnicos no cliente — sem problema de encoding
-    tecnicos=(todos||[]).filter(u=>{
-      const f=(u.funcao||'').toLowerCase();
-      return f==='técnico'||f==='tecnico';
-    });
+    tecnicos=(todos||[]).filter(u=>{const f=(u.funcao||'').toLowerCase();return f==='técnico'||f==='tecnico';});
     conferencias=confs||[];
     maletas={};
     (mals||[]).forEach(m=>{
@@ -261,23 +254,8 @@ window.addEventListener('load',async()=>{
       maletas[m.tecnico_id].items.push(m);
     });
     renderGrid();
-  }catch(e){
-    toast('Erro ao carregar: '+e.message,true);
-    console.error('ERRO INIT:',e);
-    renderGrid();
-  }
+  }catch(e){toast('Erro ao carregar: '+e.message,true);console.error(e);renderGrid();}
 });
-
-// ── GESTOR? ───────────────────────────────────────────────
-function isGestor(){
-  if(!ME)return false;
-  // Verifica múltiplos campos possíveis do sessionStorage
-  const f=(ME.funcao||ME.role||ME.tipo||'').toLowerCase().trim();
-  const nome=(ME.nome||'').toLowerCase();
-  // Gestores conhecidos: Felippe K, Patricia, Felipe A
-  const gestoresConhecidos=['felippe k','patricia','felipe a'];
-  return f==='gestor'||f==='admin'||gestoresConhecidos.includes(nome);
-}
 
 // ── GRID ─────────────────────────────────────────────────
 function renderGrid(){
@@ -296,27 +274,15 @@ function renderGrid(){
       return(Math.floor((hoje-new Date(i.data_entrega))/(1000*60*60*24*30))/i.vida_util_meses)>=0.9;
     }).length;
     const badge=falt>0?'<span class="badge badge-err">'+falt+' faltando</span>':def>0?'<span class="badge badge-warn">'+def+' defeito</span>':venc>0?'<span class="badge badge-warn">'+venc+' vencendo</span>':'<span class="badge badge-ok">Tudo OK</span>';
-    return '<div class="maleta-card" onclick="abrirTecnico(\''+tid+'\')">'
-      +'<div style="margin:0 auto 14px"><svg width="80" height="60" viewBox="0 0 80 60">'
-      +'<rect x="10" y="18" width="60" height="38" rx="6" fill="#2a2f45" stroke="#3a4060" stroke-width="1.5"/>'
-      +'<rect x="28" y="8" width="24" height="12" rx="4" fill="none" stroke="#3a4060" stroke-width="1.5"/>'
-      +'<rect x="34" y="32" width="12" height="8" rx="2" fill="#3a4060"/>'
-      +'<text x="40" y="52" text-anchor="middle" fill="#6b7599" font-size="9" font-family="system-ui">'+total+' itens</text>'
-      +'</svg></div>'
-      +'<div class="maleta-nome">'+g.nome+'</div>'+badge
-      +'</div>';
+    return '<div class="maleta-card" onclick="abrirTecnico(\''+tid+'\')"><div style="margin:0 auto 14px"><svg width="80" height="60" viewBox="0 0 80 60"><rect x="10" y="18" width="60" height="38" rx="6" fill="#2a2f45" stroke="#3a4060" stroke-width="1.5"/><rect x="28" y="8" width="24" height="12" rx="4" fill="none" stroke="#3a4060" stroke-width="1.5"/><rect x="34" y="32" width="12" height="8" rx="2" fill="#3a4060"/><text x="40" y="52" text-anchor="middle" fill="#6b7599" font-size="9" font-family="system-ui">'+total+' itens</text></svg></div><div class="maleta-nome">'+g.nome+'</div>'+badge+'</div>';
   }).join('');
 }
 
 // ── NOVA MALETA ───────────────────────────────────────────
 function abrirNovaMaleta(){
-  // Busca técnicos frescos se a lista estiver vazia
   if(!tecnicos.length){
     GET('usuarios?ativo=eq.true&select=id,nome,funcao&order=nome')
-      .then(todos=>{
-        tecnicos=(todos||[]).filter(u=>{const f=(u.funcao||'').toLowerCase();return f==='técnico'||f==='tecnico';});
-        abrirNovaMaleta();
-      })
+      .then(r=>{tecnicos=(r||[]).filter(u=>{const f=(u.funcao||'').toLowerCase();return f==='técnico'||f==='tecnico';});abrirNovaMaleta();})
       .catch(e=>toast('Erro ao buscar técnicos: '+e.message,true));
     return;
   }
@@ -332,7 +298,7 @@ async function salvarNovaMaleta(){
   maletas[tid]={nome:tnome,items:[]};
   fecharModal('ov-nova');
   renderGrid();
-  toast('Maleta criada para '+tnome+'!');
+  toast('Maleta criada!');
   abrirTecnico(tid);
 }
 
@@ -346,6 +312,13 @@ function abrirTecnico(tid){
   renderTecnico();
   atualizarReposicao();
   showScreen('tecnico');
+}
+
+function atualizarSubtitulo(){
+  if(!tecAtual)return;
+  const g=maletas[tecAtual];
+  const uc=conferencias.filter(c=>c.tecnico_id===tecAtual)[0];
+  document.getElementById('tec-sub').textContent=g.items.length+' ferramentas · '+(uc?'Última conf.: '+new Date(uc.data_conferencia).toLocaleDateString('pt-BR'):'Sem conferências');
 }
 
 function renderTecnico(){
@@ -365,40 +338,16 @@ function renderTecnico(){
   const lista=ativas.map(item=>{
     const sc=item.status==='faltando'?'var(--red)':item.status==='defeito'?'var(--amber)':'var(--green)';
     const sl=item.status==='faltando'?'Faltando':item.status==='defeito'?'Com defeito':'OK';
-    const icon=item.foto_url
-      ?'<img src="'+item.foto_url+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'🔧\'">'
-      :'🔧';
-    const btnEdit=gestor
-      ?'<button class="btn-editar" onclick="abrirEditar(\''+item.id+'\')">✏ Editar</button>'
-      :'';
-    const btnDel=gestor
-      ?'<button class="btn-excluir" onclick="confirmarExcluir(\''+item.id+'\',\''+item.nome.replace(/\'/g,\'\\\\\'\')+'\')" title="Excluir">🗑</button>'
-      :'';
-    const nomeSafe=item.nome.replace(/'/g,"\\'");
-    return '<div class="ferr-card">'
-      +'<div class="ferr-row">'
-      +'<div class="ferr-icon">'+icon+'</div>'
-      +'<div class="ferr-info">'
-      +'<div class="ferr-nome">'+item.nome+'</div>'
-      +'<div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div>'
-      +'</div>'
-      +'<span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span>'
-      +'<div class="ferr-actions">'+btnEdit+btnDel
-      +'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+nomeSafe+'\')">↓</button>'
-      +'</div></div></div>';
+    const icon=item.foto_url?'<img src="'+item.foto_url+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'🔧\'">':'🔧';
+    const btnEdit=gestor?'<button class="btn-editar" onclick="abrirEditar(\''+item.id+'\')">✏ Editar</button>':'';
+    const btnDel=gestor?'<button class="btn-excluir" onclick="excluirFerramenta(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')" title="Excluir">🗑</button>':'';
+    return '<div class="ferr-card"><div class="ferr-row"><div class="ferr-icon">'+icon+'</div><div class="ferr-info"><div class="ferr-nome">'+item.nome+'</div><div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div></div><span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span><div class="ferr-actions">'+btnEdit+btnDel+'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')">↓</button></div></div></div>';
   }).join('');
 
   let secBaixadas='';
   if(baixadas.length){
-    secBaixadas='<div class="section-sep" onclick="toggleBaixadas()">'
-      +'<span>'+baixadas.length+' ferramenta'+(baixadas.length!==1?'s':'')+' baixada'+(baixadas.length!==1?'s':'')+'</span>'
-      +'<span id="seta-b">▼</span></div>'
-      +'<div id="baixadas-wrap">'
-      +baixadas.map(i=>'<div class="baixada-row"><div>'
-        +'<div style="font-size:13px;text-decoration:line-through;color:var(--text3)">'+i.nome+'</div>'
-        +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(i.descricao||'')+' · '+(i.baixa_motivo||'')+' · '+(i.baixa_data?new Date(i.baixa_data).toLocaleDateString('pt-BR'):'')+'</div>'
-        +'</div><span class="badge badge-gray">'+(i.baixa_motivo||'Baixada')+'</span></div>').join('')
-      +'</div>';
+    secBaixadas='<div class="section-sep" onclick="toggleBaixadas()"><span>'+baixadas.length+' ferramenta'+(baixadas.length!==1?'s':'')+' baixada'+(baixadas.length!==1?'s':'')+'</span><span id="seta-b">▼</span></div><div id="baixadas-wrap">'+
+    baixadas.map(i=>'<div class="baixada-row"><div><div style="font-size:13px;text-decoration:line-through;color:var(--text3)">'+i.nome+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+(i.descricao||'')+' · '+(i.baixa_motivo||'')+' · '+(i.baixa_data?new Date(i.baixa_data).toLocaleDateString('pt-BR'):'')+'</div></div><span class="badge badge-gray">'+(i.baixa_motivo||'Baixada')+'</span></div>').join('')+'</div>';
   }
   document.getElementById('tec-lista').innerHTML=lista+secBaixadas;
 }
@@ -419,31 +368,18 @@ function abrirAddFerramenta(){
   const prev=document.getElementById('af-foto-prev');
   prev.classList.remove('on');prev.src='';
   const hint=document.getElementById('af-foto-hint');
-  hint.textContent='Dica: clique direito na foto do produto → "Copiar endereço da imagem"';hint.style.color='';
+  hint.textContent='Dica: clique direito na foto → "Copiar endereço da imagem"';hint.style.color='';
   abrirModal('ov-add');
 }
 async function salvarFerramenta(){
   const nome=document.getElementById('af-nome').value.trim();
   if(!nome){toast('Informe o nome',true);return;}
   const g=maletas[tecAtual];
-  const nova={
-    tecnico_id:tecAtual,tecnico_nome:g.nome,nome,
-    descricao:document.getElementById('af-desc').value.trim(),
-    quantidade:parseInt(document.getElementById('af-qtd').value)||1,
-    condicao:document.getElementById('af-cond').value,
-    valor:parseFloat(document.getElementById('af-valor').value)||null,
-    vida_util_meses:parseInt(document.getElementById('af-vida').value)||null,
-    foto_url:document.getElementById('af-foto-url').value||null,
-    status:'ok',
-    data_entrega:new Date().toISOString().split('T')[0],
-    criado_por:ME?.nome||'-'
-  };
+  const nova={tecnico_id:tecAtual,tecnico_nome:g.nome,nome,descricao:document.getElementById('af-desc').value.trim(),quantidade:parseInt(document.getElementById('af-qtd').value)||1,condicao:document.getElementById('af-cond').value,valor:parseFloat(document.getElementById('af-valor').value)||null,vida_util_meses:parseInt(document.getElementById('af-vida').value)||null,foto_url:document.getElementById('af-foto-url').value||null,status:'ok',data_entrega:new Date().toISOString().split('T')[0],criado_por:ME?.nome||'-'};
   try{
     const res=await POST('maletas',nova);
     maletas[tecAtual].items.push(res[0]||nova);
-    fecharModal('ov-add');
-    renderTecnico();
-    toast('Ferramenta adicionada!');
+    fecharModal('ov-add');renderTecnico();atualizarSubtitulo();toast('Ferramenta adicionada!');
   }catch(e){toast('Erro: '+e.message,true);}
 }
 
@@ -463,46 +399,30 @@ function abrirEditar(id){
   hint.textContent=item.foto_url?'✓ Foto atual':'Cole o link da imagem do produto';
   hint.style.color=item.foto_url?'var(--green)':'';
   const prev=document.getElementById('ed-foto-prev');
-  if(item.foto_url){prev.src=item.foto_url;prev.classList.add('on');}
-  else{prev.src='';prev.classList.remove('on');}
+  if(item.foto_url){prev.src=item.foto_url;prev.classList.add('on');}else{prev.src='';prev.classList.remove('on');}
   abrirModal('ov-editar');
 }
 async function salvarEdicao(){
   const id=document.getElementById('ed-id').value;
   const nome=document.getElementById('ed-nome').value.trim();
   if(!nome){toast('Informe o nome',true);return;}
-  const dados={
-    nome,
-    descricao:document.getElementById('ed-desc').value.trim(),
-    quantidade:parseInt(document.getElementById('ed-qtd').value)||1,
-    condicao:document.getElementById('ed-cond').value,
-    valor:parseFloat(document.getElementById('ed-valor').value)||null,
-    vida_util_meses:parseInt(document.getElementById('ed-vida').value)||null,
-    foto_url:document.getElementById('ed-foto-url').value||null
-  };
+  const dados={nome,descricao:document.getElementById('ed-desc').value.trim(),quantidade:parseInt(document.getElementById('ed-qtd').value)||1,condicao:document.getElementById('ed-cond').value,valor:parseFloat(document.getElementById('ed-valor').value)||null,vida_util_meses:parseInt(document.getElementById('ed-vida').value)||null,foto_url:document.getElementById('ed-foto-url').value||null};
   try{
     await PATCH('maletas?id=eq.'+id,dados);
     const item=maletas[tecAtual].items.find(i=>i.id===id);
     if(item)Object.assign(item,dados);
-    fecharModal('ov-editar');
-    renderTecnico();
-    toast('Ferramenta atualizada!');
+    fecharModal('ov-editar');renderTecnico();toast('Ferramenta atualizada!');
   }catch(e){toast('Erro: '+e.message,true);}
 }
 
-// ── EXCLUIR FERRAMENTA ───────────────────────────────────
-async function confirmarExcluir(id,nome){
+// ── EXCLUIR ───────────────────────────────────────────────
+async function excluirFerramenta(id,nome){
   if(!confirm('Excluir "'+nome+'"?\nEsta ação não pode ser desfeita.'))return;
   try{
-    await fetch(SB+'/rest/v1/maletas?id=eq.'+id,{method:'DELETE',headers:H});
+    await DELETE('maletas?id=eq.'+id);
     maletas[tecAtual].items=maletas[tecAtual].items.filter(i=>i.id!==id);
-    renderTecnico();
-    atualizarReposicao();
+    renderTecnico();atualizarReposicao();atualizarSubtitulo();
     toast('Ferramenta excluída!');
-    // Atualizar subtítulo
-    const g=maletas[tecAtual];
-    const uc=conferencias.filter(c=>c.tecnico_id===tecAtual)[0];
-    document.getElementById('tec-sub').textContent=g.items.length+' ferramentas · '+(uc?'Última conf.: '+new Date(uc.data_conferencia).toLocaleDateString('pt-BR'):'Sem conferências');
   }catch(e){toast('Erro ao excluir: '+e.message,true);}
 }
 
@@ -527,9 +447,7 @@ async function confirmarBaixa(){
         else toast('Baixa registrada!');
       }else toast('Baixa registrada!');
     }
-    fecharModal('ov-baixa');
-    renderTecnico();
-    atualizarReposicao();
+    fecharModal('ov-baixa');renderTecnico();atualizarReposicao();
   }catch(e){toast('Erro: '+e.message,true);}
 }
 
@@ -541,17 +459,9 @@ function abrirConferencia(){
   document.getElementById('conf-title').textContent='Conferência — '+g.nome;
   let body='<div style="font-size:13px;color:var(--text3);margin-bottom:14px">Marque o status de cada ferramenta</div>';
   ativas.forEach(item=>{
-    body+='<div style="padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<div style="font-size:14px;font-weight:500;margin-bottom:8px">'+item.nome+'</div>'
-      +(item.descricao?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">'+item.descricao+'</div>':'')
-      +'<div style="display:flex;gap:8px">'
-      +'<button id="cb-ok-'+item.id+'" onclick="setConf(\''+item.id+'\',\'ok\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">OK</button>'
-      +'<button id="cb-def-'+item.id+'" onclick="setConf(\''+item.id+'\',\'defeito\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">Defeito</button>'
-      +'<button id="cb-fal-'+item.id+'" onclick="setConf(\''+item.id+'\',\'faltando\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">Faltando</button>'
-      +'</div></div>';
+    body+='<div style="padding:10px 0;border-bottom:1px solid var(--border)"><div style="font-size:14px;font-weight:500;margin-bottom:8px">'+item.nome+'</div>'+(item.descricao?'<div style="font-size:12px;color:var(--text3);margin-bottom:8px">'+item.descricao+'</div>':'')+'<div style="display:flex;gap:8px"><button id="cb-ok-'+item.id+'" onclick="setConf(\''+item.id+'\',\'ok\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">OK</button><button id="cb-def-'+item.id+'" onclick="setConf(\''+item.id+'\',\'defeito\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">Defeito</button><button id="cb-fal-'+item.id+'" onclick="setConf(\''+item.id+'\',\'faltando\')" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--border);font-size:12px;cursor:pointer;background:var(--bg3);color:var(--text3);font-family:inherit">Faltando</button></div></div>';
   });
-  body+='<div style="margin-top:14px"><div style="font-size:12px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Observação</div>'
-    +'<textarea id="conf-obs" rows="2" style="width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit" placeholder="Observações..."></textarea></div>';
+  body+='<div style="margin-top:14px"><div style="font-size:12px;color:var(--text3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Observação</div><textarea id="conf-obs" rows="2" style="width:100%;font-size:14px;padding:10px 12px;border:1px solid var(--border2);border-radius:8px;background:var(--bg3);color:var(--text);font-family:inherit" placeholder="Observações..."></textarea></div>';
   document.getElementById('conf-body').innerHTML=body;
   abrirModal('ov-conf');
 }
@@ -579,8 +489,7 @@ async function salvarConferencia(){
       const local=g.items.find(i=>i.id===r.id);if(local)local.status=r.status;
     }
     conferencias.unshift({tecnico_id:tecAtual,data_conferencia:new Date().toISOString(),conferido_por:ME?.nome||'-',total_ok:tok,total_defeito:tdef,total_faltando:tfal});
-    fecharModal('ov-conf');renderTecnico();atualizarReposicao();
-    document.getElementById('tec-sub').textContent=g.items.length+' ferramentas · Última conf.: '+new Date().toLocaleDateString('pt-BR');
+    fecharModal('ov-conf');renderTecnico();atualizarReposicao();atualizarSubtitulo();
     toast('Conferência salva! '+tok+' OK · '+tdef+' defeito · '+tfal+' faltando');
   }catch(e){toast('Erro: '+e.message,true);}
 }
@@ -596,16 +505,11 @@ function abrirReposicao(){
   const todas=maletas[tecAtual].items.filter(i=>i.status==='baixada');
   const body=document.getElementById('repos-body');
   if(!todas.length){body.innerHTML='<div style="color:var(--text3);padding:20px 0;text-align:center">Nenhuma ferramenta baixada</div>';abrirModal('ov-repos');return;}
-  let html='<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Marque as que precisam de reposição:</div>';
+  let h='<div style="font-size:12px;color:var(--text3);margin-bottom:12px">Marque as que precisam de reposição:</div>';
   todas.forEach(item=>{
-    html+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<input type="checkbox" id="rep-'+item.id+'" '+(item.precisa_reposicao?'checked':'')+' onchange="toggleReposicao(\''+item.id+'\',this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red)">'
-      +'<div style="flex:1"><div style="font-size:14px;font-weight:500;text-decoration:line-through;color:var(--text3)">'+item.nome+'</div>'
-      +'<div style="font-size:11px;color:var(--text3);margin-top:2px">'+(item.baixa_motivo||'')+' · '+(item.baixa_data?new Date(item.baixa_data).toLocaleDateString('pt-BR'):'')+'</div></div>'
-      +(item.precisa_reposicao?'<span style="font-size:11px;color:var(--amber);font-weight:500">⚠ Repor</span>':'')
-      +'</div>';
+    h+='<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)"><input type="checkbox" id="rep-'+item.id+'" '+(item.precisa_reposicao?'checked':'')+' onchange="toggleReposicao(\''+item.id+'\',this.checked)" style="width:18px;height:18px;cursor:pointer;accent-color:var(--red)"><div style="flex:1"><div style="font-size:14px;font-weight:500;text-decoration:line-through;color:var(--text3)">'+item.nome+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+(item.baixa_motivo||'')+' · '+(item.baixa_data?new Date(item.baixa_data).toLocaleDateString('pt-BR'):'')+'</div></div>'+(item.precisa_reposicao?'<span style="font-size:11px;color:var(--amber);font-weight:500">⚠ Repor</span>':'')+'</div>';
   });
-  body.innerHTML=html;
+  body.innerHTML=h;
   abrirModal('ov-repos');
 }
 async function toggleReposicao(id,v){
@@ -624,18 +528,7 @@ function abrirHistorico(){
   document.getElementById('hist-body').innerHTML=confs.map((c,i)=>{
     const dot='<div style="width:12px;height:12px;border-radius:50%;background:'+(i===0?'var(--green)':'var(--border2)')+'"></div>';
     const line=i<confs.length-1?'<div style="width:2px;flex:1;background:var(--border)"></div>':'';
-    return '<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)">'
-      +'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:40px">'+dot+line+'</div>'
-      +'<div style="flex:1">'
-      +'<div style="font-size:13px;font-weight:600">'+new Date(c.data_conferencia).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})+'</div>'
-      +'<div style="font-size:12px;color:var(--text3);margin-top:2px">Por '+(c.conferido_por||'-')+'</div>'
-      +'<div style="display:flex;gap:12px;margin-top:6px">'
-      +'<span style="font-size:12px;color:var(--green)">✓ '+(c.total_ok||0)+' OK</span>'
-      +'<span style="font-size:12px;color:var(--amber)">⚠ '+(c.total_defeito||0)+' Defeito</span>'
-      +'<span style="font-size:12px;color:var(--red)">✕ '+(c.total_faltando||0)+' Faltando</span>'
-      +'</div>'
-      +(c.observacao?'<div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic">"'+c.observacao+'"</div>':'')
-      +'</div></div>';
+    return '<div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)"><div style="display:flex;flex-direction:column;align-items:center;gap:4px;min-width:40px">'+dot+line+'</div><div style="flex:1"><div style="font-size:13px;font-weight:600">'+new Date(c.data_conferencia).toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'})+'</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Por '+(c.conferido_por||'-')+'</div><div style="display:flex;gap:12px;margin-top:6px"><span style="font-size:12px;color:var(--green)">✓ '+(c.total_ok||0)+' OK</span><span style="font-size:12px;color:var(--amber)">⚠ '+(c.total_defeito||0)+' Defeito</span><span style="font-size:12px;color:var(--red)">✕ '+(c.total_faltando||0)+' Faltando</span></div>'+(c.observacao?'<div style="font-size:12px;color:var(--text3);margin-top:4px;font-style:italic">"'+c.observacao+'"</div>':'')+'</div></div>';
   }).join('');
   abrirModal('ov-hist');
 }
