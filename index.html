@@ -1274,7 +1274,7 @@ function goPage(id, btn) {
     renderTecnicos();
   }
   if(id==='aprovacoes') renderAnalise();
-  if(id==='config') renderConfig();
+  if(id==='config') { loadUsers().then(()=>renderConfig()); }
   if(id==='dashboard') { renderDashboard(); renderAlertasDashboard(); }
 }
 
@@ -1283,16 +1283,14 @@ function goPage(id, btn) {
 // ================================================
 async function loadAll() {
   try {
-    const [lancs, tipos, funcs, clientes, ordens_data, demandas_data, usuarios_data] = await Promise.all([
+    const [lancs, tipos, funcs, clientes, ordens_data, demandas_data] = await Promise.all([
       sbGet('lancamentos?order=data_servico.desc,created_at.desc'),
       sbGet('tipos_gasto?order=nome'),
       sbGet('funcoes?order=nome'),
       sbGet('clientes?ativo=eq.true&order=nome'),
       sbGet('ordens_servico?order=data_agendada.desc,created_at.desc'),
       sbGet('demandas?order=created_at.desc'),
-      sbGet('usuarios?ativo=eq.true&order=funcao'),
     ]);
-    if(usuarios_data && usuarios_data.length > 0) USERS = usuarios_data;
     lancamentos = lancs||[];
     TIPOS_GASTO = (tipos&&tipos.length>0) ? tipos : [
       {id:'t1',nome:'Combustivel',padrao:true},
