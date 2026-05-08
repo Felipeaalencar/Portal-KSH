@@ -4119,7 +4119,8 @@ function init() {
   sbGet('usuarios?ativo=eq.true&order=funcao').then(function(data) {
     if (data && data.length > 0) {
       USERS = data;
-      renderLogin(); // Atualiza com dados reais
+      // Só re-renderiza se usuário ainda não selecionou ninguém
+      if (!selectedUser) renderLogin();
     }
   }).catch(function(e) {
     console.warn('Supabase offline - usando usuarios padrao');
