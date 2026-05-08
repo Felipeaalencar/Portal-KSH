@@ -4465,20 +4465,18 @@ function init() {
     } catch(e) {}
   }
 
-  // Carregar usuários do Supabase (fonte única de verdade)
+  // Mostrar lista padrão IMEDIATAMENTE (não trava)
+  USERS = USUARIOS_PADRAO;
+  renderLogin();
+
+  // Atualizar com dados do Supabase em background
   sbGet('usuarios?ativo=eq.true&order=funcao').then(function(data) {
     if (data && data.length > 0) {
       USERS = data;
-    } else {
-      // Fallback: usar lista padrão se Supabase vazio
-      USERS = USUARIOS_PADRAO;
+      renderLogin();
     }
-    renderLogin();
   }).catch(function(e) {
-    // Fallback offline: usar lista padrão
     console.warn('Supabase offline - usando usuarios padrao');
-    USERS = USUARIOS_PADRAO;
-    renderLogin();
   });
 }
 init();
