@@ -293,31 +293,8 @@ textarea{resize:vertical;min-height:80px}
       <div class="login-title">Portal Kilian Smart Homes</div>
       <div class="login-sub">Selecione seu perfil para continuar</div>
       <div class="user-grid" id="user-grid">
-  <div class="user-card admin-card" onclick="selectUser('u1')">
-    <div class="user-av" style="background:rgba(231,76,60,.2);color:#e74c3c">FK</div>
-    <div class="user-name">Felippe K</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card admin-card" onclick="selectUser('u2')">
-    <div class="user-av" style="background:rgba(168,85,247,.2);color:#a855f7">PA</div>
-    <div class="user-name">Patricia</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card admin-card" onclick="selectUser('u3')">
-    <div class="user-av" style="background:rgba(59,130,246,.2);color:#60a5fa">FA</div>
-    <div class="user-name">Felipe A</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card" onclick="selectUser('u4')">
-    <div class="user-av" style="background:rgba(34,197,94,.15);color:#22c55e">JE</div>
-    <div class="user-name">Jesse</div>
-    <div class="user-role">Tecnico</div>
-  </div>
-  <div class="user-card" onclick="selectUser('u5')">
-    <div class="user-av" style="background:rgba(245,158,11,.15);color:#f59e0b">YU</div>
-    <div class="user-name">Yuri</div>
-    <div class="user-role">Tecnico</div>
-  </div>
+  <div class="loading" style="padding:20px;color:var(--text3);font-size:13px">Carregando...</div>
+
 </div>
     </div>
     <div class="pin-section" id="step-pin">
@@ -4486,18 +4463,20 @@ function init() {
     } catch(e) {}
   }
 
-  // PASSO 1: Mostrar usuarios padrao IMEDIATAMENTE (sem esperar Supabase)
-  USERS = USUARIOS_PADRAO;
-  renderLogin();
-
-  // PASSO 2: Tentar carregar do Supabase em background
+  // Carregar usuários do Supabase (fonte única de verdade)
   sbGet('usuarios?ativo=eq.true&order=funcao').then(function(data) {
     if (data && data.length > 0) {
       USERS = data;
-      renderLogin(); // Atualiza com dados reais
+    } else {
+      // Fallback: usar lista padrão se Supabase vazio
+      USERS = USUARIOS_PADRAO;
     }
+    renderLogin();
   }).catch(function(e) {
+    // Fallback offline: usar lista padrão
     console.warn('Supabase offline - usando usuarios padrao');
+    USERS = USUARIOS_PADRAO;
+    renderLogin();
   });
 }
 init();
