@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSH · Financeiro</title>
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--bg4:#2a2f45;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--text:#f0f2f8;--text2:#b0b8d0;--text3:#6b7599;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--blue:#3b82f6}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans',system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{font-size:24px}
+.brand-name{font-size:15px;font-weight:600;color:var(--text)}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.btn-voltar{background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;font-family:inherit;transition:all .15s}
+.btn-voltar:hover{background:var(--bg3);color:var(--text);border-color:var(--text3)}
+
+/* CONTAINER */
+.container{flex:1;max-width:920px;margin:0 auto;padding:48px 24px;width:100%}
+
+/* HERO */
+.hero{text-align:center;margin-bottom:40px}
+.hero-icon{font-size:64px;margin-bottom:16px;display:inline-block;background:var(--amber-bg);width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;border:1px solid rgba(245,158,11,.25)}
+.hero-title{font-size:32px;font-weight:700;margin-bottom:10px;letter-spacing:-0.5px}
+.hero-sub{font-size:15px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.5}
+.badge-em-breve{display:inline-block;background:var(--amber-bg);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;font-weight:600;padding:5px 14px;border-radius:20px;margin-top:14px;letter-spacing:.5px;text-transform:uppercase}
+
+/* SECTION */
+.section{margin-top:48px}
+.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+
+/* FEATURE GRID */
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:flex-start;transition:border-color .15s}
+.feat-card:hover{border-color:var(--border2)}
+.feat-icon{font-size:24px;flex-shrink:0;width:42px;height:42px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center}
+.feat-info{flex:1;min-width:0}
+.feat-name{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
+.feat-desc{font-size:12px;color:var(--text3);line-height:1.45}
+
+/* INFO BOX */
+.info-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:24px;display:flex;gap:14px;align-items:flex-start}
+.info-icon{font-size:22px;flex-shrink:0}
+.info-text{font-size:13px;color:var(--text2);line-height:1.55}
+.info-text strong{color:var(--text)}
+
+@media (max-width:600px){
+  .topbar{padding:14px 16px}
+  .container{padding:32px 16px}
+  .hero-title{font-size:24px}
+  .hero-icon{width:96px;height:96px;font-size:48px}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-logo">📊</div>
+    <div>
+      <div class="brand-name">Kilian Smart Homes</div>
+      <div class="brand-sub">Financeiro</div>
+    </div>
+  </div>
+  <button class="btn-voltar" onclick="voltarInicio()">← Voltar</button>
+</div>
+
+<div class="container">
+
+  <div class="hero">
+    <div class="hero-icon">🚧</div>
+    <div class="hero-title">Em construção</div>
+    <div class="hero-sub">Estamos preparando um dashboard financeiro completo com integração ao seu QuickBooks. Em breve você terá visibilidade total da saúde financeira da empresa em tempo real.</div>
+    <div class="badge-em-breve">Disponível em breve</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">O que vem por aí</div>
+    <div class="feat-grid">
+
+      <div class="feat-card">
+        <div class="feat-icon">💰</div>
+        <div class="feat-info">
+          <div class="feat-name">Faturamento</div>
+          <div class="feat-desc">Receita do mês, comparativo MoM e YoY, projeções e top clientes</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📉</div>
+        <div class="feat-info">
+          <div class="feat-name">Despesas</div>
+          <div class="feat-desc">Gastos por categoria, top fornecedores e comparativo com orçamento</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">💵</div>
+        <div class="feat-info">
+          <div class="feat-name">Lucratividade</div>
+          <div class="feat-desc">Margem bruta, margem líquida e lucro por tipo de serviço</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">🏦</div>
+        <div class="feat-info">
+          <div class="feat-name">Cash Flow</div>
+          <div class="feat-desc">Saldo atual, entrada vs saída e projeção de caixa</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📥</div>
+        <div class="feat-info">
+          <div class="feat-name">Contas a Receber</div>
+          <div class="feat-desc">Aging de recebíveis, DSO e clientes em atraso</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">📤</div>
+        <div class="feat-info">
+          <div class="feat-name">Contas a Pagar</div>
+          <div class="feat-desc">Compromissos do mês, fornecedores prioritários e vencimentos</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">🎯</div>
+        <div class="feat-info">
+          <div class="feat-name">CRM × Financeiro</div>
+          <div class="feat-desc">Leads fechados vs receita real, conversão de pipeline em caixa</div>
+        </div>
+      </div>
+
+      <div class="feat-card">
+        <div class="feat-icon">🔔</div>
+        <div class="feat-info">
+          <div class="feat-name">Alertas inteligentes</div>
+          <div class="feat-desc">Estouro de orçamento, queda de margem e clientes em risco</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="info-box">
+    <div class="info-icon">🔐</div>
+    <div class="info-text">
+      <strong>Integração segura com QuickBooks.</strong> Os dados serão sincronizados via API oficial da Intuit usando OAuth 2.0. Nenhuma credencial financeira fica exposta — apenas os relatórios são exibidos aqui no portal, com atualização em tempo real.
+    </div>
+  </div>
+
+</div>
+
+<script>
+let ME=null;
+
+function voltarInicio(){
+  if(ME) sessionStorage.setItem('ksh_user', JSON.stringify(ME));
+  sessionStorage.setItem('ksh_show_selector','1');
+  window.location.href='index.html';
+}
+
+// Init: validar sessao e que e gestor
+window.addEventListener('load', function(){
+  const saved = sessionStorage.getItem('ksh_user');
+  if(!saved){ window.location.href='index.html'; return; }
+  try { ME = JSON.parse(saved); }
+  catch(e){ window.location.href='index.html'; return; }
+  if(!ME || !ME.id){ window.location.href='index.html'; return; }
+});
+</script>
+
+</body>
+</html>
