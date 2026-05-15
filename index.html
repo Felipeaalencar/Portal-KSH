@@ -563,9 +563,10 @@ textarea{resize:vertical;min-height:80px}
           <option value="all">Tudo</option>
         </select>
       </div>
+      <div id="lanc-resumo-dias"></div>
       <div class="section" style="padding:0;overflow:hidden">
         <div class="tbl-wrap"><table class="tbl">
-          <thead><tr><th>Data</th><th>Cliente</th><th>Endereço</th><th>Por</th><th>Total Gastos</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Data</th><th>Cliente</th><th>Endereço</th><th>Por</th><th>Tempo</th><th>Total Gastos</th><th>Status</th><th></th></tr></thead>
           <tbody id="lanc-table"></tbody>
         </table></div>
       </div>
@@ -889,6 +890,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="field"><div class="field-label">Início</div><input type="time" id="lf-inicio"></div>
       <div class="field"><div class="field-label">Fim</div><input type="time" id="lf-fim"></div>
     </div>
+    <div style="font-size:11px;color:var(--text3);margin:-6px 0 14px;padding:8px 12px;background:var(--bg3);border-radius:6px;border-left:3px solid var(--blue)">💡 Início e Fim são preenchidos automaticamente quando o técnico usa o Controle de Tempo. Preencha manualmente apenas para OS antigas ou lançamentos retroativos.</div>
     <div class="field"><div class="field-label">Relato do Serviço</div><textarea id="lf-relato" placeholder="Descreva o serviço realizado..."></textarea></div>
 
     <!-- Gastos -->
@@ -1219,12 +1221,15 @@ async function _registrarEvento(lancId, tipo){
     ts:agora.toISOString(),
     tecnico:(currentUser&&(currentUser.nome||currentUser.name))||'-'
   });
-  // Status acompanha o tipo do evento
+  // Status: SO muda quando inicia/retoma trabalho (de "aberto" para "em_andamento").
+  // Pausar e Encerrar dia NAO mexem no status — a OS pode continuar no dia seguinte.
+  // Para concluir de vez, usuario aperta "Concluir" no botao verde da lista.
   let novoStatus=r.status;
-  if(tipo==='inicio'||tipo==='continuar') novoStatus='em_andamento';
-  else if(tipo==='pausa') novoStatus='pausado';
-  else if(tipo==='fim') novoStatus='concluido';
-  // Atualiza hora_inicio (so na primeira vez) e hora_fim (sempre na ultima)
+  if((tipo==='inicio'||tipo==='continuar')&&(r.status==='aberto'||r.status==='revisao')){
+    novoStatus='em_andamento';
+  }
+  // hora_inicio: so na primeira "inicio" (se ainda nao tiver)
+  // hora_fim: sempre atualiza no "fim" (ultima vez que encerrou)
   const hhmm=formatHoraTS(agora.toISOString());
   const payload={sessoes,status:novoStatus};
   if(tipo==='inicio'&&!r.hora_inicio) payload.hora_inicio=hhmm;
@@ -1234,16 +1239,54 @@ async function _registrarEvento(lancId, tipo){
     Object.assign(r,payload);
     openDetail(lancId); // re-renderiza
     renderLancamentos();
-    const msg={inicio:'Serviço iniciado',pausa:'Serviço pausado',continuar:'Serviço retomado',fim:'Serviço finalizado'};
+    const msg={inicio:'Serviço iniciado',pausa:'Serviço pausado',continuar:'Serviço retomado',fim:'Dia encerrado'};
     showToast(msg[tipo]||'Registrado');
   }catch(e){showToast('Erro ao registrar: '+e.message,'err');}
+}
+
+// Horas trabalhadas agrupadas por dia (local time) dentro de uma OS especifica
+function horasPorDiaLanc(sessoes){
+  if(!Array.isArray(sessoes)||sessoes.length===0) return [];
+  const porDia={};
+  const diaDe=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');};
+  let ultIni=null, diaIni=null;
+  for(const e of sessoes){
+    if(e.tipo==='inicio'||e.tipo==='continuar'){
+      ultIni=new Date(e.ts).getTime();
+      diaIni=diaDe(e.ts);
+    } else if((e.tipo==='pausa'||e.tipo==='fim')&&ultIni!=null){
+      const ms=new Date(e.ts).getTime()-ultIni;
+      if(diaIni) porDia[diaIni]=(porDia[diaIni]||0)+ms;
+      ultIni=null; diaIni=null;
+    }
+  }
+  // Se ainda esta rodando, conta ate agora no dia em que iniciou
+  if(ultIni!=null&&diaIni){
+    porDia[diaIni]=(porDia[diaIni]||0)+(Date.now()-ultIni);
+  }
+  return Object.entries(porDia).sort((a,b)=>a[0].localeCompare(b[0])); // mais antigo primeiro
+}
+
+// Tempo total de um lancamento: usa sessoes se houver, senao calcula de hora_inicio/hora_fim
+function tempoTotalLanc(r){
+  if(r&&Array.isArray(r.sessoes)&&r.sessoes.length){
+    return calcTempoTrabalhado(r.sessoes);
+  }
+  if(r&&r.hora_inicio&&r.hora_fim){
+    const [h1,m1]=String(r.hora_inicio).split(':').map(Number);
+    const [h2,m2]=String(r.hora_fim).split(':').map(Number);
+    let mins=(h2*60+m2)-(h1*60+m1);
+    if(mins<0) mins+=24*60; // virada de dia
+    return mins*60000;
+  }
+  return 0;
 }
 
 function iniciarServico(id){ _registrarEvento(id,'inicio'); }
 function pausarServico(id){ _registrarEvento(id,'pausa'); }
 function continuarServico(id){ _registrarEvento(id,'continuar'); }
-function finalizarServico(id){
-  if(!confirm('Finalizar o serviço? O status vai mudar para "Concluído".')) return;
+function encerrarDia(id){
+  if(!confirm('Encerrar o dia? Você pode voltar e iniciar novamente em outra data.')) return;
   _registrarEvento(id,'fim');
 }
 
@@ -1695,22 +1738,58 @@ function getFiltered() {
 
 function renderLancamentos() {
   const rows = getFiltered();
-  document.getElementById('lanc-count').textContent = `${rows.length} registro(s)`;
-  document.getElementById('lanc-table').innerHTML = rows.map(r=>
-    `<tr class="clickable" onclick="openDetail('${r.id}')">
+  // Calcula tempo total dos lancamentos filtrados
+  const tempoTotalMs=rows.reduce((s,r)=>s+tempoTotalLanc(r),0);
+  const tempoLabel=tempoTotalMs>0?` . ⏱ ${formatDuracao(tempoTotalMs)} no total`:'';
+  document.getElementById('lanc-count').textContent = `${rows.length} registro(s)${tempoLabel}`;
+
+  // Agrupa horas por dia (somatório)
+  const horasPorDia={};
+  for(const r of rows){
+    if(!r.data_servico) continue;
+    const t=tempoTotalLanc(r);
+    if(t>0) horasPorDia[r.data_servico]=(horasPorDia[r.data_servico]||0)+t;
+  }
+  const diasOrdenados=Object.entries(horasPorDia).sort((a,b)=>b[0].localeCompare(a[0]));
+  const elDias=document.getElementById('lanc-resumo-dias');
+  if(elDias){
+    if(diasOrdenados.length===0){
+      elDias.innerHTML='';
+    }else{
+      elDias.innerHTML=`<div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:12px">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;font-weight:600;display:flex;justify-content:space-between;align-items:center">
+          <span>⏱ Horas por dia</span>
+          <span style="color:var(--blue);font-weight:700;text-transform:none;letter-spacing:0">${formatDuracao(tempoTotalMs)} no total</span>
+        </div>
+        <div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch">
+          ${diasOrdenados.map(([data,ms])=>`
+            <div style="flex-shrink:0;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:10px 14px;min-width:90px;text-align:center">
+              <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${fmtDate(data)}</div>
+              <div style="font-weight:700;color:var(--blue);font-size:14px">${formatDuracao(ms)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+    }
+  }
+  document.getElementById('lanc-table').innerHTML = rows.map(r=>{
+    const t=tempoTotalLanc(r);
+    const tempoCel=t>0?`<span style="font-weight:600;color:var(--blue)">${formatDuracao(t)}</span>`:'<span class="muted">-</span>';
+    return `<tr class="clickable" onclick="openDetail('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td><div style="font-weight:500">${r.cliente||'-'}</div></td>
       <td class="muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.endereco||'-'}</td>
       <td class="muted">${r.preenchedor||'-'}</td>
+      <td>${tempoCel}</td>
       <td style="font-weight:600;color:var(--green)">${fmtMon(r.total_gastos)}</td>
       <td>${statusBadge(r.status)}</td>
       <td onclick="event.stopPropagation()" style="white-space:nowrap">
         ${isAdmin(currentUser)?`<button class="btn btn-sm" onclick="openNota('${r.id}')">Msg</button>`:''}
-        ${r.status!=='ok'?`<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirLancamento('${r.id}')">Concluir</button>`:''}
+        ${r.status!=='ok'&&r.status!=='concluido'?`<button class="btn btn-sm" style="background:var(--green-bg);color:var(--green);border-color:rgba(34,197,94,.3)" onclick="concluirLancamento('${r.id}')">Concluir</button>`:''}
         ${isAdmin(currentUser)?`<button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border-color:rgba(231,76,60,.3)" onclick="deletarLancamento('${r.id}')">Excluir</button>`:''}
       </td>
-    </tr>`
-  ).join('') || '<tr><td colspan="7" class="empty">Nenhum lancamento encontrado</td></tr>';
+    </tr>`;
+  }).join('') || '<tr><td colspan="8" class="empty">Nenhum lancamento encontrado</td></tr>';
 }
 
 // ================================================
@@ -1988,37 +2067,58 @@ function openDetail(id) {
       const sessoes=Array.isArray(r.sessoes)?r.sessoes:[];
       const tempoMs=calcTempoTrabalhado(sessoes);
       const tempoStr=sessoes.length?formatDuracao(tempoMs):'0min';
-      const corFundo=estado==='TRABALHANDO'?'linear-gradient(135deg,rgba(34,197,94,.08),rgba(59,130,246,.08))':estado==='PAUSADO'?'linear-gradient(135deg,rgba(245,158,11,.10),rgba(245,158,11,.04))':estado==='FINALIZADO'?'linear-gradient(135deg,rgba(34,197,94,.10),var(--bg3))':'var(--bg3)';
+      const corFundo=estado==='TRABALHANDO'?'linear-gradient(135deg,rgba(34,197,94,.08),rgba(59,130,246,.08))':estado==='PAUSADO'?'linear-gradient(135deg,rgba(245,158,11,.10),rgba(245,158,11,.04))':estado==='FINALIZADO'?'linear-gradient(135deg,rgba(245,158,11,.06),var(--bg3))':'var(--bg3)';
       let botoes='';
       if(estado==='NAO_INICIADO'){
         botoes=`<button onclick="iniciarServico('${r.id}')" style="width:100%;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(34,197,94,.25)">▶ Iniciar Serviço</button>`;
       } else if(estado==='TRABALHANDO'){
         botoes=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <button onclick="pausarServico('${r.id}')" style="padding:12px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏸ Pausar</button>
-          <button onclick="finalizarServico('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Finalizar</button>
+          <button onclick="encerrarDia('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Encerrar dia</button>
         </div>`;
       } else if(estado==='PAUSADO'){
         botoes=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <button onclick="continuarServico('${r.id}')" style="padding:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">▶ Continuar</button>
-          <button onclick="finalizarServico('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Finalizar</button>
+          <button onclick="encerrarDia('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Encerrar dia</button>
         </div>`;
-      } else { // FINALIZADO
-        botoes=`<div style="text-align:center;padding:10px;background:var(--green-bg);color:var(--green);border-radius:10px;font-size:13px;font-weight:600">✓ Serviço finalizado</div>`;
+      } else { // FINALIZADO (encerrado) - pode retomar em outro dia
+        botoes=`<button onclick="iniciarServico('${r.id}')" style="width:100%;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(34,197,94,.25)">▶ Iniciar novo dia</button>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3);text-align:center">Dia anterior encerrado. Clique para iniciar uma nova sessão.</div>`;
       }
       const timeline=sessoes.length?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600">Timeline</div>
         ${sessoes.map(e=>{
-          const labels={inicio:'▶ Iniciado',pausa:'⏸ Pausado',continuar:'▶ Retomado',fim:'⏹ Finalizado'};
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px"><span style="color:var(--text2)">${labels[e.tipo]||e.tipo}</span><span style="color:var(--text3);font-size:11px">${formatHoraTS(e.ts)} . ${e.tecnico||'-'}</span></div>`;
+          const labels={inicio:'▶ Iniciado',pausa:'⏸ Pausado',continuar:'▶ Retomado',fim:'⏹ Encerrado'};
+          const d=new Date(e.ts);
+          const data=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px"><span style="color:var(--text2)">${labels[e.tipo]||e.tipo}</span><span style="color:var(--text3);font-size:11px">${data} ${formatHoraTS(e.ts)} . ${e.tecnico||'-'}</span></div>`;
         }).join('')}
       </div>`:'';
-      const labelTempo=estado==='TRABALHANDO'?`⏱ Trabalhando . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='PAUSADO'?`⏸ Pausado . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='FINALIZADO'?`✓ Tempo total: <strong style="color:var(--text)">${tempoStr}</strong>`:'Não iniciado';
+      // Horas por dia DESTA OS (sumarizado)
+      const horasDiaArr=horasPorDiaLanc(sessoes);
+      const horasDiaHtml=horasDiaArr.length>0?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600">📅 Por dia (nesta OS)</div>
+        ${horasDiaArr.map(([dia,ms])=>{
+          const d=new Date(dia+'T12:00:00');
+          const dataFmt=d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric'});
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;font-size:13px;border-bottom:1px dashed var(--border)">
+            <span style="color:var(--text2)">${dataFmt}</span>
+            <span style="color:var(--blue);font-weight:700">${formatDuracao(ms)}</span>
+          </div>`;
+        }).join('')}
+        ${horasDiaArr.length>1?`<div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0 2px;font-size:13px;font-weight:700">
+          <span>Total</span>
+          <span style="color:var(--green)">${formatDuracao(tempoMs)}</span>
+        </div>`:''}
+      </div>`:'';
+      const labelTempo=estado==='TRABALHANDO'?`⏱ Trabalhando . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='PAUSADO'?`⏸ Pausado . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='FINALIZADO'?`⏹ Encerrado . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:'Não iniciado';
       return `<div style="background:${corFundo};border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
           <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600">⏱ Controle de Tempo</div>
           <div style="font-size:12px;color:var(--text2)">${labelTempo}</div>
         </div>
         ${botoes}
+        ${horasDiaHtml}
         ${timeline}
       </div>`;
     })()}
