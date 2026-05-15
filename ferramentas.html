@@ -65,9 +65,11 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
 .close-btn{background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1}
 .field{margin-bottom:16px}
 .field-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:7px}
-.field input,.field select,.field textarea{width:100%;font-size:15px;padding:11px 13px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);font-family:inherit;outline:none}
+.field input,.field select,.field textarea{width:100%;min-width:0;font-size:15px;padding:11px 13px;border:1px solid var(--border2);border-radius:10px;background:var(--bg3);color:var(--text);font-family:inherit;outline:none;box-sizing:border-box}
+.field select{appearance:none;-webkit-appearance:none;-moz-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath fill='%23999' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 .field input:focus,.field select:focus{border-color:var(--blue)}
-.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.field-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+.field-row > .field{min-width:0}
 .modal-footer{display:flex;gap:10px;margin-top:8px}
 .modal-footer .btn{flex:1;padding:12px;font-size:15px}
 .foto-preview{width:100%;height:120px;border-radius:10px;object-fit:cover;display:none;margin-bottom:8px}
@@ -209,6 +211,28 @@ function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classL
 function voltarInicio(){if(ME)sessionStorage.setItem('ksh_user',JSON.stringify(ME));sessionStorage.setItem('ksh_show_selector','1');window.location.href='index.html';}
 
 // ── FOTO ─────────────────────────────────────────────────
+// Helper: gera <img> com cadeia de fallback (direto -> weserv -> wsrv -> icone)
+function imgWithFallback(url){
+  if(!url) return '🔧';
+  const esc = url.replace(/&/g,'&amp;').replace(/"/g,'&quot;');
+  return '<img src="'+esc+'" data-url="'+esc+'" style="width:100%;height:100%;object-fit:cover" onerror="tryNextImg(this)">';
+}
+function tryNextImg(img){
+  const url = img.dataset.url || '';
+  const step = +(img.dataset.step || 0);
+  if(!url){ img.parentElement.innerHTML='🔧'; return; }
+  const noProto = url.replace(/^https?:\/\//,'');
+  if(step===0){
+    img.dataset.step='1';
+    img.src='https://images.weserv.nl/?url='+encodeURIComponent(noProto);
+  } else if(step===1){
+    img.dataset.step='2';
+    img.src='https://wsrv.nl/?url='+encodeURIComponent(noProto);
+  } else {
+    img.parentElement.innerHTML='🔧';
+  }
+}
+
 function previewFoto(p){
   const url=(document.getElementById(p+'-foto-url').value||'').replace(/\s+/g,'').trim();
   const prev=document.getElementById(p+'-foto-prev');
@@ -351,7 +375,7 @@ function renderTecnico(){
   const lista=ativas.map(item=>{
     const sc=item.status==='faltando'?'var(--red)':item.status==='defeito'?'var(--amber)':'var(--green)';
     const sl=item.status==='faltando'?'Faltando':item.status==='defeito'?'Com defeito':'OK';
-    const icon=item.foto_url?'<img src="'+item.foto_url+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentElement.innerHTML=\'🔧\'">':'🔧';
+    const icon=imgWithFallback(item.foto_url);
     const btnEdit=gestor?'<button class="btn-editar" onclick="abrirEditar(\''+item.id+'\')">✏ Editar</button>':'';
     const btnDel=gestor?'<button class="btn-excluir" onclick="excluirFerramenta(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')" title="Excluir">🗑</button>':'';
     return '<div class="ferr-card"><div class="ferr-row"><div class="ferr-icon">'+icon+'</div><div class="ferr-info"><div class="ferr-nome">'+item.nome+'</div><div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div></div><span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span><div class="ferr-actions">'+btnEdit+btnDel+'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')">↓</button></div></div></div>';
@@ -412,7 +436,7 @@ function abrirEditar(id){
   hint.textContent=item.foto_url?'✓ Foto atual':'Cole o link da imagem do produto';
   hint.style.color=item.foto_url?'var(--green)':'';
   const prev=document.getElementById('ed-foto-prev');
-  if(item.foto_url){prev.src=item.foto_url;prev.classList.add('on');}else{prev.src='';prev.classList.remove('on');}
+  if(item.foto_url){previewFoto('ed');}else{prev.src='';prev.classList.remove('on');}
   abrirModal('ov-editar');
 }
 async function salvarEdicao(){
