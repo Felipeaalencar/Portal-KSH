@@ -405,8 +405,8 @@ textarea{resize:vertical;min-height:80px}
         &#9901;
         <span id="notif-badge" style="display:none;position:absolute;top:0;right:0;width:8px;height:8px;background:var(--red);border-radius:50%"></span>
       </button>
-      <button class="admin-only" onclick="irParaCRM()" style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);color:var(--blue);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit" title="Abrir CRM">
-        CRM →
+      <button class="admin-only" onclick="voltarSeletor()" style="background:transparent;border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;font-family:inherit" title="Voltar ao seletor de sistemas">
+        ← Voltar
       </button>
       <span style="font-size:10px;color:var(--text3)">v2.0</span>
     </div>
@@ -4150,9 +4150,7 @@ function entrarCRM() {
     av_style: currentUser.av_style,
     pin: currentUser.pin
   }));
-  window.open('crm.html', '_blank');
-  // Voltar ao portal (nao fica na tela do seletor)
-  document.getElementById('app-wrap').classList.add('on');
+  window.location.href = 'crm.html';
 }
 
 function entrarFerramentas() {
@@ -4178,6 +4176,29 @@ function irParaCRM() {
   document.getElementById('app-wrap').classList.remove('on');
   entrarCRM();
 }
+
+// Voltar ao seletor (do Portal interno)
+function voltarSeletor() {
+  document.getElementById('app-wrap').classList.remove('on');
+  if(document.getElementById('crm-wrap')) document.getElementById('crm-wrap').style.display='none';
+  document.getElementById('selector-wrap').style.display='flex';
+}
+
+// Restaurar sessao ao voltar de outra pagina (ferramentas.html / crm.html)
+window.addEventListener('load', function() {
+  const showSelector = sessionStorage.getItem('ksh_show_selector');
+  const savedUser = sessionStorage.getItem('ksh_user');
+  if (showSelector && savedUser) {
+    try {
+      currentUser = JSON.parse(savedUser);
+      sessionStorage.removeItem('ksh_show_selector');
+      document.getElementById('login-wrap').style.display = 'none';
+      document.getElementById('selector-wrap').style.display = 'flex';
+    } catch(e) {
+      console.error('Erro ao restaurar sessao:', e);
+    }
+  }
+});
 
 // Listener para voltar do CRM (nao usado mais com nova aba, mas mantido por segurança)
 window.addEventListener('message', function(e) {

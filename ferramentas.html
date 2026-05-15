@@ -87,7 +87,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
       <div><div class="s-logo-title">Ferramentas</div><div class="s-logo-sub">KSH</div></div>
     </div>
     <div class="s-nav"><button class="nav-item active" onclick="showScreen('grid')">🧰 Maletas</button></div>
-    <div class="s-bottom"><button onclick="voltarInicio()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px 12px;width:100%;text-align:left">← Início</button></div>
+    <div class="s-bottom"><button onclick="voltarInicio()" style="background:none;border:none;color:var(--text3);font-size:13px;cursor:pointer;padding:8px 12px;width:100%;text-align:left">← Voltar</button></div>
   </div>
   <div class="content">
     <div class="screen on" id="s-grid">
@@ -206,22 +206,35 @@ function toast(m,e){const t=document.getElementById('toast');t.textContent=m;t.c
 function abrirModal(id){document.getElementById(id).classList.add('on');}
 function fecharModal(id){document.getElementById(id).classList.remove('on');}
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));document.getElementById('s-'+id).classList.add('on');}
-function voltarInicio(){if(ME)sessionStorage.setItem('ksh_user',JSON.stringify(ME));window.location.href='index.html';}
+function voltarInicio(){if(ME)sessionStorage.setItem('ksh_user',JSON.stringify(ME));sessionStorage.setItem('ksh_show_selector','1');window.location.href='index.html';}
 
 // ── FOTO ─────────────────────────────────────────────────
 function previewFoto(p){
-  const url=(document.getElementById(p+'-foto-url').value||'').trim();
+  const url=(document.getElementById(p+'-foto-url').value||'').replace(/\s+/g,'').trim();
   const prev=document.getElementById(p+'-foto-prev');
   const hint=document.getElementById(p+'-foto-hint');
   if(!url){prev.classList.remove('on');hint.textContent='Dica: clique direito na foto → "Copiar endereço da imagem"';hint.style.color='';return;}
-  prev.onerror=()=>{
-    const proxy='https://images.weserv.nl/?url='+encodeURIComponent(url)+'&w=400&h=400&fit=cover&output=jpg';
-    prev.onerror=()=>{prev.classList.remove('on');hint.textContent='⚠ Não carregou — tente a URL direta da imagem';hint.style.color='var(--amber)';};
-    prev.onload=()=>{prev.classList.add('on');hint.textContent='✓ Foto carregada';hint.style.color='var(--green)';document.getElementById(p+'-foto-url').value=proxy;};
-    prev.src=proxy;
-  };
-  prev.onload=()=>{prev.classList.add('on');hint.textContent='✓ Foto carregada';hint.style.color='var(--green)';};
-  prev.src=url;
+  // Tenta direto, depois 2 proxies; se todos falharem, salva mesmo assim
+  const tentativas=[
+    url,
+    'https://images.weserv.nl/?url='+encodeURIComponent(url.replace(/^https?:\/\//,'')),
+    'https://wsrv.nl/?url='+encodeURIComponent(url.replace(/^https?:\/\//,''))
+  ];
+  let i=0;
+  hint.textContent='Carregando...';hint.style.color='var(--text3)';
+  function tentar(){
+    if(i>=tentativas.length){
+      // Nenhuma carregou — mas a URL pode estar OK. Deixa salvar.
+      prev.classList.remove('on');
+      hint.textContent='⚠ Preview não carregou aqui, mas será salva. Verifique depois no card da ferramenta.';
+      hint.style.color='var(--amber)';
+      return;
+    }
+    prev.onload=()=>{prev.classList.add('on');hint.textContent='✓ Foto carregada';hint.style.color='var(--green)';};
+    prev.onerror=()=>{i++;tentar();};
+    prev.src=tentativas[i];
+  }
+  tentar();
 }
 
 // ── GESTOR ───────────────────────────────────────────────
