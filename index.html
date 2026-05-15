@@ -1121,6 +1121,8 @@ function isAdmin(u) { return u && (u.funcao==='Gestor'||u.role==='admin'); }
 
 function statusBadge(s) {
   if(s==='revisao'||s==='aberto') return '<span class="status st-rev">Em aberto</span>';
+  if(s==='em_andamento') return '<span class="status" style="background:rgba(59,130,246,.18);color:var(--blue)">▶ Em andamento</span>';
+  if(s==='pausado') return '<span class="status" style="background:var(--amber-bg);color:var(--amber)">⏸ Pausado</span>';
   if(s==='aprovado'||s==='ok'||s==='concluido') return '<span class="status st-ok">(ok) Concluido</span>';
   return '<span class="status st-ok">(ok) OK</span>';
 }
@@ -1159,6 +1161,90 @@ async function garantirCliente(nome, endereco){
     console.warn('garantirCliente falhou para "'+nome+'":',e);
     return null;
   }
+}
+
+// ================================================
+// TIMER DE SERVIÇO (Iniciar / Pausar / Continuar / Finalizar)
+// ================================================
+
+// Estado do timer baseado nas sessoes registradas
+function getEstadoTimer(lanc){
+  const s=lanc&&lanc.sessoes;
+  if(!s||!Array.isArray(s)||s.length===0) return 'NAO_INICIADO';
+  const ult=s[s.length-1];
+  if(ult.tipo==='fim') return 'FINALIZADO';
+  if(ult.tipo==='pausa') return 'PAUSADO';
+  return 'TRABALHANDO'; // 'inicio' ou 'continuar'
+}
+
+// Tempo total trabalhado em ms (soma trechos inicio/continuar -> pausa/fim)
+function calcTempoTrabalhado(sessoes){
+  if(!sessoes||sessoes.length===0) return 0;
+  let total=0, ultIni=null;
+  for(const e of sessoes){
+    if(e.tipo==='inicio'||e.tipo==='continuar'){
+      ultIni=new Date(e.ts).getTime();
+    } else if((e.tipo==='pausa'||e.tipo==='fim')&&ultIni!=null){
+      total+=new Date(e.ts).getTime()-ultIni;
+      ultIni=null;
+    }
+  }
+  if(ultIni!=null) total+=Date.now()-ultIni; // ainda rodando
+  return total;
+}
+
+// Formata ms -> "Xh Ymin" ou "Ymin"
+function formatDuracao(ms){
+  const min=Math.max(0,Math.floor(ms/60000));
+  if(min<60) return min+'min';
+  return Math.floor(min/60)+'h '+(min%60).toString().padStart(2,'0')+'min';
+}
+
+// Formata ISO ts -> "HH:MM" local
+function formatHoraTS(iso){
+  try{
+    const d=new Date(iso);
+    return d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',hour12:false});
+  }catch(e){return '--:--';}
+}
+
+// Registra um evento e atualiza o lancamento no banco
+async function _registrarEvento(lancId, tipo){
+  const r=lancamentos.find(x=>x.id===lancId);
+  if(!r){showToast('Lançamento não encontrado','err');return;}
+  const sessoes=Array.isArray(r.sessoes)?[...r.sessoes]:[];
+  const agora=new Date();
+  sessoes.push({
+    tipo,
+    ts:agora.toISOString(),
+    tecnico:(currentUser&&(currentUser.nome||currentUser.name))||'-'
+  });
+  // Status acompanha o tipo do evento
+  let novoStatus=r.status;
+  if(tipo==='inicio'||tipo==='continuar') novoStatus='em_andamento';
+  else if(tipo==='pausa') novoStatus='pausado';
+  else if(tipo==='fim') novoStatus='concluido';
+  // Atualiza hora_inicio (so na primeira vez) e hora_fim (sempre na ultima)
+  const hhmm=formatHoraTS(agora.toISOString());
+  const payload={sessoes,status:novoStatus};
+  if(tipo==='inicio'&&!r.hora_inicio) payload.hora_inicio=hhmm;
+  if(tipo==='fim') payload.hora_fim=hhmm;
+  try{
+    await sbPatch('lancamentos?id=eq.'+lancId,payload);
+    Object.assign(r,payload);
+    openDetail(lancId); // re-renderiza
+    renderLancamentos();
+    const msg={inicio:'Serviço iniciado',pausa:'Serviço pausado',continuar:'Serviço retomado',fim:'Serviço finalizado'};
+    showToast(msg[tipo]||'Registrado');
+  }catch(e){showToast('Erro ao registrar: '+e.message,'err');}
+}
+
+function iniciarServico(id){ _registrarEvento(id,'inicio'); }
+function pausarServico(id){ _registrarEvento(id,'pausa'); }
+function continuarServico(id){ _registrarEvento(id,'continuar'); }
+function finalizarServico(id){
+  if(!confirm('Finalizar o serviço? O status vai mudar para "Concluído".')) return;
+  _registrarEvento(id,'fim');
 }
 
 function showToast(msg, type='ok') {
@@ -1550,7 +1636,7 @@ function renderDashboard() {
 
   // Recentes
   document.getElementById('dash-recent').innerHTML = rows.slice(0,8).map(r=>
-    `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
+    `<tr class="clickable" onclick="openDetail('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td>${r.cliente||'-'}</td>
       <td class="muted">${r.preenchedor||'-'}</td>
@@ -1611,7 +1697,7 @@ function renderLancamentos() {
   const rows = getFiltered();
   document.getElementById('lanc-count').textContent = `${rows.length} registro(s)`;
   document.getElementById('lanc-table').innerHTML = rows.map(r=>
-    `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
+    `<tr class="clickable" onclick="openDetail('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td><div style="font-weight:500">${r.cliente||'-'}</div></td>
       <td class="muted" style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.endereco||'-'}</td>
@@ -1897,6 +1983,45 @@ function openDetail(id) {
       <div><div class="modal-title">Doc Lancamento</div><div style="font-size:11px;color:var(--text3);margin-top:3px">${fmtDate(r.data_servico)} . ${r.preenchedor||'-'}</div></div>
       <button class="close-btn" onclick="closeDetail()"></button>
     </div>
+    ${(() => {
+      const estado=getEstadoTimer(r);
+      const sessoes=Array.isArray(r.sessoes)?r.sessoes:[];
+      const tempoMs=calcTempoTrabalhado(sessoes);
+      const tempoStr=sessoes.length?formatDuracao(tempoMs):'0min';
+      const corFundo=estado==='TRABALHANDO'?'linear-gradient(135deg,rgba(34,197,94,.08),rgba(59,130,246,.08))':estado==='PAUSADO'?'linear-gradient(135deg,rgba(245,158,11,.10),rgba(245,158,11,.04))':estado==='FINALIZADO'?'linear-gradient(135deg,rgba(34,197,94,.10),var(--bg3))':'var(--bg3)';
+      let botoes='';
+      if(estado==='NAO_INICIADO'){
+        botoes=`<button onclick="iniciarServico('${r.id}')" style="width:100%;padding:14px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;box-shadow:0 4px 12px rgba(34,197,94,.25)">▶ Iniciar Serviço</button>`;
+      } else if(estado==='TRABALHANDO'){
+        botoes=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="pausarServico('${r.id}')" style="padding:12px;background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏸ Pausar</button>
+          <button onclick="finalizarServico('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Finalizar</button>
+        </div>`;
+      } else if(estado==='PAUSADO'){
+        botoes=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <button onclick="continuarServico('${r.id}')" style="padding:12px;background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">▶ Continuar</button>
+          <button onclick="finalizarServico('${r.id}')" style="padding:12px;background:rgba(231,76,60,.12);color:#ef4444;border:1px solid rgba(231,76,60,.35);border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">⏹ Finalizar</button>
+        </div>`;
+      } else { // FINALIZADO
+        botoes=`<div style="text-align:center;padding:10px;background:var(--green-bg);color:var(--green);border-radius:10px;font-size:13px;font-weight:600">✓ Serviço finalizado</div>`;
+      }
+      const timeline=sessoes.length?`<div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;font-weight:600">Timeline</div>
+        ${sessoes.map(e=>{
+          const labels={inicio:'▶ Iniciado',pausa:'⏸ Pausado',continuar:'▶ Retomado',fim:'⏹ Finalizado'};
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:12px"><span style="color:var(--text2)">${labels[e.tipo]||e.tipo}</span><span style="color:var(--text3);font-size:11px">${formatHoraTS(e.ts)} . ${e.tecnico||'-'}</span></div>`;
+        }).join('')}
+      </div>`:'';
+      const labelTempo=estado==='TRABALHANDO'?`⏱ Trabalhando . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='PAUSADO'?`⏸ Pausado . Total: <strong style="color:var(--text)">${tempoStr}</strong>`:estado==='FINALIZADO'?`✓ Tempo total: <strong style="color:var(--text)">${tempoStr}</strong>`:'Não iniciado';
+      return `<div style="background:${corFundo};border:1px solid var(--border);border-radius:12px;padding:14px;margin:14px 0">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:6px">
+          <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600">⏱ Controle de Tempo</div>
+          <div style="font-size:12px;color:var(--text2)">${labelTempo}</div>
+        </div>
+        ${botoes}
+        ${timeline}
+      </div>`;
+    })()}
     <div class="field"><div class="field-label">Cliente</div><div class="field-val">${r.cliente||'-'}</div></div>
     <div class="field"><div class="field-label">Endereco</div>
       <div class="field-val" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
@@ -2039,7 +2164,7 @@ function renderAnalise() {
   // Tabela
   document.getElementById('analise-table').innerHTML = ranked.map(r=>{
     const sc=scoreRentabilidade(r._margem);
-    return `<tr class="clickable" onclick="openEditLancamento('${r.id}')">
+    return `<tr class="clickable" onclick="openDetail('${r.id}')">
       <td class="muted">${fmtDate(r.data_servico)}</td>
       <td><div style="font-weight:500">${r.cliente||'-'}</div><div style="font-size:11px;color:var(--text3)">${r.preenchedor||''}</div></td>
       <td style="color:var(--blue);font-weight:600">${fmtMon(r.valor_venda)}</td>
