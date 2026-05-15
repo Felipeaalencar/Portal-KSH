@@ -399,7 +399,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="nav-sep"></div>
       <button class="nav-item admin-only" onclick="goPage('bi',this)"><span class="nav-icon">◈</span>Business Intel</button>
       <button class="nav-item admin-only" onclick="goPage('aprovacoes',this)"><span class="nav-icon">🧠</span>Análise<span id="badge-aprov" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
-      <button class="nav-item admin-only" onclick="goPage('clientes',this)"><span class="nav-icon">◷</span>Clientes<span id="badge-manut" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
+      <button class="nav-item admin-only" onclick="goPage('clientes',this)"><span class="nav-icon">◷</span>Follow-up<span id="badge-manut" style="margin-left:auto;font-size:10px;background:var(--amber-bg);color:var(--amber);padding:1px 6px;border-radius:9px;display:none"></span></button>
       <button class="nav-item" onclick="goPage('tecnicos',this)"><span class="nav-icon">◉</span>Técnicos</button>
       <div class="nav-sep admin-only"></div>
       <button class="nav-item admin-only" onclick="goPage('relatorios',this)"><span class="nav-icon">📊</span>Relatórios PDF</button>
@@ -656,10 +656,10 @@ textarea{resize:vertical;min-height:80px}
     <!-- CLIENTES -->
     <div class="page" id="page-clientes">
       <div class="page-header">
-        <div><div class="page-title">Clientes</div><div class="page-sub" id="clientes-count"></div></div>
+        <div><div class="page-title">Follow-up</div><div class="page-sub" id="clientes-count"></div></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <input class="filter-input" id="cliente-search" placeholder="🔍 Buscar cliente..." oninput="renderClientes()" style="min-width:180px">
-          <button class="btn btn-primary" onclick="openNovoCliente()">+ Novo Cliente</button>
+          <button class="btn btn-primary" onclick="openNovoCliente()">+ Adicionar manualmente</button>
         </div>
       </div>
 
@@ -851,7 +851,7 @@ textarea{resize:vertical;min-height:80px}
       <button class="mob-nav-item" onclick="goPage('lancamentos',this)"><span class="mob-nav-icon">⊞</span>Lanc.</button>
       <button class="mob-nav-item" onclick="goPage('tecnicos',this)"><span class="mob-nav-icon">◉</span>Equipe</button>
       <button class="mob-nav-item admin-mob" onclick="goPage('aprovacoes',this)"><span class="mob-nav-icon">🧠</span>Analise</button>
-      <button class="mob-nav-item admin-mob" onclick="goPage('clientes',this)"><span class="mob-nav-icon">◷</span>Clientes</button>
+      <button class="mob-nav-item admin-mob" onclick="goPage('clientes',this)"><span class="mob-nav-icon">◷</span>Follow-up</button>
       <button class="mob-nav-item" onclick="logout()" style="color:var(--text3)"><span class="mob-nav-icon">⎋</span>Sair</button>
     </div>
   </div>
@@ -1132,6 +1132,35 @@ function abrirMapa(inputId){
   window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v),'_blank','noopener');
 }
 
+// Garante que o cliente existe em Follow-up. Match por nome + endereco (case-insensitive, trimmed).
+// Mesmo cliente em endereços diferentes = follow-ups separados (cada casa tem sua manutenção).
+function _normNome(s){return (s||'').toLowerCase().trim().replace(/\s+/g,' ');}
+function _normEnd(s){return (s||'').toLowerCase().trim().replace(/\s+/g,' ');}
+function _clienteKey(nome,endereco){return _normNome(nome)+'|'+_normEnd(endereco);}
+async function garantirCliente(nome, endereco){
+  if(!nome||!nome.trim()) return null;
+  const k=_clienteKey(nome,endereco);
+  const existing=clientesCRM.find(c=>_clienteKey(c.nome,c.endereco)===k);
+  if(existing) return existing;
+  try{
+    const intervalo=90; // padrão 3 meses
+    const payload={
+      nome:nome.trim(),
+      endereco:(endereco||'').trim()||null,
+      intervalo_manutencao:intervalo,
+      proxima_manutencao:calcProximaManutencao(intervalo),
+      ativo:true,
+    };
+    const res=await sbPost('clientes',payload);
+    const created=(res&&res[0])||payload;
+    clientesCRM.push(created);
+    return created;
+  }catch(e){
+    console.warn('garantirCliente falhou para "'+nome+'":',e);
+    return null;
+  }
+}
+
 function showToast(msg, type='ok') {
   const t=document.getElementById('toast');
   t.textContent=msg; t.className='toast on '+type;
@@ -1321,6 +1350,27 @@ async function loadAll() {
     clientesCRM = clientes||[];
     ordens = ordens_data||[];
     demandas = demandas_data||[];
+
+    // Backfill: cria follow-ups para combinações cliente+endereço de OSes que ainda nao tem
+    // (pega tanto historico quanto OSes criadas pelo CRM)
+    try{
+      const chavesExistentes=new Set(clientesCRM.map(c=>_clienteKey(c.nome,c.endereco)));
+      // Combinacoes unicas (cliente, endereco) das OSes
+      const pares=new Map(); // key -> {nome, endereco}
+      for(const l of lancamentos){
+        if(!l.cliente||!l.cliente.trim()) continue;
+        const k=_clienteKey(l.cliente,l.endereco);
+        if(!pares.has(k)) pares.set(k,{nome:l.cliente.trim(),endereco:(l.endereco||'').trim()||null});
+      }
+      const faltantes=[...pares.entries()].filter(([k])=>!chavesExistentes.has(k)).map(([,v])=>v);
+      if(faltantes.length){
+        // Cria sequencialmente pra nao sobrecarregar API
+        for(const p of faltantes){
+          await garantirCliente(p.nome, p.endereco);
+        }
+        console.log('Follow-up backfill:',faltantes.length,'follow-up(s) auto-criado(s)');
+      }
+    }catch(e){console.warn('Backfill falhou:',e);}
   } catch(e) { console.log('Erro ao carregar dados:', e); }
   populateSelects();
   renderDashboard();
@@ -1401,7 +1451,7 @@ function renderAlertasDashboard() {
       titulo: mantVenc.length + ' manutencao(oes) vencida(s)',
       itens: mantVenc.map(c => c.nome + ' - ' + fmtDate(c.proxima_manutencao)),
       acao: "goPage('clientes',null)",
-      label: 'Ver Clientes'
+      label: 'Ver Follow-up'
     });
   }
 
@@ -1812,6 +1862,8 @@ async function salvarLancamento() {
       showToast('Lançamento salvo (em aberto)');
       logAudit('Lancamento criado', cliente);
     }
+    // Auto-cria/garante cliente em Follow-up (não bloqueia se falhar)
+    garantirCliente(cliente, payload.endereco).catch(()=>{});
     closeLanc();
     await loadAll();
     renderLancamentos();
@@ -1893,7 +1945,9 @@ function closeDetail() { document.getElementById('ov-detail').classList.remove('
 function diasParaManutencao(proxima) {
   if(!proxima) return null;
   const hoje = new Date(); hoje.setHours(0,0,0,0);
-  const data = new Date(proxima+'T12:00:00');
+  // Parse data como local time meia-noite (evita off-by-one por timezone)
+  const parts = String(proxima).split('-');
+  const data = new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
   return Math.round((data-hoje)/(1000*60*60*24));
 }
 
@@ -2212,6 +2266,21 @@ async function salvarCliente() {
   const btn=document.getElementById('btn-salvar-cliente');
   btn.textContent='Salvando...'; btn.disabled=true;
   const intervalo=parseInt(document.getElementById('cl-intervalo').value)||90;
+  // Calcula proxima_manutencao:
+  // - Novo: sempre hoje + intervalo
+  // - Editando: se intervalo mudou, recalcula (hoje + intervalo); se nao mudou, preserva data atual
+  let proximaData;
+  if(editClienteId){
+    const cliAtual=clientesCRM.find(c=>c.id===editClienteId);
+    const intervaloAntigo=cliAtual&&parseInt(cliAtual.intervalo_manutencao);
+    if(cliAtual&&cliAtual.proxima_manutencao&&intervaloAntigo===intervalo){
+      proximaData=cliAtual.proxima_manutencao; // mesmo intervalo → preserva
+    }else{
+      proximaData=calcProximaManutencao(intervalo); // mudou → recalcula
+    }
+  }else{
+    proximaData=calcProximaManutencao(intervalo);
+  }
   const payload={
     nome,
     telefone:document.getElementById('cl-telefone').value.trim()||null,
@@ -2221,9 +2290,7 @@ async function salvarCliente() {
     equipamentos:document.getElementById('cl-equipamentos').value.trim()||null,
     observacoes:document.getElementById('cl-observacoes').value.trim()||null,
     intervalo_manutencao:intervalo,
-    proxima_manutencao: editClienteId
-      ? (clientesCRM.find(c=>c.id===editClienteId)&&clientesCRM.find(c=>c.id===editClienteId).proxima_manutencao) || calcProximaManutencao(intervalo)
-      : calcProximaManutencao(intervalo),
+    proxima_manutencao:proximaData,
     ativo:true,
   };
   try {
