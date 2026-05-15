@@ -313,7 +313,7 @@ textarea{resize:vertical;min-height:65px}
       <div class="nav-sep admin-only" id="nav-sep2"></div>
       <button class="nav-item admin-only" id="nav-settings" onclick="goPage('settings',this)"><span class="nav-icon">◌</span>Configurações</button>
       <div style="margin:8px 0;height:1px;background:var(--border)"></div>
-      <button class="nav-item" onclick="irParaInicioCRM()" style="color:var(--text3)"><span class="nav-icon">←</span>Início</button>
+      <button class="nav-item" onclick="irParaInicioCRM()" style="color:var(--text3)"><span class="nav-icon">←</span>Voltar</button>
     </nav>
     <div class="s-bottom">
       <div class="s-user" onclick="logout()">
@@ -692,6 +692,7 @@ window.addEventListener('load', function() {
 
 function irParaInicioCRM() {
   if(currentUser) sessionStorage.setItem('ksh_user', JSON.stringify(currentUser));
+  sessionStorage.setItem('ksh_show_selector', '1');
   window.location.href = 'index.html';
 }
 function enterApp(){
