@@ -873,7 +873,13 @@ textarea{resize:vertical;min-height:80px}
         <div id="ac-cliente" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--bg2);border:1px solid var(--border2);border-radius:0 0 8px 8px;z-index:10;max-height:160px;overflow-y:auto"></div>
       </div>
     </div>
-    <div class="field"><div class="field-label">Endereço *</div><input type="text" id="lf-endereco" placeholder="Ex: 590 Ocean Dr, Miami, FL"></div>
+    <div class="field">
+      <div class="field-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Endereço *</span>
+        <button type="button" onclick="abrirMapa('lf-endereco')" style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;padding:3px 8px;font-family:inherit;border-radius:5px">🗺 Abrir no mapa</button>
+      </div>
+      <input type="text" id="lf-endereco" placeholder="Ex: 590 Ocean Dr, Miami, FL">
+    </div>
     <div class="field"><div class="field-label">Técnico(s) *</div>
       <select id="lf-tec-select" onchange="addTecChip()"><option value="">Selecionar técnico...</option></select>
       <div class="chips-wrap" id="lf-tec-chips"></div>
@@ -949,7 +955,13 @@ textarea{resize:vertical;min-height:80px}
       <div class="field" style="grid-column:1/-1"><div class="field-label">Nome *</div><input type="text" id="cl-nome" placeholder="Nome completo ou empresa"></div>
       <div class="field"><div class="field-label">Telefone *</div><input type="text" id="cl-telefone" placeholder="+1 (305) 000-0000"></div>
       <div class="field"><div class="field-label">Email</div><input type="text" id="cl-email" placeholder="email@exemplo.com"></div>
-      <div class="field" style="grid-column:1/-1"><div class="field-label">Endereço</div><input type="text" id="cl-endereco" placeholder="590 Ocean Dr, Miami, FL"></div>
+      <div class="field" style="grid-column:1/-1">
+        <div class="field-label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>Endereço</span>
+          <button type="button" onclick="abrirMapa('cl-endereco')" style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);color:var(--blue);font-size:10px;font-weight:600;cursor:pointer;padding:3px 8px;font-family:inherit;border-radius:5px">🗺 Abrir no mapa</button>
+        </div>
+        <input type="text" id="cl-endereco" placeholder="590 Ocean Dr, Miami, FL">
+      </div>
       <div class="field"><div class="field-label">Contato / Responsável</div><input type="text" id="cl-contato" placeholder="Nome do responsável"></div>
       <div class="field"><div class="field-label">Intervalo de Manutenção</div>
         <select id="cl-intervalo">
@@ -1111,6 +1123,13 @@ function statusBadge(s) {
   if(s==='revisao'||s==='aberto') return '<span class="status st-rev">Em aberto</span>';
   if(s==='aprovado'||s==='ok'||s==='concluido') return '<span class="status st-ok">(ok) Concluido</span>';
   return '<span class="status st-ok">(ok) OK</span>';
+}
+
+// Abre o endereço (vindo de um input) no Google Maps em nova aba
+function abrirMapa(inputId){
+  const v=(document.getElementById(inputId).value||'').trim();
+  if(!v){showToast('Preencha o endereço primeiro','err');return;}
+  window.open('https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(v),'_blank','noopener');
 }
 
 function showToast(msg, type='ok') {
@@ -1777,18 +1796,20 @@ async function salvarLancamento() {
     gastos:gastosForm,
     total_gastos:total,
     preenchedor:currentUser.nome||currentUser.name,
-    status:'ok',
-    notas:[],
     valor_venda:isAdmin(currentUser)?(parseFloat(document.getElementById('lf-valor-venda').value)||null):undefined,
   };
 
   try {
     if(editLancId) {
+      // Edição: NÃO sobrescreve status nem notas (preserva o que ja existe)
       await sbPatch(`lancamentos?id=eq.${editLancId}`,payload);
-      showToast('Lancamento atualizado (ok)');
+      showToast('Lançamento atualizado');
     } else {
+      // Novo: começa "em aberto", sem notas
+      payload.status='aberto';
+      payload.notas=[];
       await sbPost('lancamentos',payload);
-      showToast('Lancamento salvo (ok)');
+      showToast('Lançamento salvo (em aberto)');
       logAudit('Lancamento criado', cliente);
     }
     closeLanc();
