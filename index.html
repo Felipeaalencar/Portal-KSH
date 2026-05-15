@@ -1825,7 +1825,12 @@ function openDetail(id) {
       <button class="close-btn" onclick="closeDetail()"></button>
     </div>
     <div class="field"><div class="field-label">Cliente</div><div class="field-val">${r.cliente||'-'}</div></div>
-    <div class="field"><div class="field-label">Endereco</div><div class="field-val">${r.endereco||'-'}</div></div>
+    <div class="field"><div class="field-label">Endereco</div>
+      <div class="field-val" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+        <span style="flex:1">${r.endereco||'-'}</span>
+        ${r.endereco?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.endereco)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);padding:4px 10px;border:1px solid rgba(59,130,246,.3);border-radius:6px;text-decoration:none;white-space:nowrap;background:var(--blue-bg);font-weight:600">🗺 Mapa</a>`:''}
+      </div>
+    </div>
     <div class="field"><div class="field-label">Tecnico(s)</div><div class="field-val">${tecs}</div></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
       <div class="field"><div class="field-label">Horario</div><div class="field-val">${r.hora_inicio||'-'}  ${r.hora_fim||'-'}</div></div>
@@ -2102,7 +2107,12 @@ async function abrirFicha(id) {
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div class="field" style="margin:0"><div class="field-label">Telefone</div><div class="field-val">${c.telefone||'-'}</div></div>
       <div class="field" style="margin:0"><div class="field-label">Email</div><div class="field-val">${c.email||'-'}</div></div>
-      <div class="field" style="margin:0;grid-column:1/-1"><div class="field-label">Endereco</div><div class="field-val">${c.endereco||'-'}</div></div>
+      <div class="field" style="margin:0;grid-column:1/-1"><div class="field-label">Endereco</div>
+        <div class="field-val" style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <span style="flex:1">${c.endereco||'-'}</span>
+          ${c.endereco?`<a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(c.endereco)}" target="_blank" rel="noopener" style="font-size:11px;color:var(--blue);padding:4px 10px;border:1px solid rgba(59,130,246,.3);border-radius:6px;text-decoration:none;white-space:nowrap;background:var(--blue-bg);font-weight:600">🗺 Mapa</a>`:''}
+        </div>
+      </div>
       <div class="field" style="margin:0"><div class="field-label">Contato / Responsavel</div><div class="field-val">${c.contato||'-'}</div></div>
       <div class="field" style="margin:0"><div class="field-label">Prox. Manutencao</div><div class="field-val" style="display:flex;align-items:center;gap:8px">${c.proxima_manutencao?fmtDate(c.proxima_manutencao):'-'} ${manutencaoBadge(c.proxima_manutencao)}</div></div>
       ${c.equipamentos?`<div class="field" style="margin:0;grid-column:1/-1"><div class="field-label">Equipamentos Instalados</div><div class="field-val" style="white-space:pre-wrap">${c.equipamentos}</div></div>`:''}

@@ -115,6 +115,9 @@ body{background:var(--bg);color:var(--text);min-height:100vh}
         </div>
       </div>
       <div class="stats-bar" id="tec-stats"></div>
+      <div style="margin-bottom:14px">
+        <input type="text" id="tec-busca" placeholder="🔍 Buscar ferramenta por nome ou descrição..." oninput="renderTecnico()" style="width:100%;background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:inherit;font-size:13px;outline:none">
+      </div>
       <div id="tec-lista"></div>
     </div>
   </div>
@@ -450,6 +453,7 @@ function abrirTecnico(tid){
   document.getElementById('tec-nome').textContent=g.nome;
   const uc=conferencias.filter(c=>c.tecnico_id===tid)[0];
   document.getElementById('tec-sub').textContent=g.items.length+' ferramentas · '+(uc?'Última conf.: '+new Date(uc.data_conferencia).toLocaleDateString('pt-BR'):'Sem conferências');
+  const bsc=document.getElementById('tec-busca');if(bsc)bsc.value='';
   renderTecnico();
   atualizarReposicao();
   showScreen('tecnico');
@@ -464,6 +468,7 @@ function atualizarSubtitulo(){
 
 function renderTecnico(){
   const g=maletas[tecAtual];
+  if(!g)return;
   const ativas=g.items.filter(i=>i.status!=='baixada');
   const baixadas=g.items.filter(i=>i.status==='baixada');
   const ok=ativas.filter(i=>i.status==='ok').length;
@@ -476,21 +481,49 @@ function renderTecnico(){
     '<div class="stat"><div class="stat-n" style="color:var(--amber)">'+def+'</div><div class="stat-l">Defeito</div></div>'+
     '<div class="stat"><div class="stat-n" style="color:var(--red)">'+fal+'</div><div class="stat-l">Faltando</div></div>';
 
-  const lista=ativas.map(item=>{
+  // BUSCA: filtra ativas por nome ou descricao
+  const buscaEl=document.getElementById('tec-busca');
+  const busca=(buscaEl&&buscaEl.value||'').toLowerCase().trim();
+  const ativasFiltered=busca?ativas.filter(i=>
+    (i.nome||'').toLowerCase().includes(busca)||
+    (i.descricao||'').toLowerCase().includes(busca)
+  ):ativas;
+
+  // VIDA UTIL: gera badge se vencida ou vencendo em <=30 dias
+  const today=new Date();today.setHours(0,0,0,0);
+  function vidaUtilBadge(item){
+    if(!item.vida_util_meses||!item.data_entrega) return '';
+    const entrega=new Date(item.data_entrega);
+    if(isNaN(entrega.getTime())) return '';
+    const venc=new Date(entrega);
+    venc.setMonth(venc.getMonth()+(+item.vida_util_meses));
+    const diff=Math.ceil((venc-today)/(1000*60*60*24));
+    if(diff<0) return '<span style="background:var(--red-bg);color:var(--red);border:1px solid rgba(239,68,68,.3);font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap;display:inline-block">⚠ Vencida há '+Math.abs(diff)+'d</span>';
+    if(diff<=30) return '<span style="background:var(--amber-bg);color:var(--amber);border:1px solid rgba(245,158,11,.3);font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px;white-space:nowrap;display:inline-block">⏰ Vence em '+diff+'d</span>';
+    return '';
+  }
+
+  const lista=ativasFiltered.map(item=>{
     const sc=item.status==='faltando'?'var(--red)':item.status==='defeito'?'var(--amber)':'var(--green)';
     const sl=item.status==='faltando'?'Faltando':item.status==='defeito'?'Com defeito':'OK';
     const icon=imgWithFallback(item.foto_url);
+    const vu=vidaUtilBadge(item);
     const btnEdit=gestor?'<button class="btn-editar" onclick="abrirEditar(\''+item.id+'\')">✏ Editar</button>':'';
     const btnDel=gestor?'<button class="btn-excluir" onclick="excluirFerramenta(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')" title="Excluir">🗑</button>':'';
-    return '<div class="ferr-card"><div class="ferr-row"><div class="ferr-icon">'+icon+'</div><div class="ferr-info"><div class="ferr-nome">'+item.nome+'</div><div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div></div><span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span><div class="ferr-actions">'+btnEdit+btnDel+'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')">↓</button></div></div></div>';
+    return '<div class="ferr-card"><div class="ferr-row"><div class="ferr-icon">'+icon+'</div><div class="ferr-info"><div class="ferr-nome">'+item.nome+'</div><div class="ferr-desc">'+(item.descricao||'')+' · '+item.quantidade+'un</div>'+(vu?'<div style="margin-top:5px">'+vu+'</div>':'')+'</div><span style="font-size:11px;font-weight:600;color:'+sc+';white-space:nowrap">'+sl+'</span><div class="ferr-actions">'+btnEdit+btnDel+'<button class="icon-btn danger" onclick="abrirBaixa(\''+item.id+'\',\''+item.nome.replace(/'/g,"\\'")+'\')">↓</button></div></div></div>';
   }).join('');
+
+  // Mensagem caso busca nao tenha encontrado nada
+  const listaFinal=(busca&&ativasFiltered.length===0)
+    ?'<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">Nenhuma ferramenta encontrada para "<b>'+busca.replace(/</g,'&lt;')+'</b>"</div>'
+    :lista;
 
   let secBaixadas='';
   if(baixadas.length){
     secBaixadas='<div class="section-sep" onclick="toggleBaixadas()"><span>'+baixadas.length+' ferramenta'+(baixadas.length!==1?'s':'')+' baixada'+(baixadas.length!==1?'s':'')+'</span><span id="seta-b">▼</span></div><div id="baixadas-wrap">'+
     baixadas.map(i=>'<div class="baixada-row"><div><div style="font-size:13px;text-decoration:line-through;color:var(--text3)">'+i.nome+'</div><div style="font-size:11px;color:var(--text3);margin-top:2px">'+(i.descricao||'')+' · '+(i.baixa_motivo||'')+' · '+(i.baixa_data?new Date(i.baixa_data).toLocaleDateString('pt-BR'):'')+'</div></div><span class="badge badge-gray">'+(i.baixa_motivo||'Baixada')+'</span></div>').join('')+'</div>';
   }
-  document.getElementById('tec-lista').innerHTML=lista+secBaixadas;
+  document.getElementById('tec-lista').innerHTML=listaFinal+secBaixadas;
 }
 
 function toggleBaixadas(){
