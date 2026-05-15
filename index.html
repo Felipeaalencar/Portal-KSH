@@ -1262,7 +1262,7 @@ function goPage(id, btn) {
     renderTecnicos();
   }
   if(id==='aprovacoes') renderAnalise();
-  if(id==='config') { loadUsers().then(()=>renderConfig()); }
+  if(id==='config') renderConfig();
   if(id==='dashboard') { renderDashboard(); renderAlertasDashboard(); }
 }
 
@@ -4069,7 +4069,7 @@ function openEditarUsuario(id) {
   document.getElementById('u-funcao').innerHTML=FUNCOES.map(f=>`<option${f.nome===(u.funcao||u.role)?' selected':''}>${f.nome}</option>`).join('');
   document.getElementById('ov-usuario').classList.add('on');
 }
-async async function salvarUsuario() {
+async function salvarUsuario() {
   const nome=document.getElementById('u-nome').value.trim();
   const funcao=document.getElementById('u-funcao').value;
   const pin=document.getElementById('u-pin').value.trim();
@@ -4119,8 +4119,7 @@ function init() {
   sbGet('usuarios?ativo=eq.true&order=funcao').then(function(data) {
     if (data && data.length > 0) {
       USERS = data;
-      // Só re-renderiza se usuário ainda não selecionou ninguém
-      if (!selectedUser) renderLogin();
+      renderLogin(); // Atualiza com dados reais
     }
   }).catch(function(e) {
     console.warn('Supabase offline - usando usuarios padrao');
