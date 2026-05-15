@@ -882,15 +882,15 @@ textarea{resize:vertical;min-height:80px}
 
     <!-- Gastos -->
     <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin:16px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)">Gastos do Dia</div>
-    <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:6px;align-items:end">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:6px;align-items:end">
       <div class="field" style="margin:0"><div class="field-label">Tipo de gasto</div>
         <select id="gasto-tipo" onchange="toggleNovoTipo(this.value)"><option value="">Selecionar...</option></select>
       </div>
       <div class="field" style="margin:0"><div class="field-label">Valor ($)</div>
-        <input type="number" id="gasto-valor" placeholder="0.00" step="0.01" min="0" style="width:90px">
+        <input type="number" id="gasto-valor" placeholder="0.00" step="0.01" min="0">
       </div>
       <div class="field" style="margin:0"><div class="field-label">Data</div>
-        <input type="date" id="gasto-data" style="width:130px">
+        <input type="date" id="gasto-data">
       </div>
       <button class="btn btn-primary btn-sm" onclick="addGasto()" style="margin-bottom:0;white-space:nowrap">+ Add</button>
     </div>
