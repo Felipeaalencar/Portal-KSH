@@ -4,7 +4,7 @@
 const SUPABASE_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const REDIRECT_URI = 'https://portal-ksh.vercel.app/api/quickbooks/callback';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { code, realmId, error, error_description } = req.query;
 
   if (error) {
@@ -72,4 +72,4 @@ export default async function handler(req, res) {
     console.error('Callback error:', e);
     res.redirect(302, '/financeiro.html?qbo_error=' + encodeURIComponent(e.message));
   }
-}
+};

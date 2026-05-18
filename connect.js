@@ -1,7 +1,7 @@
 // /api/quickbooks/connect.js
 // Inicia o OAuth com QuickBooks: redireciona o usuario pra Intuit autorizar.
 
-export default function handler(req, res) {
+module.exports = function handler(req, res) {
   const clientId = process.env.QBO_CLIENT_ID;
   if (!clientId) {
     return res.status(500).send('QBO_CLIENT_ID nao configurado no Vercel');
@@ -19,4 +19,4 @@ export default function handler(req, res) {
     + '&state=' + state;
 
   res.redirect(302, authUrl);
-}
+};

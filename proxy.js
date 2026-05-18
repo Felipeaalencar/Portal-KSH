@@ -1,25 +1,17 @@
 // /api/quickbooks/proxy.js
 // Proxy autenticado pra API do QuickBooks. Renova access_token se estiver pra vencer.
-//
-// Uso (do frontend):
-//   GET /api/quickbooks/proxy?endpoint=_status
-//   GET /api/quickbooks/proxy?endpoint=companyinfo/{realmId}
-//   GET /api/quickbooks/proxy?endpoint=reports/ProfitAndLoss&date_macro=This+Month-to-date
-//
-// O proxy adiciona automaticamente: /v3/company/{realmId}/{endpoint}
 
 const SUPABASE_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const QBO_BASE = 'https://quickbooks.api.intuit.com';
 
 async function getValidToken() {
-  // Le token mais recente do Supabase
   const r = await fetch(SUPABASE_URL + '/rest/v1/qbo_tokens?select=*&order=updated_at.desc&limit=1', {
     headers: {
       'apikey': process.env.SUPABASE_SERVICE_ROLE_KEY,
       'Authorization': 'Bearer ' + process.env.SUPABASE_SERVICE_ROLE_KEY
     }
   });
-  if (!r.ok) throw new Error('SUPABASE_READ_FAILED');
+  if (!r.ok) throw new Error('SUPABASE_READ_FAILED: ' + r.status);
   const arr = await r.json();
   if (!arr.length) throw new Error('NOT_CONNECTED');
 
@@ -27,7 +19,6 @@ async function getValidToken() {
   const expMs = new Date(tok.expires_at).getTime();
   const FIVE_MIN = 5 * 60 * 1000;
 
-  // Se expirou ou esta pra expirar, refresh
   if (Date.now() > expMs - FIVE_MIN) {
     const basicAuth = Buffer.from(process.env.QBO_CLIENT_ID + ':' + process.env.QBO_CLIENT_SECRET).toString('base64');
     const refreshRes = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
@@ -74,14 +65,12 @@ async function getValidToken() {
   return { accessToken: tok.access_token, realmId: tok.realm_id, companyName: tok.company_name };
 }
 
-export default async function handler(req, res) {
-  // CORS — permite chamada do mesmo dominio
+module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
 
   try {
     const { endpoint, ...rest } = req.query;
 
-    // Endpoint especial: verificar status de conexao
     if (endpoint === '_status') {
       try {
         const t = await getValidToken();
@@ -98,7 +87,6 @@ export default async function handler(req, res) {
 
     const { accessToken, realmId } = await getValidToken();
 
-    // Monta URL final
     let url = QBO_BASE + '/v3/company/' + realmId + '/' + endpoint;
     const extraParams = new URLSearchParams();
     for (const [k, v] of Object.entries(rest)) {
@@ -127,4 +115,4 @@ export default async function handler(req, res) {
     console.error('Proxy error:', e);
     res.status(500).json({ error: e.message });
   }
-}
+};
