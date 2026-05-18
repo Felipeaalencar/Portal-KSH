@@ -104,9 +104,20 @@ async function carregar(){
   let status;
   try{
     const r = await fetch('/api/quickbooks/proxy?endpoint=_status');
-    status = await r.json();
+    const txt = await r.text();
+    // Tenta parsear como JSON — se falhar, mostra o conteudo cru pra debug
+    try{
+      status = JSON.parse(txt);
+    }catch(parseErr){
+      cont.innerHTML = errorHtml + `<div class="error-box">
+        <strong>API não retornou JSON</strong> (HTTP ${r.status})<br>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)">Conteúdo retornado pelo /api/quickbooks/proxy:</div>
+        <pre style="white-space:pre-wrap;font-size:11px;margin-top:6px;background:var(--bg);padding:10px;border-radius:6px;max-height:300px;overflow:auto;color:var(--text2)">${txt.substring(0,1000).replace(/</g,'&lt;')}</pre>
+      </div>`;
+      return;
+    }
   }catch(e){
-    cont.innerHTML = errorHtml + `<div class="error-box">Erro ao verificar conexão: ${e.message}</div>`;
+    cont.innerHTML = errorHtml + `<div class="error-box">Erro de rede ao chamar API: ${e.message}</div>`;
     return;
   }
 
