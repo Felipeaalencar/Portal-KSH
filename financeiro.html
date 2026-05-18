@@ -5,11 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KSH · Financeiro</title>
 <style>
-:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--bg4:#2a2f45;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--text:#f0f2f8;--text2:#b0b8d0;--text3:#6b7599;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--blue:#3b82f6}
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--bg4:#2a2f45;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--text:#f0f2f8;--text2:#b0b8d0;--text3:#6b7599;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--green-bg:rgba(34,197,94,.1);--red-bg:rgba(231,76,60,.1);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.1)}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans',system-ui,sans-serif}
 body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
-
-/* TOPBAR */
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg2)}
 .brand{display:flex;align-items:center;gap:12px}
 .brand-logo{font-size:24px}
@@ -17,163 +15,263 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .brand-sub{font-size:11px;color:var(--text3);margin-top:1px}
 .btn-voltar{background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;font-family:inherit;transition:all .15s}
 .btn-voltar:hover{background:var(--bg3);color:var(--text);border-color:var(--text3)}
-
-/* CONTAINER */
-.container{flex:1;max-width:920px;margin:0 auto;padding:48px 24px;width:100%}
-
-/* HERO */
-.hero{text-align:center;margin-bottom:40px}
-.hero-icon{font-size:64px;margin-bottom:16px;display:inline-block;background:var(--amber-bg);width:120px;height:120px;border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;border:1px solid rgba(245,158,11,.25)}
-.hero-title{font-size:32px;font-weight:700;margin-bottom:10px;letter-spacing:-0.5px}
-.hero-sub{font-size:15px;color:var(--text2);max-width:540px;margin:0 auto;line-height:1.5}
-.badge-em-breve{display:inline-block;background:var(--amber-bg);border:1px solid rgba(245,158,11,.3);color:var(--amber);font-size:11px;font-weight:600;padding:5px 14px;border-radius:20px;margin-top:14px;letter-spacing:.5px;text-transform:uppercase}
-
-/* SECTION */
-.section{margin-top:48px}
-.section-title{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
-
-/* FEATURE GRID */
-.feat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
-.feat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;display:flex;gap:14px;align-items:flex-start;transition:border-color .15s}
-.feat-card:hover{border-color:var(--border2)}
-.feat-icon{font-size:24px;flex-shrink:0;width:42px;height:42px;background:var(--bg3);border-radius:10px;display:flex;align-items:center;justify-content:center}
-.feat-info{flex:1;min-width:0}
-.feat-name{font-size:14px;font-weight:600;margin-bottom:4px;color:var(--text)}
-.feat-desc{font-size:12px;color:var(--text3);line-height:1.45}
-
-/* INFO BOX */
-.info-box{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:24px;display:flex;gap:14px;align-items:flex-start}
-.info-icon{font-size:22px;flex-shrink:0}
-.info-text{font-size:13px;color:var(--text2);line-height:1.55}
-.info-text strong{color:var(--text)}
-
-@media (max-width:600px){
-  .topbar{padding:14px 16px}
-  .container{padding:32px 16px}
-  .hero-title{font-size:24px}
-  .hero-icon{width:96px;height:96px;font-size:48px}
-}
+.container{flex:1;max-width:1100px;margin:0 auto;padding:32px 24px;width:100%}
+.page-hd{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:24px}
+.page-title{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.qbo-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:7px 12px;border-radius:8px}
+.qbo-status .dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.qbo-status.connected .dot{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.6)}
+.connect-card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:16px;padding:48px 32px;text-align:center;max-width:560px;margin:60px auto}
+.connect-icon{font-size:56px;margin-bottom:16px}
+.connect-title{font-size:22px;font-weight:700;margin-bottom:10px}
+.connect-sub{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px}
+.btn-connect{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:10px;transition:transform .15s;box-shadow:0 4px 16px rgba(44,160,28,.3)}
+.btn-connect:hover{transform:translateY(-1px)}
+.connect-foot{margin-top:20px;font-size:11px;color:var(--text3)}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:28px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
+.kpi-loading{color:var(--text3);font-size:14px;font-weight:500}
+.kpi.green .kpi-value{color:var(--green)}
+.kpi.red .kpi-value{color:var(--red)}
+.kpi.blue .kpi-value{color:var(--blue)}
+.kpi.amber .kpi-value{color:var(--amber)}
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
+.section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.section-action{color:var(--blue);font-size:11px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:600;background:none;border:none;font-family:inherit}
+.info-box{background:var(--blue-bg);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.5;margin-top:20px}
+.info-box strong{color:var(--blue)}
+.error-box{background:var(--red-bg);border:1px solid rgba(231,76,60,.3);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--text);margin-bottom:20px}
+.btn-disconnect{background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.btn-disconnect:hover{color:var(--red);border-color:rgba(231,76,60,.3)}
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="brand">
-    <div class="brand-logo">📊</div>
+    <span class="brand-logo">📊</span>
     <div>
-      <div class="brand-name">Kilian Smart Homes</div>
-      <div class="brand-sub">Financeiro</div>
+      <div class="brand-name">Financeiro</div>
+      <div class="brand-sub">KSH · Kilian Smart Homes</div>
     </div>
   </div>
-  <button class="btn-voltar" onclick="voltarInicio()">← Voltar</button>
+  <button class="btn-voltar" onclick="voltarSeletor()">← Voltar</button>
 </div>
 
 <div class="container">
-
-  <div class="hero">
-    <div class="hero-icon">🚧</div>
-    <div class="hero-title">Em construção</div>
-    <div class="hero-sub">Estamos preparando um dashboard financeiro completo com integração ao seu QuickBooks. Em breve você terá visibilidade total da saúde financeira da empresa em tempo real.</div>
-    <div class="badge-em-breve">Disponível em breve</div>
+  <div id="conteudo">
+    <div style="text-align:center;padding:80px 20px;color:var(--text3)">⏳ Carregando...</div>
   </div>
-
-  <div class="section">
-    <div class="section-title">O que vem por aí</div>
-    <div class="feat-grid">
-
-      <div class="feat-card">
-        <div class="feat-icon">💰</div>
-        <div class="feat-info">
-          <div class="feat-name">Faturamento</div>
-          <div class="feat-desc">Receita do mês, comparativo MoM e YoY, projeções e top clientes</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">📉</div>
-        <div class="feat-info">
-          <div class="feat-name">Despesas</div>
-          <div class="feat-desc">Gastos por categoria, top fornecedores e comparativo com orçamento</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">💵</div>
-        <div class="feat-info">
-          <div class="feat-name">Lucratividade</div>
-          <div class="feat-desc">Margem bruta, margem líquida e lucro por tipo de serviço</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">🏦</div>
-        <div class="feat-info">
-          <div class="feat-name">Cash Flow</div>
-          <div class="feat-desc">Saldo atual, entrada vs saída e projeção de caixa</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">📥</div>
-        <div class="feat-info">
-          <div class="feat-name">Contas a Receber</div>
-          <div class="feat-desc">Aging de recebíveis, DSO e clientes em atraso</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">📤</div>
-        <div class="feat-info">
-          <div class="feat-name">Contas a Pagar</div>
-          <div class="feat-desc">Compromissos do mês, fornecedores prioritários e vencimentos</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">🎯</div>
-        <div class="feat-info">
-          <div class="feat-name">CRM × Financeiro</div>
-          <div class="feat-desc">Leads fechados vs receita real, conversão de pipeline em caixa</div>
-        </div>
-      </div>
-
-      <div class="feat-card">
-        <div class="feat-icon">🔔</div>
-        <div class="feat-info">
-          <div class="feat-name">Alertas inteligentes</div>
-          <div class="feat-desc">Estouro de orçamento, queda de margem e clientes em risco</div>
-        </div>
-      </div>
-
-    </div>
-  </div>
-
-  <div class="info-box">
-    <div class="info-icon">🔐</div>
-    <div class="info-text">
-      <strong>Integração segura com QuickBooks.</strong> Os dados serão sincronizados via API oficial da Intuit usando OAuth 2.0. Nenhuma credencial financeira fica exposta — apenas os relatórios são exibidos aqui no portal, com atualização em tempo real.
-    </div>
-  </div>
-
 </div>
 
 <script>
-let ME=null;
-
-function voltarInicio(){
-  if(ME) sessionStorage.setItem('ksh_user', JSON.stringify(ME));
-  sessionStorage.setItem('ksh_show_selector','1');
-  window.location.href='index.html';
+if (!sessionStorage.getItem('ksh_user')) {
+  window.location.href = '/';
 }
 
-// Init: validar sessao e que e gestor
-window.addEventListener('load', function(){
-  const saved = sessionStorage.getItem('ksh_user');
-  if(!saved){ window.location.href='index.html'; return; }
-  try { ME = JSON.parse(saved); }
-  catch(e){ window.location.href='index.html'; return; }
-  if(!ME || !ME.id){ window.location.href='index.html'; return; }
-});
+function voltarSeletor(){
+  sessionStorage.setItem('ksh_show_selector','1');
+  window.location.href = '/';
+}
+
+function conectarQBO(){ window.location.href = '/api/quickbooks/connect'; }
+
+function desconectarQBO(){
+  alert('Por enquanto, pra desconectar tem que deletar a linha em qbo_tokens no Supabase. Faremos botão dedicado em breve.');
+}
+
+function fmtMoney(v){
+  if(v==null||isNaN(v)) return '-';
+  return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+const params = new URLSearchParams(window.location.search);
+const qboError = params.get('qbo_error');
+const qboConnected = params.get('qbo_connected');
+
+async function carregar(){
+  const cont = document.getElementById('conteudo');
+  let errorHtml = '';
+  if(qboError){
+    errorHtml = `<div class="error-box">⚠️ Erro ao conectar: ${qboError}</div>`;
+    history.replaceState({},'','/financeiro.html');
+  }
+
+  let status;
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=_status');
+    status = await r.json();
+  }catch(e){
+    cont.innerHTML = errorHtml + `<div class="error-box">Erro ao verificar conexão: ${e.message}</div>`;
+    return;
+  }
+
+  if(!status.connected){
+    cont.innerHTML = errorHtml + `
+      <div class="connect-card">
+        <div class="connect-icon">📊</div>
+        <div class="connect-title">Conectar QuickBooks</div>
+        <div class="connect-sub">
+          Conecte sua conta do QuickBooks Online para trazer dados financeiros (receita, despesas, lucro, A/R, A/P) direto pro Portal KSH em tempo real.
+        </div>
+        <button class="btn-connect" onclick="conectarQBO()">
+          <span>🔗</span>
+          <span>Conectar com QuickBooks</span>
+        </button>
+        <div class="connect-foot">
+          Você será redirecionado pra Intuit pra autorizar.<br>
+          Apenas leitura — não modificamos nada no QuickBooks.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  const sucessoMsg = qboConnected ? `<div style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);margin-bottom:20px">✅ Conectado com sucesso ao QuickBooks!</div>` : '';
+  if(qboConnected){ history.replaceState({},'','/financeiro.html'); }
+
+  cont.innerHTML = sucessoMsg + errorHtml + `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">Visão Geral</div>
+        <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+        <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
+      </div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">Receita (mês atual)</div><div class="kpi-value kpi-loading" id="kpi-receita">⏳</div><div class="kpi-sub" id="kpi-receita-sub"></div></div>
+      <div class="kpi red"><div class="kpi-label">Despesas (mês atual)</div><div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div><div class="kpi-sub" id="kpi-despesas-sub"></div></div>
+      <div class="kpi blue"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div><div class="kpi-sub" id="kpi-lucro-sub"></div></div>
+      <div class="kpi amber"><div class="kpi-label">A Receber</div><div class="kpi-value kpi-loading" id="kpi-ar">⏳</div><div class="kpi-sub" id="kpi-ar-sub"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span>📈 P&L do Mês</span><button class="section-action" onclick="carregarPL()">Atualizar</button></div>
+      <div id="pl-container" style="color:var(--text3);font-size:13px">Carregando...</div>
+    </div>
+
+    <div class="info-box">
+      <strong>💡 Próximos passos:</strong> esta primeira versão da Visão Geral já puxa dados em tempo real do seu QuickBooks. Em sessões futuras vamos adicionar <strong>Receita & Lucro</strong> (gráficos), <strong>A Receber</strong> (aging + cruzamento com Follow-up) e <strong>A Pagar</strong>.
+    </div>
+  `;
+
+  carregarKPIs();
+  carregarPL();
+}
+
+function extrairValor(plReport, nomeLinha){
+  if(!plReport||!plReport.Rows||!plReport.Rows.Row) return null;
+  function buscar(rows){
+    for(const row of rows){
+      if(row.Summary&&row.Summary.ColData){
+        const label = (row.Summary.ColData[0]&&row.Summary.ColData[0].value)||'';
+        if(label.toLowerCase().includes(nomeLinha.toLowerCase())){
+          const v = row.Summary.ColData[row.Summary.ColData.length-1];
+          return v ? parseFloat(v.value)||0 : 0;
+        }
+      }
+      if(row.Rows&&row.Rows.Row){
+        const r = buscar(row.Rows.Row);
+        if(r!=null) return r;
+      }
+    }
+    return null;
+  }
+  return buscar(plReport.Rows.Row);
+}
+
+async function carregarKPIs(){
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&date_macro=' + encodeURIComponent('This Month-to-date') + '&minorversion=70');
+    const data = await r.json();
+    if(data.error){
+      ['kpi-receita','kpi-despesas','kpi-lucro'].forEach(id=>{document.getElementById(id).textContent='Erro';});
+      console.error('Erro P&L:', data);
+      return;
+    }
+    const report = data.Report || data;
+    const receita = extrairValor(report,'Total Income') || extrairValor(report,'Total Revenue') || 0;
+    const despesas = extrairValor(report,'Total Expenses') || 0;
+    const lucro = extrairValor(report,'Net Income') || (receita - despesas);
+
+    document.getElementById('kpi-receita').textContent = fmtMoney(receita);
+    document.getElementById('kpi-receita').classList.remove('kpi-loading');
+    document.getElementById('kpi-receita-sub').textContent = 'Mês atual (acumulado)';
+
+    document.getElementById('kpi-despesas').textContent = fmtMoney(despesas);
+    document.getElementById('kpi-despesas').classList.remove('kpi-loading');
+    document.getElementById('kpi-despesas-sub').textContent = 'Mês atual (acumulado)';
+
+    document.getElementById('kpi-lucro').textContent = fmtMoney(lucro);
+    document.getElementById('kpi-lucro').classList.remove('kpi-loading');
+    const margem = receita > 0 ? ((lucro/receita)*100).toFixed(1) : 0;
+    document.getElementById('kpi-lucro-sub').textContent = `Margem: ${margem}%`;
+  }catch(e){
+    console.error('Erro KPIs:',e);
+  }
+
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/AgedReceivables') + '&minorversion=70');
+    const data = await r.json();
+    const report = data.Report || data;
+    const total = extrairValor(report,'Total') || extrairValor(report,'TOTAL') || 0;
+    document.getElementById('kpi-ar').textContent = fmtMoney(total);
+    document.getElementById('kpi-ar').classList.remove('kpi-loading');
+    document.getElementById('kpi-ar-sub').textContent = 'Total em aberto';
+  }catch(e){
+    console.error('Erro A/R:',e);
+    document.getElementById('kpi-ar').textContent = '-';
+  }
+}
+
+async function carregarPL(){
+  const cont = document.getElementById('pl-container');
+  if(!cont) return;
+  cont.innerHTML = 'Carregando...';
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&date_macro=' + encodeURIComponent('This Month-to-date') + '&minorversion=70');
+    const data = await r.json();
+    if(data.error){ cont.innerHTML = '<div style="color:var(--red)">Erro: '+JSON.stringify(data.error)+'</div>'; return; }
+    const report = data.Report || data;
+
+    function renderRow(row, depth=0){
+      let html='';
+      if(row.Summary&&row.Summary.ColData){
+        const label = (row.Summary.ColData[0]&&row.Summary.ColData[0].value) || '';
+        const valorRaw = (row.Summary.ColData[row.Summary.ColData.length-1]&&row.Summary.ColData[row.Summary.ColData.length-1].value) || '0';
+        const fw = depth===0 ? '700' : '500';
+        const color = depth===0 ? 'var(--text)' : 'var(--text2)';
+        html += `<div style="display:flex;justify-content:space-between;padding:6px 0;padding-left:${depth*16}px;font-size:13px;font-weight:${fw};color:${color};border-bottom:1px dashed var(--border)"><span>${label}</span><span>${fmtMoney(parseFloat(valorRaw)||0)}</span></div>`;
+      }
+      if(row.Rows&&row.Rows.Row){
+        for(const sub of row.Rows.Row){
+          html += renderRow(sub, depth+1);
+        }
+      }
+      return html;
+    }
+
+    let html = '';
+    if(report.Rows&&report.Rows.Row){
+      for(const row of report.Rows.Row){
+        html += renderRow(row, 0);
+      }
+    }
+    cont.innerHTML = html || '<div style="color:var(--text3)">Sem dados no período.</div>';
+  }catch(e){
+    cont.innerHTML = '<div style="color:var(--red)">Erro: '+e.message+'</div>';
+  }
+}
+
+carregar();
 </script>
 
 </body>
