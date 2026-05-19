@@ -178,12 +178,14 @@ function calcularAtalho(tipo){
 }
 
 function aplicarAtalho(tipo){
+  console.log('[FILTRO] aplicarAtalho chamado:', tipo);
   const r = calcularAtalho(tipo);
   if(!r) return;
   periodo.start = r.start;
   periodo.end = r.end;
   periodo.label = r.label;
   periodo.atalho = tipo;
+  console.log('[FILTRO] periodo atualizado:', periodo);
   document.getElementById('custom-range').classList.remove('visible');
   sincronizarDropdowns();
   atualizarBotoesAtalho();
@@ -437,6 +439,7 @@ function extrairColunasMensal(plReport){
 }
 
 function recarregarTudo(){
+  console.log('[FILTRO] recarregarTudo - periodo:', periodo.start, 'a', periodo.end);
   carregarSaldos();
   carregarKPIs();
   carregarPL();
@@ -454,9 +457,20 @@ async function carregarSaldos(){
       grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--red);font-size:13px">Erro ao carregar saldos: '+JSON.stringify(data.error)+'</div></div>';
       return;
     }
-    const accounts = (data.QueryResponse && data.QueryResponse.Account) || [];
+    const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
+
+    // Filtra contas com movimentação nos últimos 180 dias (descarta históricas/inativas)
+    const CORTE_DIAS = 180;
+    const dataCorte = new Date();
+    dataCorte.setDate(dataCorte.getDate() - CORTE_DIAS);
+    const accounts = accountsRaw.filter(acc => {
+      if(!acc.MetaData || !acc.MetaData.LastUpdatedTime) return false;
+      const ult = new Date(acc.MetaData.LastUpdatedTime);
+      return ult >= dataCorte;
+    });
+
     if(!accounts.length){
-      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhuma conta bancária ou cartão encontrado no QuickBooks.</div></div>';
+      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhuma conta com movimentação nos últimos '+CORTE_DIAS+' dias. ('+accountsRaw.length+' contas no plano total, todas paradas)</div></div>';
       return;
     }
 
@@ -487,7 +501,7 @@ async function carregarSaldos(){
           </div>
           <div class="saldo-nome">${acc.Name}</div>
           <div class="saldo-valor ${isNegativo?'negativo':''}">${fmtMoney(saldoExibido)}</div>
-          <div class="saldo-sub">Atualizado: ${ultUpdate}</div>
+          <div class="saldo-sub">Posted (sem pendings) · ${ultUpdate}</div>
         </div>
       `;
     });
@@ -509,8 +523,10 @@ async function carregarKPIs(){
       + '&start_date=' + encodeURIComponent(periodo.start)
       + '&end_date=' + encodeURIComponent(periodo.end)
       + '&minorversion=70';
+    console.log('[KPIs] fetch URL:', url);
     const r = await fetch(url);
     const data = await r.json();
+    console.log('[KPIs] HTTP status:', r.status, '· tem Report?', !!(data && data.Report));
     if(data.error){
       ['kpi-receita','kpi-despesas','kpi-lucro'].forEach(id=>{document.getElementById(id).textContent='Erro';});
       console.error('Erro P&L:', data);
@@ -521,6 +537,7 @@ async function carregarKPIs(){
     const despesas = extrairValor(report,'Total Expenses') || 0;
     const cogs = extrairValor(report,'Total Cost of Goods Sold') || extrairValor(report,'Total COGS') || 0;
     const lucro = extrairValor(report,'Net Income') || (receita - despesas - cogs);
+    console.log('[KPIs] valores extraídos:', {receita, despesas, cogs, lucro});
 
     document.getElementById('kpi-receita').textContent = fmtMoney(receita);
     document.getElementById('kpi-receita').classList.remove('kpi-loading');
