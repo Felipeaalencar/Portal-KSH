@@ -947,8 +947,10 @@ function renderProjetos(){
 
     <div class="proj-filters">
       <button class="proj-filter-pill active" data-status="ativos" onclick="filtrarProjetos('ativos')">Em andamento</button>
-      <button class="proj-filter-pill" data-status="todos" onclick="filtrarProjetos('todos')">Todos</button>
+      <button class="proj-filter-pill" data-status="este-mes" onclick="filtrarProjetos('este-mes')">Este mês</button>
+      <button class="proj-filter-pill" data-status="mes-passado" onclick="filtrarProjetos('mes-passado')">Mês passado</button>
       <button class="proj-filter-pill" data-status="negativos" onclick="filtrarProjetos('negativos')">⚠️ Margem negativa</button>
+      <button class="proj-filter-pill" data-status="todos" onclick="filtrarProjetos('todos')">Todos</button>
       <input class="proj-search" id="proj-search" placeholder="🔍 Buscar projeto ou cliente..." oninput="filtrarProjetos()">
     </div>
 
@@ -999,62 +1001,56 @@ async function carregarProjetos(){
       return;
     }
 
-    // 2-4. Busca Invoices + Purchases + Bills em paralelo (pra performance)
-    const [rInv, rPur, rBill] = await Promise.all([
-      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Invoice MAXRESULTS 1000')),
-      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Purchase MAXRESULTS 1000')),
-      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Bill MAXRESULTS 1000'))
-    ]);
-    const dInv = await rInv.json();
-    const dPur = await rPur.json();
-    const dBill = await rBill.json();
+    // 2. Pra cada projeto, busca o P&L filtrado (mesma fonte que QBO Projects usa).
+    // P&L estrutura: Income (no topo) + COGS + Expenses (no meio) + NetIncome (no fim).
+    // Custos = COGS + Expenses (= o que o QBO chama de "Custos").
+    document.getElementById('proj-tbody').innerHTML = `<tr class="proj-loading-row"><td colspan="5">⏳ Buscando P&L de ${projetos.length} projetos no QuickBooks (paralelo)...</td></tr>`;
 
-    const invoices = (dInv.QueryResponse && dInv.QueryResponse.Invoice) || [];
-    const purchases = (dPur.QueryResponse && dPur.QueryResponse.Purchase) || [];
-    const bills = (dBill.QueryResponse && dBill.QueryResponse.Bill) || [];
+    const buscarPLProjeto = async (projId) => {
+      try{
+        const endpoint = `reports/ProfitAndLoss?customer=${projId}&date_macro=All&accounting_method=Accrual`;
+        const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent(endpoint));
+        if(!r.ok) return null;
+        const d = await r.json();
+        return d;
+      }catch(e){
+        console.warn('Falha P&L projeto', projId, e);
+        return null;
+      }
+    };
 
-    // 5. Agrega por projeto
-    const dados = projetos.map(p => {
-      const projId = p.Id;
-      const clienteNome = (p.ParentRef && p.ParentRef.name) || '—';
+    // Roda em batches de 10 pra não estourar nada
+    const dados = [];
+    const BATCH_SIZE = 10;
+    for(let i = 0; i < projetos.length; i += BATCH_SIZE){
+      const batch = projetos.slice(i, i + BATCH_SIZE);
+      const reports = await Promise.all(batch.map(p => buscarPLProjeto(p.Id)));
 
-      // Receita = sum(Invoice.TotalAmt where CustomerRef.value = projId)
-      let receita = 0;
-      invoices.forEach(inv => {
-        if(inv.CustomerRef && inv.CustomerRef.value === projId){
-          receita += Number(inv.TotalAmt || 0);
-        }
+      batch.forEach((p, idx) => {
+        const pnl = reports[idx];
+        const receita = extrairValor(pnl, 'Income') || extrairValor(pnl, 'Total Income') || 0;
+        const cogs = extrairValor(pnl, 'COGS') || extrairValor(pnl, 'Total COGS') || 0;
+        const exp = extrairValor(pnl, 'Expenses') || extrairValor(pnl, 'Total Expenses') || 0;
+        const custo = Math.abs(cogs) + Math.abs(exp);
+        const lucro = receita - custo;
+        const margem = receita > 0 ? (lucro / receita) * 100 : null;
+
+        dados.push({
+          id: p.Id,
+          nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
+          cliente: (p.ParentRef && p.ParentRef.name) || '—',
+          receita: receita,
+          custo: custo,
+          lucro: lucro,
+          margem: margem,
+          ativo: p.Active !== false,
+          criado: p.MetaData ? p.MetaData.CreateTime : null
+        });
       });
 
-      // Custos = sum das Lines de Purchase + Bill onde CustomerRef = projId
-      let custo = 0;
-      const acumularLines = (lines) => {
-        if(!Array.isArray(lines)) return;
-        lines.forEach(ln => {
-          const det = ln.AccountBasedExpenseLineDetail || ln.ItemBasedExpenseLineDetail;
-          if(det && det.CustomerRef && det.CustomerRef.value === projId){
-            custo += Number(ln.Amount || 0);
-          }
-        });
-      };
-      purchases.forEach(pur => acumularLines(pur.Line));
-      bills.forEach(b => acumularLines(b.Line));
-
-      const lucro = receita - custo;
-      const margem = receita > 0 ? (lucro / receita) * 100 : null;
-
-      return {
-        id: projId,
-        nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
-        cliente: clienteNome,
-        receita: receita,
-        custo: custo,
-        lucro: lucro,
-        margem: margem,
-        ativo: p.Active !== false,
-        criado: p.MetaData ? p.MetaData.CreateTime : null
-      };
-    });
+      // Atualiza progress
+      document.getElementById('proj-tbody').innerHTML = `<tr class="proj-loading-row"><td colspan="5">⏳ ${Math.min(i+BATCH_SIZE, projetos.length)}/${projetos.length} projetos processados...</td></tr>`;
+    }
 
     projetosCache = dados;
     renderProjetosTabela(dados);
@@ -1109,6 +1105,26 @@ function renderProjetosTabela(dados){
   let filtrados = dados.slice();
   if(filtroStatus === 'ativos') filtrados = filtrados.filter(d => d.ativo);
   else if(filtroStatus === 'negativos') filtrados = filtrados.filter(d => d.margem !== null && d.margem < 0);
+  else if(filtroStatus === 'este-mes'){
+    const hoje = new Date();
+    const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1).getTime();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0, 23,59,59).getTime();
+    filtrados = filtrados.filter(d => {
+      if(!d.criado) return false;
+      const t = new Date(d.criado).getTime();
+      return t >= ini && t <= fim;
+    });
+  }
+  else if(filtroStatus === 'mes-passado'){
+    const hoje = new Date();
+    const ini = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1).getTime();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23,59,59).getTime();
+    filtrados = filtrados.filter(d => {
+      if(!d.criado) return false;
+      const t = new Date(d.criado).getTime();
+      return t >= ini && t <= fim;
+    });
+  }
 
   if(busca.trim()){
     const q = busca.toLowerCase();
@@ -1118,12 +1134,12 @@ function renderProjetosTabela(dados){
     );
   }
 
-  // Ordena por margem (piores primeiro), null no fim
+  // Ordena por data de criação DESC (mais novos primeiro). Sem data vai pro fim.
   filtrados.sort((a,b) => {
-    if(a.margem === null && b.margem === null) return (b.custo||0) - (a.custo||0);
-    if(a.margem === null) return 1;
-    if(b.margem === null) return -1;
-    return a.margem - b.margem;
+    if(!a.criado && !b.criado) return 0;
+    if(!a.criado) return 1;
+    if(!b.criado) return -1;
+    return new Date(b.criado).getTime() - new Date(a.criado).getTime();
   });
 
   if(filtrados.length === 0){
