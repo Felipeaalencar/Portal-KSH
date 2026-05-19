@@ -99,6 +99,70 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .btn-disconnect:hover{color:var(--red);border-color:rgba(231,76,60,.3)}
 .skel{background:linear-gradient(90deg,var(--bg3) 0%,var(--bg4) 50%,var(--bg3) 100%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:6px;height:18px}
 @keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* === LAYOUT APP (sidebar + main) === */
+.app-layout{flex:1;display:flex;min-height:0}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;overflow-y:auto}
+.sidebar-section{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;padding:10px 10px 6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;border:1px solid transparent;user-select:none;font-family:inherit;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg3);color:var(--text)}
+.sidebar-item.active{background:linear-gradient(135deg,rgba(44,160,28,.18),rgba(28,122,19,.08));color:var(--text);border-color:rgba(44,160,28,.35);font-weight:600}
+.sidebar-item .ic{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.sidebar-item .bg{background:rgba(245,158,11,.18);color:var(--amber);font-size:9px;padding:2px 6px;border-radius:4px;margin-left:auto;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.sidebar-item .bg.purple{background:var(--purple-bg);color:var(--purple)}
+.sidebar-spacer{flex:1}
+.sidebar-divider{height:1px;background:var(--border);margin:12px 0}
+.main-content{flex:1;padding:32px 28px;min-width:0;overflow-x:hidden}
+.main-content-inner{max-width:1200px;margin:0 auto}
+
+/* === PLACEHOLDER GENÉRICO === */
+.placeholder-page{background:var(--bg2);border:1px dashed var(--border2);border-radius:14px;padding:60px 40px;text-align:center;margin-top:20px}
+.placeholder-icon{font-size:48px;margin-bottom:14px}
+.placeholder-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.placeholder-sub{font-size:13px;color:var(--text3);max-width:480px;margin:0 auto;line-height:1.6}
+.placeholder-tag{display:inline-block;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:4px 10px;border-radius:6px;margin-top:14px;font-weight:600}
+
+/* === PROJETOS === */
+.projetos-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.proj-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.proj-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:6px}
+.proj-kpi-value{font-size:20px;font-weight:700;letter-spacing:-0.3px}
+.proj-kpi-value.green{color:var(--green)}
+.proj-kpi-value.red{color:var(--red)}
+.proj-kpi-value.amber{color:var(--amber)}
+.proj-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.proj-filter-pill{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.proj-filter-pill:hover{background:var(--bg4);color:var(--text)}
+.proj-filter-pill.active{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border-color:#2ca01c}
+.proj-search{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 12px;border-radius:6px;font-family:inherit;outline:none;min-width:220px;margin-left:auto}
+.proj-search:focus{border-color:var(--blue)}
+.proj-table{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.proj-table table{width:100%;border-collapse:collapse;font-size:12px}
+.proj-table th{background:var(--bg3);text-align:left;padding:11px 14px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;border-bottom:1px solid var(--border)}
+.proj-table th.right{text-align:right}
+.proj-table td{padding:13px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.proj-table tr:last-child td{border-bottom:none}
+.proj-table tr:hover td{background:var(--bg3)}
+.proj-table td.right{text-align:right}
+.proj-nome{color:var(--text);font-weight:600;font-size:13px}
+.proj-cliente{color:var(--text3);font-size:11px;margin-top:2px}
+.proj-bar-wrap{display:flex;flex-direction:column;gap:5px;min-width:170px}
+.proj-bar-row{display:flex;align-items:center;gap:8px;font-size:10px}
+.proj-bar-row .lbl{color:var(--text3);width:36px;flex-shrink:0;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.proj-bar-row .bar{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.proj-bar-row .bar .fill{height:100%;border-radius:3px;transition:width .4s}
+.proj-bar-row .bar .fill.income{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.proj-bar-row .bar .fill.cost{background:linear-gradient(90deg,#0ea5e9,#0284c7)}
+.proj-bar-row .val{color:var(--text);font-weight:600;font-size:10px;min-width:70px;text-align:right}
+.margem-tag{display:inline-block;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:-0.2px}
+.margem-tag.green{background:var(--green-bg);color:var(--green)}
+.margem-tag.red{background:var(--red-bg);color:var(--red)}
+.margem-tag.amber{background:var(--amber-bg);color:var(--amber)}
+.margem-tag.gray{background:var(--bg3);color:var(--text3)}
+.margem-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.proj-row.danger{background:rgba(239,68,68,.04)}
+.proj-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+.proj-loading-row td{padding:30px;text-align:center;color:var(--text3)}
 </style>
 </head>
 <body>
@@ -114,10 +178,13 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
   <button class="btn-voltar" onclick="voltarSeletor()">← Voltar</button>
 </div>
 
-<div class="container">
-  <div id="conteudo">
-    <div style="text-align:center;padding:80px 20px;color:var(--text3)">⏳ Carregando...</div>
-  </div>
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar" style="display:none"></aside>
+  <main class="main-content">
+    <div class="main-content-inner" id="conteudo">
+      <div style="text-align:center;padding:80px 20px;color:var(--text3)">⏳ Carregando...</div>
+    </div>
+  </main>
 </div>
 
 <script>
@@ -264,6 +331,22 @@ const params = new URLSearchParams(window.location.search);
 const qboError = params.get('qbo_error');
 const qboConnected = params.get('qbo_connected');
 
+// === ESTADO GLOBAL DO APP ===
+let qboStatus = null;
+let paginaAtual = 'visao';
+let dadosVisaoMsg = '';
+let projetosCache = null;
+
+const PAGINAS = {
+  visao:    { titulo:'Visão Geral', sub:'Filtros, saldos, KPIs e P&L', sprint:'Sprint 1 ✅' },
+  bancos:   { titulo:'Saldos & Bancos', sub:'Saldos REAIS dos bancos via Plaid', sprint:'Sprint 1.5 ⏳ aguardando você criar conta Plaid' },
+  categ:    { titulo:'Categorização', sub:'IA caça transações sem categoria no QBO', sprint:'Sprint 3 ⏳' },
+  assin:    { titulo:'Assinaturas', sub:'Audit de pagamentos recorrentes (zombie subscriptions)', sprint:'Sprint 3.5 ⏳' },
+  projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto em aberto', sprint:'Sprint 2 ✅' },
+  cfo:      { titulo:'CFO Insights', sub:'Alertas críticos + dica do expert smart home', sprint:'Sprint 4 ⏳' },
+  config:   { titulo:'Configurações', sub:'Integrações e preferências', sprint:'Pendente' }
+};
+
 async function carregar(){
   const cont = document.getElementById('conteudo');
   let errorHtml = '';
@@ -312,8 +395,70 @@ async function carregar(){
     return;
   }
 
-  const sucessoMsg = qboConnected ? `<div style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);margin-bottom:20px">✅ Conectado com sucesso ao QuickBooks!</div>` : '';
+  // === QBO CONECTADO — MONTA SHELL E NAVEGA ===
+  qboStatus = status;
+  dadosVisaoMsg = (qboConnected ? `<div style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);margin-bottom:20px">✅ Conectado com sucesso ao QuickBooks!</div>` : '') + errorHtml;
   if(qboConnected){ history.replaceState({},'','/financeiro.html'); }
+
+  montarSidebar();
+  document.getElementById('sidebar').style.display = 'flex';
+
+  const hash = window.location.hash.replace('#','');
+  navegar(hash && PAGINAS[hash] ? hash : 'visao');
+}
+
+function montarSidebar(){
+  document.getElementById('sidebar').innerHTML = `
+    <div class="sidebar-section">Visão</div>
+    <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
+    <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
+    <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">🔁</span><span>Assinaturas</span></button>
+    <div class="sidebar-section">Análises</div>
+    <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
+    <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-divider"></div>
+    <button class="sidebar-item" data-pagina="config" onclick="navegar('config')"><span class="ic">⚙️</span><span>Configurações</span></button>
+  `;
+}
+
+function navegar(pagina){
+  if(!PAGINAS[pagina]) pagina = 'visao';
+  paginaAtual = pagina;
+  if(window.location.hash !== '#'+pagina) window.location.hash = '#'+pagina;
+  document.querySelectorAll('.sidebar-item').forEach(it=>{
+    it.classList.toggle('active', it.dataset.pagina === pagina);
+  });
+  if(chartLP){ try{ chartLP.destroy(); }catch(e){} chartLP = null; }
+  window.scrollTo(0,0);
+  if(pagina === 'visao') renderVisaoGeral();
+  else if(pagina === 'projetos') renderProjetos();
+  else renderPlaceholder(pagina);
+}
+
+function renderPlaceholder(pagina){
+  const p = PAGINAS[pagina];
+  document.getElementById('conteudo').innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">${p.titulo}</div>
+        <div class="page-sub">${p.sub}</div>
+      </div>
+      <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+    </div>
+    <div class="placeholder-page">
+      <div class="placeholder-icon">🚧</div>
+      <div class="placeholder-title">${p.titulo}</div>
+      <div class="placeholder-sub">${p.sub}</div>
+      <div class="placeholder-tag">${p.sprint}</div>
+    </div>
+  `;
+}
+
+function renderVisaoGeral(){
+  const cont = document.getElementById('conteudo');
+  const status = qboStatus || {};
 
   const hoje = new Date();
   const anoAtual = hoje.getFullYear();
@@ -322,7 +467,7 @@ async function carregar(){
   let anosOpts = '';
   for(let a=anoAtual; a>=anoAtual-5; a--){ anosOpts += `<option value="${a}">${a}</option>`; }
 
-  cont.innerHTML = sucessoMsg + errorHtml + `
+  cont.innerHTML = dadosVisaoMsg + `
     <div class="page-hd">
       <div>
         <div class="page-title">Visão Geral</div>
@@ -392,10 +537,11 @@ async function carregar(){
     </div>
 
     <div class="info-box">
-      <strong>💡 Sprint 1 estabilizada.</strong> Próxima Sprint 3 vai criar fluxo de categorização direto no Portal — sua assistente vai categorizar as transações pendentes pelo Portal KSH e o Posted vai convergir com o saldo real do banco automaticamente.
+      <strong>💡 Sprint 2 ativa.</strong> Sidebar à esquerda + página "Projetos" funcional. Próxima: Sprint 1.5 (Plaid - aguardando você criar conta).
     </div>
   `;
 
+  dadosVisaoMsg = '';
   aplicarAtalho('mes-atual');
 }
 
@@ -776,6 +922,284 @@ async function carregarGraficoLP(){
     console.error('Erro gráfico L/P:', e);
   }
 }
+
+// === PÁGINA PROJETOS ===
+function renderProjetos(){
+  const status = qboStatus || {};
+  document.getElementById('conteudo').innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">📁 Projetos</div>
+        <div class="page-sub">Renda × custo × margem por projeto · dados do QuickBooks</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+        <button class="section-action" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 12px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px" onclick="projetosCache=null;carregarProjetos()">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <div class="projetos-summary" id="projetos-summary">
+      <div class="proj-kpi"><div class="proj-kpi-label">Total Projetos</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Receita Total</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Custos Totais</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Margem Média</div><div class="proj-kpi-value">⏳</div></div>
+    </div>
+
+    <div class="proj-filters">
+      <button class="proj-filter-pill active" data-status="ativos" onclick="filtrarProjetos('ativos')">Em andamento</button>
+      <button class="proj-filter-pill" data-status="todos" onclick="filtrarProjetos('todos')">Todos</button>
+      <button class="proj-filter-pill" data-status="negativos" onclick="filtrarProjetos('negativos')">⚠️ Margem negativa</button>
+      <input class="proj-search" id="proj-search" placeholder="🔍 Buscar projeto ou cliente..." oninput="filtrarProjetos()">
+    </div>
+
+    <div class="proj-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Projeto</th>
+            <th>Cliente</th>
+            <th style="min-width:220px">Renda vs. Custo</th>
+            <th class="right">Margem de Lucro</th>
+            <th class="right">Data de Início</th>
+          </tr>
+        </thead>
+        <tbody id="proj-tbody">
+          <tr class="proj-loading-row"><td colspan="5">⏳ Buscando projetos no QuickBooks (pode levar 5-10s pra agregar invoices + purchases)...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box" style="margin-top:20px">
+      <strong>💡 Sprint 2 — Projetos espelhados do QBO + bônus.</strong> Mostra o que o QBO mostra (renda, custos, margem%) e adiciona: lucro absoluto $, ordenação por pior margem, filtro de negativos, busca. <strong>Próxima Sprint 2.5:</strong> cruzamento com lançamentos do Portal pra ver tempo real da equipe × preço cobrado.
+    </div>
+  `;
+
+  if(projetosCache){
+    renderProjetosTabela(projetosCache);
+    renderProjetosSummary(projetosCache);
+  }else{
+    carregarProjetos();
+  }
+}
+
+async function carregarProjetos(){
+  try{
+    // 1. Lista de projetos (Customer com Job=true)
+    const rCust = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Customer where Job=true MAXRESULTS 200'));
+    if(!rCust.ok){
+      document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="5" class="proj-empty">Erro HTTP ${rCust.status} ao buscar projetos.</td></tr>`;
+      return;
+    }
+    const dCust = await rCust.json();
+    const projetos = (dCust.QueryResponse && dCust.QueryResponse.Customer) || [];
+
+    if(projetos.length === 0){
+      document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="5" class="proj-empty">📭 Nenhum projeto encontrado no QuickBooks.<br><small style="color:var(--text3)">Verifique se a feature Projects está habilitada no seu QBO.</small></td></tr>`;
+      renderProjetosSummary([]);
+      return;
+    }
+
+    // 2-4. Busca Invoices + Purchases + Bills em paralelo (pra performance)
+    const [rInv, rPur, rBill] = await Promise.all([
+      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Invoice MAXRESULTS 1000')),
+      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Purchase MAXRESULTS 1000')),
+      fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Bill MAXRESULTS 1000'))
+    ]);
+    const dInv = await rInv.json();
+    const dPur = await rPur.json();
+    const dBill = await rBill.json();
+
+    const invoices = (dInv.QueryResponse && dInv.QueryResponse.Invoice) || [];
+    const purchases = (dPur.QueryResponse && dPur.QueryResponse.Purchase) || [];
+    const bills = (dBill.QueryResponse && dBill.QueryResponse.Bill) || [];
+
+    // 5. Agrega por projeto
+    const dados = projetos.map(p => {
+      const projId = p.Id;
+      const clienteNome = (p.ParentRef && p.ParentRef.name) || '—';
+
+      // Receita = sum(Invoice.TotalAmt where CustomerRef.value = projId)
+      let receita = 0;
+      invoices.forEach(inv => {
+        if(inv.CustomerRef && inv.CustomerRef.value === projId){
+          receita += Number(inv.TotalAmt || 0);
+        }
+      });
+
+      // Custos = sum das Lines de Purchase + Bill onde CustomerRef = projId
+      let custo = 0;
+      const acumularLines = (lines) => {
+        if(!Array.isArray(lines)) return;
+        lines.forEach(ln => {
+          const det = ln.AccountBasedExpenseLineDetail || ln.ItemBasedExpenseLineDetail;
+          if(det && det.CustomerRef && det.CustomerRef.value === projId){
+            custo += Number(ln.Amount || 0);
+          }
+        });
+      };
+      purchases.forEach(pur => acumularLines(pur.Line));
+      bills.forEach(b => acumularLines(b.Line));
+
+      const lucro = receita - custo;
+      const margem = receita > 0 ? (lucro / receita) * 100 : null;
+
+      return {
+        id: projId,
+        nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
+        cliente: clienteNome,
+        receita: receita,
+        custo: custo,
+        lucro: lucro,
+        margem: margem,
+        ativo: p.Active !== false,
+        criado: p.MetaData ? p.MetaData.CreateTime : null
+      };
+    });
+
+    projetosCache = dados;
+    renderProjetosTabela(dados);
+    renderProjetosSummary(dados);
+  }catch(e){
+    console.error('Erro projetos:', e);
+    document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="5" class="proj-empty">⚠️ Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function renderProjetosSummary(dados){
+  const el = document.getElementById('projetos-summary');
+  if(!el) return;
+  const totReceita = dados.reduce((a,d) => a + (d.receita||0), 0);
+  const totCusto = dados.reduce((a,d) => a + (d.custo||0), 0);
+  const margemMedia = totReceita > 0 ? ((totReceita - totCusto)/totReceita * 100) : 0;
+  const ativos = dados.filter(d => d.ativo).length;
+
+  el.innerHTML = `
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Total Projetos</div>
+      <div class="proj-kpi-value">${dados.length}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${ativos} ativos</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Receita Total</div>
+      <div class="proj-kpi-value green">${fmtMoney(totReceita)}</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Custos Totais</div>
+      <div class="proj-kpi-value amber">${fmtMoney(totCusto)}</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Margem Média</div>
+      <div class="proj-kpi-value ${margemMedia < 0 ? 'red' : margemMedia < 20 ? 'amber' : 'green'}">${margemMedia.toFixed(1)}%</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${fmtMoney(totReceita - totCusto)} lucro</div>
+    </div>
+  `;
+}
+
+function renderProjetosTabela(dados){
+  const tbody = document.getElementById('proj-tbody');
+  if(!tbody) return;
+
+  let filtroStatus = 'ativos';
+  document.querySelectorAll('.proj-filter-pill').forEach(b => {
+    if(b.classList.contains('active')) filtroStatus = b.dataset.status;
+  });
+  const buscaEl = document.getElementById('proj-search');
+  const busca = (buscaEl && buscaEl.value) || '';
+
+  let filtrados = dados.slice();
+  if(filtroStatus === 'ativos') filtrados = filtrados.filter(d => d.ativo);
+  else if(filtroStatus === 'negativos') filtrados = filtrados.filter(d => d.margem !== null && d.margem < 0);
+
+  if(busca.trim()){
+    const q = busca.toLowerCase();
+    filtrados = filtrados.filter(d =>
+      (d.nome||'').toLowerCase().includes(q) ||
+      (d.cliente||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Ordena por margem (piores primeiro), null no fim
+  filtrados.sort((a,b) => {
+    if(a.margem === null && b.margem === null) return (b.custo||0) - (a.custo||0);
+    if(a.margem === null) return 1;
+    if(b.margem === null) return -1;
+    return a.margem - b.margem;
+  });
+
+  if(filtrados.length === 0){
+    tbody.innerHTML = `<tr><td colspan="5" class="proj-empty">Nenhum projeto com esses filtros.</td></tr>`;
+    return;
+  }
+
+  const maxAbs = Math.max(
+    ...filtrados.map(d => Math.max(d.receita||0, d.custo||0)),
+    1
+  );
+
+  let html = '';
+  filtrados.forEach(d => {
+    const dangerCls = (d.margem !== null && d.margem < 0) ? 'danger' : '';
+
+    let margemCls = 'gray';
+    let margemTxt = '—';
+    if(d.margem !== null){
+      if(d.margem < 0) margemCls = 'red';
+      else if(d.margem < 20) margemCls = 'amber';
+      else margemCls = 'green';
+      margemTxt = (d.margem > 0 ? '+' : '') + d.margem.toFixed(1) + '%';
+    }
+
+    const dataInicio = d.criado ? new Date(d.criado).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'}) : '—';
+
+    const wReceita = Math.min(100, (d.receita/maxAbs)*100);
+    const wCusto = Math.min(100, (d.custo/maxAbs)*100);
+
+    html += `
+      <tr class="proj-row ${dangerCls}">
+        <td><div class="proj-nome">⭐ ${d.nome}</div></td>
+        <td><span style="color:var(--text2);font-size:12px">${d.cliente}</span></td>
+        <td>
+          <div class="proj-bar-wrap">
+            <div class="proj-bar-row">
+              <span class="lbl">Renda</span>
+              <span class="bar"><span class="fill income" style="width:${wReceita}%"></span></span>
+              <span class="val">${fmtMoney(d.receita)}</span>
+            </div>
+            <div class="proj-bar-row">
+              <span class="lbl">Custos</span>
+              <span class="bar"><span class="fill cost" style="width:${wCusto}%"></span></span>
+              <span class="val">${fmtMoney(d.custo)}</span>
+            </div>
+          </div>
+        </td>
+        <td class="right">
+          <span class="margem-tag ${margemCls}">${margemTxt}</span>
+          ${d.margem !== null ? `<div class="margem-sub">${d.lucro >= 0 ? '+' : ''}${fmtMoney(d.lucro)}</div>` : ''}
+        </td>
+        <td class="right" style="color:var(--text3);font-size:11px">${dataInicio}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function filtrarProjetos(status){
+  if(status){
+    document.querySelectorAll('.proj-filter-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.status === status);
+    });
+  }
+  if(projetosCache) renderProjetosTabela(projetosCache);
+}
+
+// === Roteamento via hash (back/forward do browser) ===
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#','');
+  if(hash && PAGINAS[hash] && hash !== paginaAtual){
+    navegar(hash);
+  }
+});
 
 carregar();
 </script>
