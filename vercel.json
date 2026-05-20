@@ -1,1 +1,8 @@
-{}
+{
+  "buildCommand": "echo 'force rebuild for api/ai/'",
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
