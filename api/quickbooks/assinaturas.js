@@ -1,23 +1,38 @@
 // /api/quickbooks/assinaturas.js
 //
-// Detecta assinaturas recorrentes (Purchase + Bill) nos últimos 18 meses.
-// Agrupa por vendor + valor (±5%) e identifica padrões mensal/trimestral/anual.
-// Retorna no formato esperado pelo frontend renderAssinHTML().
+// Detecta cobranças recorrentes (Purchase + Bill) nos últimos 18 meses.
+// Categoriza: Software, Infraestrutura, Marketing, Seguros, Bancos/Taxas, Outros.
 
-// ─── KEYWORDS DE CATEGORIZAÇÃO ───
 const CAT_KEYS = {
   Software: ['adobe','figma','notion','slack','microsoft','365','office','quickbooks','intuit',
     'google workspace','gsuite','dropbox','zoom','asana','trello','monday','airtable','todoist',
-    'lastpass','1password','github','gitlab','jetbrains','visual studio','linear','clickup'],
+    'lastpass','1password','github','gitlab','jetbrains','visual studio','linear','clickup',
+    'apple','icloud','audible','spotify','netflix','calendly','loom','grammarly','typeform',
+    'descript','superhuman','sketch','linear','plausible'],
   Infraestrutura: ['aws','amazon web','azure','google cloud','gcp','vercel','supabase','cloudflare',
     'digitalocean','heroku','netlify','render','railway','fly.io','linode','mongodb','redis',
-    'twilio','sendgrid','mailgun','stripe','plaid','rapidapi','postman'],
+    'twilio','sendgrid','mailgun','stripe','plaid','rapidapi','postman','datadog','sentry',
+    'fastly','akamai','contabo','hostinger','hostgator','godaddy','namecheap','squarespace','wordpress'],
   Marketing: ['mailchimp','brevo','sendinblue','activecampaign','constant contact','hubspot',
     'salesforce','canva','semrush','ahrefs','moz','klaviyo','convertkit','drip','buffer',
     'hootsuite','later','sprout social','meta business','facebook ads','google ads','linkedin ads',
-    'tiktok ads','snapchat ads']
+    'tiktok ads','snapchat ads','intercom','drift','calendly'],
+  Seguros: ['geico','progressive','statefarm','state farm','allstate','liberty','farmers',
+    'nationwide','travelers','usaa','aaa','metlife','aetna','blue cross','blue shield',
+    'cigna','humana','kaiser','united health','next insur','next insurance','hiscox','simply business',
+    'biberk','thimble','assurant','chubb','hartford','intuit insurance','insur','insurance'],
+  'Bancos/Taxas': ['checking','savings','credit card','debit card','chase','bank of america',
+    'wells fargo','citi','capital one','american express','amex','discover','visa','mastercard',
+    'paypal','venmo','zelle','wire fee','overdraft','atm fee','monthly fee','service fee',
+    'apple card','wallet','revolut','wise','klarna','affirm']
 };
 const EMAIL_MKT = ['mailchimp','brevo','sendinblue','activecampaign','constant contact','klaviyo','convertkit','drip','hubspot'];
+
+// Keywords pra detectar nome de conta/cartão (não é um vendor real)
+const NAO_VENDOR = [
+  'checking', 'savings', 'credit card', 'debit card', 'cartao', 'cartão',
+  'account', 'conta', 'wallet'
+];
 
 function categorizar(nome){
   const n = (nome||'').toLowerCase();
@@ -25,6 +40,11 @@ function categorizar(nome){
     if(keys.some(k => n.includes(k))) return cat;
   }
   return 'Outros';
+}
+
+function isNomeConta(nome){
+  const n = (nome||'').toLowerCase();
+  return NAO_VENDOR.some(k => n.includes(k));
 }
 
 function pertoDe(v1, v2, tol = 0.05){
@@ -44,7 +64,7 @@ function detectFreq(diasArr){
 }
 
 function ymKey(dateStr){
-  return dateStr.slice(0,7); // 'YYYY-MM'
+  return dateStr.slice(0,7);
 }
 
 module.exports = async (req, res) => {
@@ -74,19 +94,44 @@ module.exports = async (req, res) => {
     const purchases = purData?.QueryResponse?.Purchase || [];
     const bills = billData?.QueryResponse?.Bill || [];
 
-    // Normaliza pra { vendor, valor, data }
+    // Normaliza pra { vendor, valor, data, isConta }
     const transacoes = [];
+
     purchases.forEach(p => {
-      const vendor = p?.EntityRef?.name || p?.PaymentMethodRef?.name || p?.AccountRef?.name || 'Unknown';
+      // Tenta achar o nome do vendor real primeiro. Se não tiver, usa fallback.
+      let vendor = p?.EntityRef?.name;
+      let isConta = false;
+
+      if (!vendor) {
+        // Fallback: tenta extrair de Description ou Memo
+        const desc = (p?.PrivateNote || p?.Memo || '').trim();
+        if (desc) {
+          // Pega só primeira parte antes de qualquer numero/data
+          vendor = desc.split(/\s+\d|\s+\$/)[0].trim().substring(0, 60);
+        }
+      }
+
+      if (!vendor) {
+        // Último fallback: nome da conta/cartão
+        vendor = p?.PaymentMethodRef?.name || p?.AccountRef?.name || 'Unknown';
+        isConta = true;
+      }
+
       const valor = Math.abs(parseFloat(p?.TotalAmt || 0));
       const data = p?.TxnDate;
-      if(valor > 0 && data) transacoes.push({ vendor, valor, data, id: p?.Id, src: 'Purchase' });
+      if(valor > 0 && data) transacoes.push({ vendor, valor, data, id: p?.Id, src: 'Purchase', isConta });
     });
+
     bills.forEach(b => {
       const vendor = b?.VendorRef?.name || 'Unknown';
       const valor = Math.abs(parseFloat(b?.TotalAmt || 0));
       const data = b?.TxnDate;
-      if(valor > 0 && data) transacoes.push({ vendor, valor, data, id: b?.Id, src: 'Bill' });
+      if(valor > 0 && data) transacoes.push({ vendor, valor, data, id: b?.Id, src: 'Bill', isConta: false });
+    });
+
+    // Detecta isConta também por nome (segurança)
+    transacoes.forEach(t => {
+      if (!t.isConta && isNomeConta(t.vendor)) t.isConta = true;
     });
 
     // Agrupa por (vendor + valor ±5%)
@@ -96,7 +141,7 @@ module.exports = async (req, res) => {
         x.vendor.toLowerCase() === t.vendor.toLowerCase() && pertoDe(x.valor, t.valor)
       );
       if(!g){
-        g = { vendor: t.vendor, valor: t.valor, txs: [] };
+        g = { vendor: t.vendor, valor: t.valor, txs: [], isConta: t.isConta };
         grupos.push(g);
       }
       g.txs.push(t);
@@ -128,7 +173,6 @@ module.exports = async (req, res) => {
       else if(freq.tipo === 'Anual') porMes = g.valor / 12;
       const totalAnual = porMes * 12;
 
-      // Detecta aumento
       let aumentoPct = 0;
       let valorAnterior = null;
       let valorAtual = g.valor;
@@ -146,7 +190,9 @@ module.exports = async (req, res) => {
 
       const diasDesdeUltima = Math.round((hoje - ultimaData) / (1000*60*60*24));
       const ativa = diasDesdeUltima < (freq.dias * 1.5);
-      const categoria = categorizar(g.vendor);
+
+      // Categoria: se for conta, força Bancos/Taxas (mesmo se nome bater outras keywords)
+      let categoria = g.isConta ? 'Bancos/Taxas' : categorizar(g.vendor);
 
       assinaturas.push({
         vendor: g.vendor,
@@ -163,15 +209,16 @@ module.exports = async (req, res) => {
         totalAnual,
         ativa,
         diasDesdeUltima,
+        isConta: g.isConta,
         qboLink: null
       });
     });
 
-    // Ordena por totalAnual desc
     assinaturas.sort((a,b) => b.totalAnual - a.totalAnual);
 
-    // ─── ALERTAS DE REDUNDÂNCIA ───
     const ativas = assinaturas.filter(a => a.ativa);
+
+    // Redundâncias de email marketing
     const emailMktAtivas = ativas.filter(a => EMAIL_MKT.some(k => a.vendor.toLowerCase().includes(k)));
     const alertas = [];
     if(emailMktAtivas.length >= 2){
@@ -187,7 +234,6 @@ module.exports = async (req, res) => {
       });
     }
 
-    // ─── RESUMO ───
     const totalMes = ativas.reduce((a,b)=>a+b.totalMensal,0);
     const totalAno = totalMes * 12;
     const qtdMensais = ativas.filter(a => a.frequencia === 'Mensal').length;
@@ -195,13 +241,11 @@ module.exports = async (req, res) => {
     const qtdAumentaram = ativas.filter(a => a.aumentoPct > 0).length;
     const economiaPotencialAno = alertas.reduce((a,b)=>a+b.economiaMes,0) * 12;
 
-    // Total por categoria (em $/mês)
     const totalPorCategoria = {};
     ativas.forEach(a => {
       totalPorCategoria[a.categoria] = (totalPorCategoria[a.categoria] || 0) + a.totalMensal;
     });
 
-    // ─── CRESCIMENTO MENSAL (últimos 12 meses) ───
     const meses = [];
     for(let i = 11; i >= 0; i--){
       const d = new Date(hoje);
