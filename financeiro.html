@@ -289,76 +289,76 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 @keyframes pa-spin{to{transform:rotate(360deg)}}
 
 /* === ASSINATURAS === */
-.as-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
-.as-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
-.as-kpi.highlight{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)}
-.as-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600}
-.as-kpi.highlight .as-kpi-label{color:var(--green)}
-.as-kpi-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
-.as-kpi.highlight .as-kpi-val{color:var(--green)}
-.as-kpi-hint{font-size:10px;color:var(--text3);margin-top:3px}
-.as-kpi-hint.up{color:var(--red)}
-.as-kpi-hint.warn{color:var(--amber)}
-.as-kpi-hint.good{color:var(--green)}
+.rec-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.rec-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.rec-kpi.highlight{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)}
+.rec-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600}
+.rec-kpi.highlight .rec-kpi-label{color:var(--green)}
+.rec-kpi-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.rec-kpi.highlight .rec-kpi-val{color:var(--green)}
+.rec-kpi-hint{font-size:10px;color:var(--text3);margin-top:3px}
+.rec-kpi-hint.up{color:var(--red)}
+.rec-kpi-hint.warn{color:var(--amber)}
+.rec-kpi-hint.good{color:var(--green)}
 
-.as-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
-.as-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.rec-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.rec-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 
-.as-cat-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:10px;background:var(--bg3)}
-.as-cat-bar > div{height:100%}
-.as-cat-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--text2)}
-.as-cat-legend span{display:flex;align-items:center;gap:6px}
-.as-cat-legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.rec-cat-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:10px;background:var(--bg3)}
+.rec-cat-bar > div{height:100%}
+.rec-cat-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--text2)}
+.rec-cat-legend span{display:flex;align-items:center;gap:6px}
+.rec-cat-legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
 
-.as-alert{border-radius:10px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
-.as-alert.red{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3)}
-.as-alert.amber{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3)}
-.as-alert-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
-.as-alert.red .as-alert-title{color:var(--red)}
-.as-alert.amber .as-alert-title{color:var(--amber)}
-.as-alert-body{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px}
-.as-alert-hint{font-size:11px;color:var(--text3)}
-.as-alert-hint b{color:var(--text2)}
+.rec-alert{border-radius:10px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rec-alert.red{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3)}
+.rec-alert.amber{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3)}
+.rec-alert-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.rec-alert.red .rec-alert-title{color:var(--red)}
+.rec-alert.amber .rec-alert-title{color:var(--amber)}
+.rec-alert-body{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px}
+.rec-alert-hint{font-size:11px;color:var(--text3)}
+.rec-alert-hint b{color:var(--text2)}
 
-.as-chart-wrap{padding:6px 0}
-.as-chart-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px}
+.rec-chart-wrap{padding:6px 0}
+.rec-chart-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px}
 
-.as-filtros{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
-.as-fbtn{background:transparent;color:var(--text2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s ease}
-.as-fbtn:hover{background:var(--bg3)}
-.as-fbtn.active{background:rgba(59,130,246,.15);color:var(--blue);border-color:var(--blue);font-weight:600}
-.as-fbtn.warn{color:var(--amber);border-color:rgba(245,158,11,.4)}
-.as-fbtn.warn.active{background:rgba(245,158,11,.15);font-weight:600}
-.as-fbtn.green{color:var(--green);border-color:rgba(34,197,94,.4)}
-.as-fbtn.green.active{background:rgba(34,197,94,.15);font-weight:600}
-.as-search{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit}
+.rec-filtros{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.rec-fbtn{background:transparent;color:var(--text2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s ease}
+.rec-fbtn:hover{background:var(--bg3)}
+.rec-fbtn.active{background:rgba(59,130,246,.15);color:var(--blue);border-color:var(--blue);font-weight:600}
+.rec-fbtn.warn{color:var(--amber);border-color:rgba(245,158,11,.4)}
+.rec-fbtn.warn.active{background:rgba(245,158,11,.15);font-weight:600}
+.rec-fbtn.green{color:var(--green);border-color:rgba(34,197,94,.4)}
+.rec-fbtn.green.active{background:rgba(34,197,94,.15);font-weight:600}
+.rec-search{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit}
 
-.as-tbl{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
-.as-tbl-head{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:10px 14px;background:rgba(0,0,0,.2);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;border-bottom:1px solid var(--border)}
-.as-row{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s ease}
-.as-row:last-child{border-bottom:none}
-.as-row:hover{background:rgba(255,255,255,.02)}
-.as-row.warn{background:rgba(245,158,11,.04)}
-.as-row.red{background:rgba(239,68,68,.04)}
-.as-vendor-name{font-weight:600;color:var(--text)}
-.as-vendor-sub{font-size:10px;color:var(--text3);margin-top:2px}
-.as-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
-.as-badge.software{background:rgba(59,130,246,.15);color:var(--blue)}
-.as-badge.infra{background:rgba(124,58,237,.15);color:var(--purple)}
-.as-badge.marketing{background:rgba(245,158,11,.15);color:var(--amber)}
-.as-badge.seguros{background:rgba(34,197,94,.15);color:var(--green)}
-.as-badge.bancostaxas{background:rgba(148,163,184,.15);color:#94a3b8}
-.as-badge.outros{background:rgba(107,117,153,.15);color:var(--text3)}
-.as-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
-.as-date{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
-.as-qbo-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit}
-.as-qbo-btn:hover{background:var(--bg3);color:var(--text)}
-.as-tag{font-size:10px;margin-left:5px;font-weight:600}
-.as-tag.warn{color:var(--amber)}
-.as-tag.red{color:var(--red)}
-.as-tag.gray{color:var(--text3)}
+.rec-tbl{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.rec-tbl-head{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:10px 14px;background:rgba(0,0,0,.2);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;border-bottom:1px solid var(--border)}
+.rec-row{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s ease}
+.rec-row:last-child{border-bottom:none}
+.rec-row:hover{background:rgba(255,255,255,.02)}
+.rec-row.warn{background:rgba(245,158,11,.04)}
+.rec-row.red{background:rgba(239,68,68,.04)}
+.rec-vendor-name{font-weight:600;color:var(--text)}
+.rec-vendor-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.rec-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.rec-badge.software{background:rgba(59,130,246,.15);color:var(--blue)}
+.rec-badge.infra{background:rgba(124,58,237,.15);color:var(--purple)}
+.rec-badge.marketing{background:rgba(245,158,11,.15);color:var(--amber)}
+.rec-badge.seguros{background:rgba(34,197,94,.15);color:var(--green)}
+.rec-badge.bancostaxas{background:rgba(148,163,184,.15);color:#94a3b8}
+.rec-badge.outros{background:rgba(107,117,153,.15);color:var(--text3)}
+.rec-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.rec-date{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.rec-qbo-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit}
+.rec-qbo-btn:hover{background:var(--bg3);color:var(--text)}
+.rec-tag{font-size:10px;margin-left:5px;font-weight:600}
+.rec-tag.warn{color:var(--amber)}
+.rec-tag.red{color:var(--red)}
+.rec-tag.gray{color:var(--text3)}
 
-.as-empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:13px}
+.rec-empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:13px}
 
 </style>
 </head>
@@ -571,7 +571,7 @@ const PAGINAS = {
   visao:    { titulo:'Visão Geral', sub:'Filtros, saldos, KPIs e P&L', sprint:'Sprint 1 ✅' },
   bancos:   { titulo:'Saldos & Bancos', sub:'Saldos REAIS dos bancos via Plaid', sprint:'Sprint 1.5 ⏳ aguardando você criar conta Plaid' },
   categ:    { titulo:'Categorização', sub:'IA caça transações sem categoria no QBO', sprint:'Sprint 3 ⏳' },
-  assin:    { titulo:'Assinaturas', sub:'Audit de pagamentos recorrentes (zombie subscriptions)', sprint:'Sprint 3.5 ⏳' },
+  assin:    { titulo:'Pagamentos recorrentes', sub:'Análise de gastos recorrentes', sprint:'' },
   projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto em aberto', sprint:'Sprint 2.7 ✅ números 100% iguais QBO' },
   cfo:      { titulo:'CFO Insights', sub:'Alertas críticos + dica do expert smart home', sprint:'Sprint 4 ⏳' },
   config:   { titulo:'Configurações', sub:'Cost rate atual dos funcionários (read-only)', sprint:'Sprint 2.6 ✅' }
@@ -647,7 +647,7 @@ function montarSidebar(){
     <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
     <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
     <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
-    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">🔁</span><span>Assinaturas</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Pagamentos recorrentes</span></button>
     <div class="sidebar-section">Análises</div>
     <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
     <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
@@ -683,7 +683,7 @@ function navegar(pagina){
   if(pagina === 'visao') renderVisaoGeral();
   else if(pagina === 'projetos') renderProjetos();
   else if(pagina === 'config') renderConfig();
-  else if(pagina === 'assin') renderAssinaturas();
+  else if(pagina === 'assin') renderRecorrentes();
   else renderPlaceholder(pagina);
 }
 
@@ -2095,45 +2095,45 @@ window.addEventListener('hashchange', () => {
 });
 
 // === ASSINATURAS (Sprint 3) ===
-let _assinaturasCache = null;
-let _assinFiltro = 'todas';
-let _assinBusca = '';
+let _recorrentesCache = null;
+let _recFiltro = 'todas';
+let _recBusca = '';
 
-async function renderAssinaturas(){
+async function renderRecorrentes(){
   const cont = document.getElementById('conteudo');
   cont.innerHTML = `
     <div class="page-hd">
       <div>
-        <div class="page-title">🔁 Assinaturas</div>
-        <div class="page-sub">Audit de pagamentos recorrentes (zombie subscriptions)</div>
+        <div class="page-title">💳 Pagamentos recorrentes</div>
+        <div class="page-sub">Análise de gastos que se repetem (mensais, anuais, etc.)</div>
       </div>
       <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
     </div>
-    <div id="as-conteudo">
-      <div class="as-empty">⏳ Detectando assinaturas recorrentes nas últimas 18 meses...</div>
+    <div id="rec-conteudo">
+      <div class="rec-empty">⏳ Detectando pagamentos recorrentes dos últimos 18 meses...</div>
     </div>
   `;
 
   try {
-    if(!_assinaturasCache){
-      const r = await fetch('/api/quickbooks/assinaturas');
+    if(!_recorrentesCache){
+      const r = await fetch('/api/quickbooks/recorrentes');
       if(!r.ok) throw new Error('HTTP ' + r.status);
-      _assinaturasCache = await r.json();
+      _recorrentesCache = await r.json();
     }
-    renderAssinHTML();
+    renderRecorrentesHTML();
   } catch(e){
     console.error('Erro assinaturas:', e);
-    document.getElementById('as-conteudo').innerHTML = `
-      <div class="as-empty" style="color:var(--red)">⚠️ Erro: ${escapeHtml(e.message)}</div>
+    document.getElementById('rec-conteudo').innerHTML = `
+      <div class="rec-empty" style="color:var(--red)">⚠️ Erro: ${escapeHtml(e.message)}</div>
     `;
   }
 }
 
-function renderAssinHTML(){
-  const d = _assinaturasCache;
-  const cont = document.getElementById('as-conteudo');
+function renderRecorrentesHTML(){
+  const d = _recorrentesCache;
+  const cont = document.getElementById('rec-conteudo');
   if(!d || !d.assinaturas){
-    cont.innerHTML = `<div class="as-empty">Sem assinaturas detectadas.</div>`;
+    cont.innerHTML = `<div class="rec-empty">Sem assinaturas detectadas.</div>`;
     return;
   }
 
@@ -2149,33 +2149,33 @@ function renderAssinHTML(){
 
   // ─── KPIs ───
   const kpisHtml = `
-    <div class="as-kpis">
-      <div class="as-kpi">
-        <div class="as-kpi-label">Total/mês</div>
-        <div class="as-kpi-val">${fmtMoney(r.totalMes)}</div>
-        ${crescPct !== 0 ? `<div class="as-kpi-hint ${crescPct > 0 ? 'up' : 'good'}">${crescPct > 0 ? '↑' : '↓'} ${Math.abs(crescPct).toFixed(0)}% vs 12 meses</div>` : ''}
+    <div class="rec-kpis">
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Total/mês</div>
+        <div class="rec-kpi-val">${fmtMoney(r.totalMes)}</div>
+        ${crescPct !== 0 ? `<div class="rec-kpi-hint ${crescPct > 0 ? 'up' : 'good'}">${crescPct > 0 ? '↑' : '↓'} ${Math.abs(crescPct).toFixed(0)}% vs 12 meses</div>` : ''}
       </div>
-      <div class="as-kpi">
-        <div class="as-kpi-label">Total/ano</div>
-        <div class="as-kpi-val">${fmtMoney(r.totalAno)}</div>
-        <div class="as-kpi-hint">${r.qtdMensais} mensais + ${r.qtdAnuais} anuais</div>
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Total/ano</div>
+        <div class="rec-kpi-val">${fmtMoney(r.totalAno)}</div>
+        <div class="rec-kpi-hint">${r.qtdMensais} mensais + ${r.qtdAnuais} anuais</div>
       </div>
-      <div class="as-kpi">
-        <div class="as-kpi-label">Ativas</div>
-        <div class="as-kpi-val">${r.qtdAtivas}</div>
-        ${r.qtdAumentaram > 0 ? `<div class="as-kpi-hint warn">${r.qtdAumentaram} aumentou de preço</div>` : `<div class="as-kpi-hint">Tudo estável</div>`}
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Ativas</div>
+        <div class="rec-kpi-val">${r.qtdAtivas}</div>
+        ${r.qtdAumentaram > 0 ? `<div class="rec-kpi-hint warn">${r.qtdAumentaram} aumentou de preço</div>` : `<div class="rec-kpi-hint">Tudo estável</div>`}
       </div>
       ${r.economiaPotencialAno > 0 ? `
-        <div class="as-kpi highlight">
-          <div class="as-kpi-label">💰 Economia potencial</div>
-          <div class="as-kpi-val">${fmtMoney(r.economiaPotencialAno)}/ano</div>
-          <div class="as-kpi-hint">${fmtMoney(r.economiaPotencialAno/12)}/mês ao consolidar</div>
+        <div class="rec-kpi highlight">
+          <div class="rec-kpi-label">💰 Economia potencial</div>
+          <div class="rec-kpi-val">${fmtMoney(r.economiaPotencialAno)}/ano</div>
+          <div class="rec-kpi-hint">${fmtMoney(r.economiaPotencialAno/12)}/mês ao consolidar</div>
         </div>
       ` : `
-        <div class="as-kpi">
-          <div class="as-kpi-label">Status</div>
-          <div class="as-kpi-val" style="color:var(--green)">✓ Sem redundâncias</div>
-          <div class="as-kpi-hint good">Stack enxuto</div>
+        <div class="rec-kpi">
+          <div class="rec-kpi-label">Status</div>
+          <div class="rec-kpi-val" style="color:var(--green)">✓ Sem redundâncias</div>
+          <div class="rec-kpi-hint good">Stack enxuto</div>
         </div>
       `}
     </div>
@@ -2184,23 +2184,28 @@ function renderAssinHTML(){
   // ─── CATEGORIZAÇÃO ───
   const catTotal = Object.values(r.totalPorCategoria || {}).reduce((s, v) => s + v, 0);
   const catCores = {
-    'Software': '#3b82f6',
-    'Infraestrutura': '#a78bfa',
-    'Marketing': '#f59e0b',
+    'Software & SaaS': '#3b82f6',
     'Seguros': '#22c55e',
-    'Bancos/Taxas': '#94a3b8',
+    'Veículos & Combustível': '#f59e0b',
+    'Bancos & Taxas': '#94a3b8',
+    'Utilities & Telefonia': '#a78bfa',
+    'Aluguel & Imóveis': '#ec4899',
+    'Folha & Contractors': '#0ea5e9',
+    'Materiais & Equipamentos': '#84cc16',
+    'Marketing & Publicidade': '#f97316',
+    'Sócios & Distribuições': '#8b5cf6',
     'Outros': '#6b7599'
   };
   const cats = Object.entries(r.totalPorCategoria || {}).sort((a,b) => b[1]-a[1]);
   const catBarHtml = cats.length > 0 ? `
-    <div class="as-section">
-      <div class="as-section-title">
+    <div class="rec-section">
+      <div class="rec-section-title">
         <span>📂 Por categoria · ${fmtMoney(catTotal)}/mês</span>
       </div>
-      <div class="as-cat-bar">
+      <div class="rec-cat-bar">
         ${cats.map(([cat, val]) => `<div style="width:${(val/catTotal*100).toFixed(1)}%;background:${catCores[cat] || '#6b7599'}" title="${escapeHtml(cat)}"></div>`).join('')}
       </div>
-      <div class="as-cat-legend">
+      <div class="rec-cat-legend">
         ${cats.map(([cat, val]) => `<span><i style="background:${catCores[cat] || '#6b7599'}"></i>${escapeHtml(cat)} <b>${fmtMoney(val)}</b> · ${(val/catTotal*100).toFixed(0)}%</span>`).join('')}
       </div>
     </div>
@@ -2208,11 +2213,11 @@ function renderAssinHTML(){
 
   // ─── ALERTAS DE REDUNDÂNCIA ───
   const alertasHtml = alertas.map(a => `
-    <div class="as-alert red">
+    <div class="rec-alert red">
       <div style="flex:1">
-        <div class="as-alert-title">🚨 Possível redundância · ${escapeHtml(a.grupo)}</div>
-        <div class="as-alert-body">Você tem <b>${a.qtd} ferramentas</b> nesta categoria: ${a.ferramentas.map(f => `<b>${escapeHtml(f)}</b>`).join(', ')}</div>
-        <div class="as-alert-hint">Custo combinado: <b style="color:var(--red)">${fmtMoney(a.totalMes)}/mês</b> · Consolidar pode economizar <b style="color:var(--green)">${fmtMoney(a.economiaMes)}/mês</b></div>
+        <div class="rec-alert-title">🚨 Possível redundância · ${escapeHtml(a.grupo)}</div>
+        <div class="rec-alert-body">Você tem <b>${a.qtd} ferramentas</b> nesta categoria: ${a.ferramentas.map(f => `<b>${escapeHtml(f)}</b>`).join(', ')}</div>
+        <div class="rec-alert-hint">Custo combinado: <b style="color:var(--red)">${fmtMoney(a.totalMes)}/mês</b> · Consolidar pode economizar <b style="color:var(--green)">${fmtMoney(a.economiaMes)}/mês</b></div>
       </div>
     </div>
   `).join('');
@@ -2225,18 +2230,18 @@ function renderAssinHTML(){
     return `${x},${y}`;
   }).join(' L');
   const crescHtml = cres.length > 0 ? `
-    <div class="as-section">
-      <div class="as-section-title">
+    <div class="rec-section">
+      <div class="rec-section-title">
         <span>📈 Crescimento de gastos · últimos 12 meses</span>
         <span style="color:${crescPct > 0 ? 'var(--amber)' : 'var(--green)'};font-weight:600">${crescPct > 0 ? '+' : ''}${crescPct.toFixed(0)}% no período</span>
       </div>
-      <div class="as-chart-wrap">
+      <div class="rec-chart-wrap">
         <svg viewBox="0 0 600 100" style="width:100%;height:80px">
-          <defs><linearGradient id="as-grad" x1="0" y1="0" x2="0" y2="1">
+          <defs><linearGradient id="rec-grad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stop-color="#3b82f6" stop-opacity=".25"/>
             <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
           </linearGradient></defs>
-          <path d="M${pontos} L600,100 L0,100 Z" fill="url(#as-grad)"/>
+          <path d="M${pontos} L600,100 L0,100 Z" fill="url(#rec-grad)"/>
           <path d="M${pontos}" fill="none" stroke="#3b82f6" stroke-width="2"/>
           ${cres.map((c, i) => {
             const x = (i / (cres.length-1)) * 600;
@@ -2244,7 +2249,7 @@ function renderAssinHTML(){
             return `<circle cx="${x}" cy="${y}" r="${i === cres.length-1 ? 3 : 1.5}" fill="#3b82f6"/>`;
           }).join('')}
         </svg>
-        <div class="as-chart-axis">
+        <div class="rec-chart-axis">
           <span>${fmtMes(cres[0]?.mes)} · ${fmtMoney(cres[0]?.total)}</span>
           ${cres.length > 6 ? `<span>${fmtMes(cres[Math.floor(cres.length/2)]?.mes)} · ${fmtMoney(cres[Math.floor(cres.length/2)]?.total)}</span>` : ''}
           <span>${fmtMes(cres[cres.length-1]?.mes)} · ${fmtMoney(cres[cres.length-1]?.total)}</span>
@@ -2261,41 +2266,39 @@ function renderAssinHTML(){
   const vendoresQtd = assinaturas.filter(a => a.ativa && !a.isConta).length;
 
   const filtrosHtml = `
-    <div class="as-filtros">
-      <button class="as-fbtn ${_assinFiltro==='todas'?'active':''}" onclick="filtrarAssin('todas')">Todas (${assinaturas.filter(a=>a.ativa).length})</button>
-      <button class="as-fbtn ${_assinFiltro==='mensais'?'active':''}" onclick="filtrarAssin('mensais')">Mensais (${r.qtdMensais})</button>
-      <button class="as-fbtn ${_assinFiltro==='anuais'?'active':''}" onclick="filtrarAssin('anuais')">Anuais (${r.qtdAnuais})</button>
-      ${vendoresQtd > 0 ? `<button class="as-fbtn ${_assinFiltro==='vendores'?'active':''}" onclick="filtrarAssin('vendores')">📛 Vendors (${vendoresQtd})</button>` : ''}
-      ${contasQtd > 0 ? `<button class="as-fbtn ${_assinFiltro==='contas'?'active':''}" onclick="filtrarAssin('contas')">🏦 Conta/Cartão (${contasQtd})</button>` : ''}
-      ${aumentaramQtd > 0 ? `<button class="as-fbtn warn ${_assinFiltro==='aumentou'?'active':''}" onclick="filtrarAssin('aumentou')">⚠ Aumentou (${aumentaramQtd})</button>` : ''}
-      ${redundantesSet.size > 0 ? `<button class="as-fbtn green ${_assinFiltro==='cortar'?'active':''}" onclick="filtrarAssin('cortar')">💰 Cortar (${redundantesSet.size})</button>` : ''}
-      <input type="search" class="as-search" placeholder="Buscar vendor..." value="${escapeHtml(_assinBusca)}" oninput="buscaAssin(this.value)"/>
+    <div class="rec-filtros">
+      <button class="rec-fbtn ${_recFiltro==='todas'?'active':''}" onclick="filtrarRec('todas')">Todas (${assinaturas.filter(a=>a.ativa).length})</button>
+      <button class="rec-fbtn ${_recFiltro==='mensais'?'active':''}" onclick="filtrarRec('mensais')">Mensais (${r.qtdMensais})</button>
+      <button class="rec-fbtn ${_recFiltro==='anuais'?'active':''}" onclick="filtrarRec('anuais')">Anuais (${r.qtdAnuais})</button>
+      ${vendoresQtd > 0 ? `<button class="rec-fbtn ${_recFiltro==='vendores'?'active':''}" onclick="filtrarRec('vendores')">📛 Vendors (${vendoresQtd})</button>` : ''}
+      ${contasQtd > 0 ? `<button class="rec-fbtn ${_recFiltro==='contas'?'active':''}" onclick="filtrarRec('contas')">🏦 Conta/Cartão (${contasQtd})</button>` : ''}
+      ${aumentaramQtd > 0 ? `<button class="rec-fbtn warn ${_recFiltro==='aumentou'?'active':''}" onclick="filtrarRec('aumentou')">⚠ Aumentou (${aumentaramQtd})</button>` : ''}
+      ${redundantesSet.size > 0 ? `<button class="rec-fbtn green ${_recFiltro==='cortar'?'active':''}" onclick="filtrarRec('cortar')">💰 Cortar (${redundantesSet.size})</button>` : ''}
+      <input type="search" class="rec-search" placeholder="Buscar vendor..." value="${escapeHtml(_recBusca)}" oninput="buscaRec(this.value)"/>
     </div>
   `;
 
   // Filtrar
   let lista = assinaturas.filter(a => a.ativa);
-  if(_assinFiltro === 'mensais') lista = lista.filter(a => a.frequencia === 'Mensal');
-  else if(_assinFiltro === 'anuais') lista = lista.filter(a => a.frequencia === 'Anual');
-  else if(_assinFiltro === 'aumentou') lista = lista.filter(a => a.aumentoPct > 0);
-  else if(_assinFiltro === 'cortar') lista = lista.filter(a => redundantesSet.has(a.vendor.toLowerCase()));
-  else if(_assinFiltro === 'contas') lista = lista.filter(a => a.isConta);
-  else if(_assinFiltro === 'vendores') lista = lista.filter(a => !a.isConta);
-  if(_assinBusca) lista = lista.filter(a => a.vendor.toLowerCase().includes(_assinBusca.toLowerCase()));
+  if(_recFiltro === 'mensais') lista = lista.filter(a => a.frequencia === 'Mensal');
+  else if(_recFiltro === 'anuais') lista = lista.filter(a => a.frequencia === 'Anual');
+  else if(_recFiltro === 'aumentou') lista = lista.filter(a => a.aumentoPct > 0);
+  else if(_recFiltro === 'cortar') lista = lista.filter(a => redundantesSet.has(a.vendor.toLowerCase()));
+  else if(_recFiltro === 'contas') lista = lista.filter(a => a.isConta);
+  else if(_recFiltro === 'vendores') lista = lista.filter(a => !a.isConta);
+  if(_recBusca) lista = lista.filter(a => a.vendor.toLowerCase().includes(_recBusca.toLowerCase()));
 
   const linhasHtml = lista.length === 0 ? `
-    <div class="as-empty">Nenhuma assinatura encontrada com esses filtros.</div>
+    <div class="rec-empty">Nenhuma assinatura encontrada com esses filtros.</div>
   ` : lista.map(a => {
     const ehRedundante = redundantesSet.has(a.vendor.toLowerCase());
     const aumentou = a.aumentoPct > 0;
     const rowCls = ehRedundante ? 'red' : (aumentou ? 'warn' : '');
     const catKey = (a.categoria || 'Outros').toLowerCase().replace(/[^a-z]/g, '');
-    const catCls = catKey.includes('software') ? 'software'
-                 : catKey.includes('infra') ? 'infra'
-                 : catKey.includes('marketing') ? 'marketing'
-                 : catKey.includes('seguros') ? 'seguros'
-                 : catKey.includes('bancos') ? 'bancostaxas'
-                 : 'outros';
+    // Mapeia categoria pra classe CSS via cor (slugfy: minúsculas, sem acento/espaço)
+    const catCls = (a.categoria || 'outros').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
 
     let sub = `${a.frequencia} · ${a.ocorrencias}x · desde ${fmtMesAbrev(a.primeiraCobranca)}`;
     if(aumentou && a.valorAnterior) {
@@ -2303,32 +2306,38 @@ function renderAssinHTML(){
     }
 
     let tag = '';
-    if(ehRedundante) tag = `<span class="as-tag red">🚨 redundante</span>`;
-    else if(aumentou) tag = `<span class="as-tag warn">⚠ +${a.aumentoPct.toFixed(0)}%</span>`;
+    if(ehRedundante) tag = `<span class="rec-tag red">🚨 redundante</span>`;
+    else if(aumentou) tag = `<span class="rec-tag warn">⚠ +${a.aumentoPct.toFixed(0)}%</span>`;
 
     // Indicador de conta/cartão (não é um vendor real)
     const iconConta = a.isConta ? `<span title="Pagamento via conta/cartão (sem vendor identificado no QBO)" style="margin-right:6px;opacity:.7">🏦</span>` : '';
 
+    // Linha pequena com a conta QBO (Chart of Accounts)
+    const contaQboLine = a.contaQbo && a.contaQbo !== '—'
+      ? `<div style="font-size:11px;color:#6b7599;margin-top:2px">📊 ${escapeHtml(a.contaQbo)}</div>`
+      : '';
+
     return `
-      <div class="as-row ${rowCls}">
+      <div class="rec-row ${rowCls}">
         <div>
-          <div class="as-vendor-name">${iconConta}${escapeHtml(a.vendor)}${tag}</div>
-          <div class="as-vendor-sub">${escapeHtml(sub)}</div>
+          <div class="rec-vendor-name">${iconConta}${escapeHtml(a.vendor)}${tag}</div>
+          <div class="rec-vendor-sub">${escapeHtml(sub)}</div>
+          ${contaQboLine}
         </div>
-        <div><span class="as-badge ${catCls}">${escapeHtml(a.categoria)}</span></div>
-        <div class="as-val">${fmtMoney(a.valorAtual)}</div>
-        <div class="as-date">${fmtDataBR(a.proximaCobranca)}</div>
-        <div class="as-val">${fmtMoney(a.totalAnual)}</div>
+        <div><span class="rec-badge ${catCls}">${escapeHtml(a.categoria)}</span></div>
+        <div class="rec-val">${fmtMoney(a.valorAtual)}</div>
+        <div class="rec-date">${fmtDataBR(a.proximaCobranca)}</div>
+        <div class="rec-val">${fmtMoney(a.totalAnual)}</div>
         <div style="text-align:right">
-          ${a.qboLink ? `<a href="${a.qboLink}" target="_blank" class="as-qbo-btn" title="Abrir no QBO">↗</a>` : '—'}
+          ${a.qboLink ? `<a href="${a.qboLink}" target="_blank" class="rec-qbo-btn" title="Abrir no QBO">↗</a>` : '—'}
         </div>
       </div>
     `;
   }).join('');
 
   const tblHtml = `
-    <div class="as-tbl">
-      <div class="as-tbl-head">
+    <div class="rec-tbl">
+      <div class="rec-tbl-head">
         <div>Fornecedor</div><div>Categoria</div><div>Por cobrança</div><div>Próxima</div><div>Ano</div><div></div>
       </div>
       ${linhasHtml}
@@ -2337,18 +2346,18 @@ function renderAssinHTML(){
 
   cont.innerHTML = kpisHtml + catBarHtml + alertasHtml + crescHtml + filtrosHtml + tblHtml + `
     <div class="info-box" style="margin-top:20px">
-      <strong>💡 Como funciona:</strong> Detecta automaticamente cobranças recorrentes nas suas transações Purchase + Bill do QBO dos últimos 18 meses. Agrupa por fornecedor + valor (±5%) e identifica padrões mensais/trimestrais/anuais. <strong>3+ ocorrências = assinatura.</strong>
+      <strong>💡 Como funciona:</strong> Detecta cobranças recorrentes nas suas transações Purchase + Bill do QBO dos últimos 18 meses. Agrupa por fornecedor + valor (±5%) e identifica padrões mensais/trimestrais/anuais. <strong>3+ ocorrências = recorrente.</strong> Categorias vêm direto das contas contábeis do seu QBO (Chart of Accounts).
     </div>
   `;
 }
 
-function filtrarAssin(filtro){
-  _assinFiltro = filtro;
-  renderAssinHTML();
+function filtrarRec(filtro){
+  _recFiltro = filtro;
+  renderRecorrentesHTML();
 }
-function buscaAssin(termo){
-  _assinBusca = termo || '';
-  renderAssinHTML();
+function buscaRec(termo){
+  _recBusca = termo || '';
+  renderRecorrentesHTML();
 }
 
 function fmtMes(yyyymm){
