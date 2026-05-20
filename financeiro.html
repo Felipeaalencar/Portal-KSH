@@ -377,7 +377,7 @@ const PAGINAS = {
   assin:    { titulo:'Assinaturas', sub:'Audit de pagamentos recorrentes (zombie subscriptions)', sprint:'Sprint 3.5 ⏳' },
   projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto em aberto', sprint:'Sprint 2 ✅' },
   cfo:      { titulo:'CFO Insights', sub:'Alertas críticos + dica do expert smart home', sprint:'Sprint 4 ⏳' },
-  config:   { titulo:'Configurações', sub:'Cost rate por funcionário', sprint:'Sprint 2.5 ✅' }
+  config:   { titulo:'Configurações', sub:'Cost rate atual dos funcionários (read-only)', sprint:'Sprint 2.6 ✅' }
 };
 
 async function carregar(){
@@ -961,20 +961,13 @@ async function carregarGraficoLP(){
 function renderProjetos(){
   const status = qboStatus || {};
 
-  // Status dos rates pra exibir
-  const totalEmps = employeesCache ? (employeesCache.total||0) : 0;
-  const withoutRate = employeesCache ? (employeesCache.without_rate||0) : 0;
-  const withRate = totalEmps - withoutRate;
-  let ratePillHtml = '';
-  if(totalEmps > 0){
-    const ok = withoutRate === 0;
-    ratePillHtml = `
-      <button onclick="navegar('config')" title="${ok ? 'Todos os funcionários têm cost rate cadastrado' : `${withoutRate} funcionário(s) usando default $${costRatePerHour}/h`}" style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid ${ok?'rgba(34,197,94,.3)':'rgba(245,158,11,.3)'};color:var(--text2);padding:6px 10px;border-radius:7px;font-family:inherit;font-size:11px;cursor:pointer">
-        <span style="font-size:13px">${ok?'✅':'⚠️'}</span>
-        <span><strong style="color:var(--text)">${withRate}/${totalEmps}</strong> rates cadastrados</span>
-        <span style="color:var(--text3);font-weight:600">⚙️</span>
-      </button>`;
-  }
+  // Status: cost rates agora vêm direto do QBO em cada TimeActivity
+  let ratePillHtml = `
+    <button onclick="navegar('config')" title="Cost rates lidos direto do QBO Payroll em cada TimeActivity" style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid rgba(34,197,94,.3);color:var(--text2);padding:6px 10px;border-radius:7px;font-family:inherit;font-size:11px;cursor:pointer">
+      <span style="font-size:13px">✅</span>
+      <span>Rates do <strong style="color:var(--text)">QBO</strong></span>
+      <span style="color:var(--text3);font-weight:600">⚙️</span>
+    </button>`;
 
   document.getElementById('conteudo').innerHTML = `
     <div class="page-hd">
@@ -1025,7 +1018,7 @@ function renderProjetos(){
 
     <div class="info-box" style="margin-top:20px">
       <strong>💡 Lista padrão:</strong> Projetos criados em 2025+ OU com atividade em 2025+. Projetos antigos sem atividade recente ficam no arquivo — use a busca (digite 3+ letras) pra carregá-los sob demanda.
-      <br><strong style="display:inline-block;margin-top:6px">Custos = P&L contábil + Mão de obra por funcionário.</strong> Cada hora × cost rate específico (ou default $${costRatePerHour}/h se não cadastrado em <a href="#config" onclick="event.preventDefault();navegar('config')" style="color:var(--blue);text-decoration:none;font-weight:600">⚙️ Configurações</a>). Hover no custo pra ver breakdown por funcionário.
+      <br><strong style="display:inline-block;margin-top:6px">Custos = P&L contábil + Mão de obra com cost rate REAL do QBO.</strong> Cada hora usa o cost rate registrado no QBO Payroll na época do lançamento (não uma média estimada). Hover no custo pra ver breakdown por funcionário. Veja rates atuais em <a href="#config" onclick="event.preventDefault();navegar('config')" style="color:var(--blue);text-decoration:none;font-weight:600">⚙️ Configurações</a>.
     </div>
   `;
 
@@ -1046,14 +1039,14 @@ function atualizarCostRate(v){
 }
 
 // ─── HELPERS COM RETRY (429-aware) ───
-async function fetchQBOComRetry(url, maxRetries = 3){
+async function fetchQBOComRetry(url, maxRetries = 4){
   for(let tentativa = 0; tentativa <= maxRetries; tentativa++){
     try{
       const r = await fetch(url);
       if(r.status === 429){
         if(tentativa >= maxRetries) return null;
-        // Backoff: 1.5s, 3s, 6s
-        const wait = 1500 * Math.pow(2, tentativa);
+        // Backoff: 2s, 4s, 8s, 16s
+        const wait = 2000 * Math.pow(2, tentativa);
         console.warn(`[QBO 429] backoff ${wait}ms (tentativa ${tentativa+1}/${maxRetries})`);
         await new Promise(res => setTimeout(res, wait));
         continue;
@@ -1146,9 +1139,9 @@ async function carregarProjetos(){
 
     if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">🔎 Triando ${todosProjetos.length} projetos (${candidatosRapidos.length} criados em 2025+, ${candidatosTriagem.length} sob avaliação)...</td></tr>`;
 
-    // Triagem em batches de 4 (carga leve, 1 chamada por projeto)
+    // Triagem em batches de 3 (carga leve, 1 chamada por projeto)
     const relevantes = [...candidatosRapidos];
-    const BATCH_TRIAGEM = 4;
+    const BATCH_TRIAGEM = 3;
     for(let i = 0; i < candidatosTriagem.length; i += BATCH_TRIAGEM){
       const batch = candidatosTriagem.slice(i, i + BATCH_TRIAGEM);
       const tas = await Promise.all(batch.map(p => buscarTimeActivityComCache(p.Id)));
@@ -1170,7 +1163,7 @@ async function carregarProjetos(){
     if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ Processando ${relevantes.length} projetos relevantes...</td></tr>`;
 
     const dados = [];
-    const BATCH_FULL = 4; // batch menor pra não estourar rate limit
+    const BATCH_FULL = 3; // batch pequeno pra respeitar rate limit do QBO
     for(let i = 0; i < relevantes.length; i += BATCH_FULL){
       const batch = relevantes.slice(i, i + BATCH_FULL);
       const resultados = await Promise.all(batch.map(p => Promise.all([
@@ -1218,18 +1211,19 @@ function processarProjeto(p, pnl, timeActs){
     horas += h;
     const empId = ta.EmployeeRef && ta.EmployeeRef.value;
     const empNameFromQBO = (ta.EmployeeRef && ta.EmployeeRef.name) || 'Sem funcionário';
-    const info = empId && employeeRateMap.get(empId);
-    const rate = info ? info.rate : costRatePerHour;
-    const name = info ? info.name : empNameFromQBO;
-    const custom = info ? info.custom : false;
+    // ★ FONTE DA VERDADE: CostRate vem do próprio QBO, em cada TimeActivity (rate da época do lançamento)
+    // Fallback pra default global quando CostRate=0 (raro, funcionário sem rate cadastrado no Payroll)
+    const rateQbo = Number(ta.CostRate) || 0;
+    const rate = rateQbo > 0 ? rateQbo : costRatePerHour;
+    const fromQbo = rateQbo > 0;
     const valor = h * rate;
     maoObra += valor;
-    const key = empId || ('_'+empNameFromQBO);
+    const key = (empId || ('_'+empNameFromQBO)) + '::' + rate; // mesma pessoa com rates diferentes = linhas distintas
     if(breakdown.has(key)){
       const b = breakdown.get(key);
       b.horas += h; b.total += valor;
     }else{
-      breakdown.set(key, { name, rate, horas: h, total: valor, custom });
+      breakdown.set(key, { empId, name: empNameFromQBO, rate, horas: h, total: valor, fromQbo });
     }
   });
 
@@ -1369,10 +1363,10 @@ function renderProjetosTabela(dados){
     const wReceita = Math.min(100, (d.receita/maxAbs)*100);
     const wCusto = Math.min(100, (d.custo/maxAbs)*100);
 
-    // Tooltip dos custos: breakdown P&L + Mão de Obra (por funcionário)
+    // Tooltip dos custos: breakdown P&L + Mão de Obra (rate do próprio QBO)
     let breakdownStr = '';
     if(d.breakdown && d.breakdown.length){
-      breakdownStr = '\n' + d.breakdown.map(b => `  ${b.name}: ${fmtHoras(b.horas)} × $${b.rate.toFixed(2)}/h = ${fmtMoney(b.total)}${b.custom?'':' (default)'}`).join('\n');
+      breakdownStr = '\n' + d.breakdown.map(b => `  ${b.name}: ${fmtHoras(b.horas)} × $${b.rate.toFixed(2)}/h = ${fmtMoney(b.total)}${b.fromQbo?'':' (default)'}`).join('\n');
     }
     const tooltipCusto = `P&L (lançamentos): ${fmtMoney(d.custoPL||0)}\n\nMão de obra (${fmtHoras(d.horas||0)}): ${fmtMoney(d.maoObra||0)}${breakdownStr}\n──────\nTotal: ${fmtMoney(d.custo)}`;
 
@@ -1490,95 +1484,131 @@ async function renderConfig(){
     <div class="page-hd">
       <div>
         <div class="page-title">⚙️ Configurações</div>
-        <div class="page-sub">Cost rate por funcionário · usado pelo cálculo de Projetos</div>
+        <div class="page-sub">Cost rate atual dos funcionários · fonte: QuickBooks Payroll</div>
       </div>
       <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
     </div>
 
-    <div id="config-default-card" style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:20px">
-      <div style="display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap">
-        <div>
-          <div style="font-size:14px;font-weight:600;margin-bottom:4px">Cost rate padrão (fallback)</div>
-          <div style="font-size:12px;color:var(--text3);max-width:520px;line-height:1.5">Aplicado a funcionários que ainda não têm rate específico cadastrado. Mude aqui pra ajustar todos os "sem rate" de uma vez.</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <span style="color:var(--text3);font-size:14px;font-weight:600">$</span>
-          <input type="number" id="cfg-default-rate" value="${costRatePerHour}" min="0" step="0.01" style="background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:15px;padding:8px 12px;border-radius:8px;width:100px;font-family:inherit;outline:none;font-weight:600">
-          <span style="color:var(--text3);font-size:12px">/hora</span>
-          <button id="cfg-default-save" onclick="salvarDefaultRate()" style="background:var(--blue);color:#fff;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600">Salvar</button>
-        </div>
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start">
+      <div style="font-size:22px">💡</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        <strong style="color:var(--text)">Os cost rates não são editáveis aqui.</strong> O QuickBooks já guarda o cost rate de cada funcionário em cada hora lançada (no Payroll, por TimeActivity). O Portal lê esse valor direto da API — então o que você vê abaixo é o <strong style="color:var(--text)">rate efetivo médio</strong> calculado a partir das horas que cada um lançou em 2025+. Pra mudar um rate, ajuste no <strong style="color:var(--text)">QBO Payroll</strong> e ele reflete aqui automaticamente.
       </div>
     </div>
 
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)">
         <div>
-          <div style="font-size:14px;font-weight:600">Funcionários</div>
+          <div style="font-size:14px;font-weight:600">Funcionários · cost rate efetivo (read-only)</div>
           <div id="cfg-emp-status" style="font-size:12px;color:var(--text3);margin-top:2px">Carregando...</div>
         </div>
-        <button onclick="renderConfig(true)" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 12px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px">🔄 Recarregar do QBO</button>
+        <button onclick="navegar('projetos')" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 12px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px">📁 Ver Projetos</button>
       </div>
       <div id="cfg-emp-table-wrap">
-        <div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">⏳ Buscando funcionários no QuickBooks...</div>
+        <div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">⏳ Calculando rates a partir do cache de Projetos...</div>
       </div>
-    </div>
-
-    <div class="info-box" style="margin-top:20px">
-      <strong>💡 Como funciona:</strong> Cada TimeActivity no QBO tem um <code style="background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:11px">EmployeeRef</code>. O Portal lê esse ID e busca o rate cadastrado aqui. Se o funcionário ainda não tem rate específico, usa o padrão acima. <strong>Após salvar, recarregue Projetos pra ver os números atualizados.</strong>
     </div>
   `;
 
-  // Carrega (force reload se chamado via botão)
-  const force = arguments[0] === true;
-  const data = await carregarEmployeeRates(force);
-  if(!data){
-    document.getElementById('cfg-emp-table-wrap').innerHTML = `<div style="padding:40px;text-align:center;color:var(--red);font-size:13px">⚠️ Falha ao carregar funcionários. Tente novamente.</div>`;
-    return;
-  }
-  renderConfigEmpTable(data);
+  // Garante que os funcionários estão carregados
+  await carregarEmployeeRates();
+  renderConfigEmpTableReadOnly();
 }
 
-function renderConfigEmpTable(data){
-  const emps = data.employees || [];
+function renderConfigEmpTableReadOnly(){
+  const wrap = document.getElementById('cfg-emp-table-wrap');
   const statusEl = document.getElementById('cfg-emp-status');
-  if(statusEl){
-    const withRate = (data.total||0) - (data.without_rate||0);
-    statusEl.innerHTML = data.without_rate > 0
-      ? `<span style="color:var(--amber)">⚠️ ${data.without_rate} sem rate específico</span> · ${withRate} de ${data.total} cadastrados · usando default <strong style="color:var(--text2)">$${(data.default_cost_rate||40).toFixed(2)}/h</strong> pros demais`
-      : `✅ Todos os ${data.total} funcionários têm rate cadastrado`;
+
+  // Se ainda não rodou Projetos, sugere fazer isso primeiro
+  if(!projetosCache || projetosCache.length === 0){
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--amber)">⚠️ Carregue Projetos primeiro pra ver os rates efetivos.</span>`;
+    wrap.innerHTML = `
+      <div style="padding:50px 30px;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px">📁</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6;max-width:480px;margin-left:auto;margin-right:auto">
+          Os rates efetivos vêm das horas lançadas no QBO. Carregue a página <strong>Projetos</strong> primeiro pra calcular o rate atual de cada funcionário.
+        </div>
+        <button onclick="navegar('projetos')" style="background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">Ir pra Projetos →</button>
+      </div>
+    `;
+    return;
   }
 
-  const wrap = document.getElementById('cfg-emp-table-wrap');
-  if(!emps.length){
-    wrap.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Nenhum funcionário ativo encontrado no QuickBooks.</div>`;
+  // Agrega TimeActivities de TODOS os projetos no cache pra extrair rate efetivo por funcionário
+  const empStats = new Map(); // empId → { name, totalHoras, totalCost, rates: Set, ultimoUso }
+  projetosCache.forEach(proj => {
+    (proj.breakdown || []).forEach(b => {
+      const key = b.empId || '_'+b.name;
+      if(empStats.has(key)){
+        const s = empStats.get(key);
+        s.totalHoras += b.horas;
+        s.totalCost += b.total;
+        s.rates.add(b.rate);
+      }else{
+        empStats.set(key, {
+          empId: b.empId,
+          name: b.name,
+          totalHoras: b.horas,
+          totalCost: b.total,
+          rates: new Set([b.rate]),
+          fromQbo: b.fromQbo
+        });
+      }
+    });
+  });
+
+  // Combina com lista completa do QBO (inclui funcionários sem horas em 2025+)
+  const empsQbo = (employeesCache && employeesCache.employees) || [];
+  empsQbo.forEach(emp => {
+    if(!empStats.has(emp.qbo_employee_id)){
+      empStats.set(emp.qbo_employee_id, {
+        empId: emp.qbo_employee_id,
+        name: emp.display_name,
+        totalHoras: 0,
+        totalCost: 0,
+        rates: new Set(),
+        fromQbo: false
+      });
+    }
+  });
+
+  const linhas = Array.from(empStats.values()).sort((a,b) => b.totalHoras - a.totalHoras);
+  const ativos = linhas.filter(l => l.totalHoras > 0);
+
+  if(statusEl){
+    statusEl.innerHTML = `<strong style="color:var(--text2)">${ativos.length}</strong> funcionário(s) com horas em 2025+ · <strong style="color:var(--text2)">${linhas.length}</strong> totais · dados de ${projetosCache.length} projetos`;
+  }
+
+  if(!linhas.length){
+    wrap.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Nenhum funcionário encontrado.</div>`;
     return;
   }
 
   let rows = '';
-  emps.forEach(e => {
-    const id = e.qbo_employee_id;
-    const cur = e.cost_rate !== null ? e.cost_rate : '';
-    const placeholder = e.cost_rate === null ? `default $${(data.default_cost_rate||40).toFixed(2)}` : '';
-    const tag = e.has_custom_rate
-      ? `<span style="background:rgba(34,197,94,.1);color:var(--green);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Cadastrado</span>`
-      : `<span style="background:rgba(245,158,11,.1);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Default</span>`;
+  linhas.forEach(l => {
+    const rateMedio = l.totalHoras > 0 ? (l.totalCost / l.totalHoras) : 0;
+    const ratesArr = Array.from(l.rates).sort((a,b)=>a-b);
+    const variou = ratesArr.length > 1;
+    const ratesStr = variou
+      ? `$${ratesArr[0].toFixed(2)} – $${ratesArr[ratesArr.length-1].toFixed(2)}`
+      : (ratesArr[0] !== undefined ? `$${ratesArr[0].toFixed(2)}` : '—');
+
+    const tag = l.totalHoras === 0
+      ? `<span style="background:var(--bg3);color:var(--text3);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Sem horas em 2025+</span>`
+      : (l.fromQbo
+          ? `<span style="background:rgba(34,197,94,.1);color:var(--green);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">QBO</span>`
+          : `<span style="background:rgba(245,158,11,.1);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Default $${costRatePerHour}</span>`);
+
     rows += `
       <tr style="border-top:1px solid var(--border)">
         <td style="padding:14px 22px">
-          <div style="font-size:13px;font-weight:500">${e.display_name}</div>
-          ${e.email?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${e.email}</div>`:''}
+          <div style="font-size:13px;font-weight:500">${l.name}</div>
+          ${l.empId?`<div style="font-size:10px;color:var(--text3);margin-top:2px">ID ${l.empId}</div>`:''}
         </td>
         <td style="padding:14px 12px">${tag}</td>
-        <td style="padding:14px 12px;text-align:right">
-          <div style="display:inline-flex;align-items:center;gap:6px">
-            <span style="color:var(--text3);font-size:12px">$</span>
-            <input type="number" data-emp-id="${id}" data-emp-name="${(e.display_name||'').replace(/"/g,'&quot;')}" value="${cur}" placeholder="${placeholder}" min="0" step="0.01" style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:13px;padding:7px 10px;border-radius:6px;width:100px;font-family:inherit;outline:none;text-align:right" oninput="marcarEmpDirty('${id}')">
-            <span style="color:var(--text3);font-size:11px">/h</span>
-          </div>
-        </td>
-        <td style="padding:14px 22px;text-align:right">
-          <button id="emp-save-${id}" onclick="salvarRateFuncionario('${id}')" disabled style="background:var(--bg3);border:1px solid var(--border);color:var(--text3);padding:6px 14px;border-radius:6px;cursor:not-allowed;font-family:inherit;font-size:11px;font-weight:600;transition:all .15s">Salvar</button>
-        </td>
+        <td style="padding:14px 12px;text-align:right;font-family:'DM Mono',monospace;font-size:13px;color:var(--text)">${l.totalHoras === 0 ? '—' : (rateMedio === ratesArr[0] && !variou ? '$'+rateMedio.toFixed(2) : '$'+rateMedio.toFixed(2)+' méd.')}</td>
+        <td style="padding:14px 12px;text-align:right;font-size:12px;color:var(--text3)">${ratesStr}${variou?' <span title="Rate variou ao longo do tempo" style="color:var(--amber);cursor:help">⚡</span>':''}</td>
+        <td style="padding:14px 22px;text-align:right;font-size:13px;font-weight:600;color:${l.totalHoras > 0 ? 'var(--text)' : 'var(--text3)'}">${l.totalHoras > 0 ? fmtHoras(l.totalHoras) : '—'}</td>
       </tr>
     `;
   });
@@ -1588,94 +1618,15 @@ function renderConfigEmpTable(data){
       <thead>
         <tr style="background:var(--bg3)">
           <th style="padding:11px 22px;text-align:left;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Funcionário</th>
-          <th style="padding:11px 12px;text-align:left;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Status</th>
-          <th style="padding:11px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Cost Rate</th>
-          <th style="padding:11px 22px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px"></th>
+          <th style="padding:11px 12px;text-align:left;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Fonte</th>
+          <th style="padding:11px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Rate efetivo</th>
+          <th style="padding:11px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Histórico</th>
+          <th style="padding:11px 22px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horas 2025+</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
   `;
-}
-
-function marcarEmpDirty(empId){
-  const btn = document.getElementById('emp-save-'+empId);
-  if(!btn) return;
-  btn.disabled = false;
-  btn.style.background = 'var(--blue)';
-  btn.style.color = '#fff';
-  btn.style.borderColor = 'var(--blue)';
-  btn.style.cursor = 'pointer';
-}
-
-async function salvarRateFuncionario(empId){
-  const input = document.querySelector(`input[data-emp-id="${empId}"]`);
-  const btn = document.getElementById('emp-save-'+empId);
-  if(!input || !btn) return;
-  const rate = parseFloat(input.value);
-  if(isNaN(rate) || rate < 0){
-    alert('Valor inválido');
-    return;
-  }
-  const name = input.dataset.empName || '';
-  btn.textContent = 'Salvando...';
-  btn.disabled = true;
-  try{
-    const r = await fetch('/api/quickbooks/employees', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ qbo_employee_id: empId, display_name: name, cost_rate: rate })
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    btn.textContent = '✓ Salvo';
-    btn.style.background = 'var(--green)';
-    btn.style.borderColor = 'var(--green)';
-    // Invalida cache de projetos pra forçar recálculo na próxima visita
-    projetosCache = null;
-    setTimeout(async ()=>{
-      const data = await carregarEmployeeRates(true);
-      if(data) renderConfigEmpTable(data);
-    }, 600);
-  }catch(e){
-    btn.textContent = 'Erro';
-    btn.style.background = 'var(--red)';
-    alert('Erro ao salvar: '+e.message);
-  }
-}
-
-async function salvarDefaultRate(){
-  const input = document.getElementById('cfg-default-rate');
-  const btn = document.getElementById('cfg-default-save');
-  if(!input || !btn) return;
-  const value = parseFloat(input.value);
-  if(isNaN(value) || value < 0){ alert('Valor inválido'); return; }
-  btn.textContent = 'Salvando...';
-  btn.disabled = true;
-  try{
-    const r = await fetch('/api/quickbooks/employees?action=default', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ value })
-    });
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    costRatePerHour = value;
-    localStorage.setItem('ksh_cost_rate_h', String(value));
-    projetosCache = null;
-    btn.textContent = '✓ Salvo';
-    btn.style.background = 'var(--green)';
-    setTimeout(async ()=>{
-      btn.textContent = 'Salvar';
-      btn.style.background = 'var(--blue)';
-      btn.disabled = false;
-      const data = await carregarEmployeeRates(true);
-      if(data) renderConfigEmpTable(data);
-    }, 1000);
-  }catch(e){
-    btn.textContent = 'Erro';
-    btn.style.background = 'var(--red)';
-    btn.disabled = false;
-    alert('Erro ao salvar: '+e.message);
-  }
 }
 
 // === Roteamento via hash (back/forward do browser) ===
