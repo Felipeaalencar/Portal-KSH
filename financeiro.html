@@ -1778,10 +1778,20 @@ async function gerarAnaliseIA(projId, forcarRefresh){
       body: JSON.stringify({ projetoId: projId })
     });
     if(!r.ok){
-      const err = await r.json().catch(()=>({error:'Erro desconhecido'}));
+      let detalheErr = `HTTP ${r.status}`;
+      try {
+        const txt = await r.text();
+        try { 
+          const j = JSON.parse(txt);
+          detalheErr += ` · ${j.error || txt.substring(0,300)}`;
+        } catch(e) {
+          detalheErr += ` · ${txt.substring(0,400)}`;
+        }
+      } catch(e) {}
+      console.error('[IA] Erro:', detalheErr);
       card.innerHTML = `
         <div class="pa-ai-trigger">
-          <div style="color:var(--red);font-size:13px;margin-bottom:10px">⚠️ ${err.error || 'Falha na análise'}</div>
+          <div style="color:var(--red);font-size:12px;margin-bottom:10px;text-align:left;background:rgba(239,68,68,.08);padding:12px;border-radius:6px;word-break:break-word;font-family:monospace;line-height:1.5">${escapeHtml(detalheErr)}</div>
           <button class="pa-ai-btn" onclick="gerarAnaliseIA('${projId}', true)">🔄 Tentar de novo</button>
         </div>
       `;
