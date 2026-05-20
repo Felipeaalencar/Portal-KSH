@@ -336,6 +336,9 @@ let qboStatus = null;
 let paginaAtual = 'visao';
 let dadosVisaoMsg = '';
 let projetosCache = null;
+let projetosArquivoMeta = new Map(); // id → { id, nome, cliente, ativo, criado } dos não carregados
+let projetosArquivoIds = new Set();
+let buscaProjetoTimer = null;
 let costRatePerHour = Number(localStorage.getItem('ksh_cost_rate_h')) || 40;
 
 // ─── Sprint 2.5: cost rate por funcionário ───
@@ -977,7 +980,7 @@ function renderProjetos(){
     <div class="page-hd">
       <div>
         <div class="page-title">📁 Projetos</div>
-        <div class="page-sub">Renda × custo × margem por projeto · dados do QuickBooks</div>
+        <div class="page-sub">Projetos com atividade em 2025+ · busque pra encontrar antigos</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
         ${ratePillHtml}
@@ -999,7 +1002,7 @@ function renderProjetos(){
       <button class="proj-filter-pill" data-status="mes-passado" onclick="filtrarProjetos('mes-passado')">Mês passado</button>
       <button class="proj-filter-pill" data-status="negativos" onclick="filtrarProjetos('negativos')">⚠️ Margem negativa</button>
       <button class="proj-filter-pill" data-status="todos" onclick="filtrarProjetos('todos')">Todos</button>
-      <input class="proj-search" id="proj-search" placeholder="🔍 Buscar projeto ou cliente..." oninput="filtrarProjetos()">
+      <input class="proj-search" id="proj-search" placeholder="🔍 Buscar projeto ou cliente (3+ letras busca no arquivo)..." oninput="filtrarProjetos()">
     </div>
 
     <div class="proj-table">
@@ -1021,7 +1024,8 @@ function renderProjetos(){
     </div>
 
     <div class="info-box" style="margin-top:20px">
-      <strong>💡 Custos = P&L contábil + Mão de obra calculada por funcionário.</strong> Cada hora registrada no QBO é multiplicada pelo cost rate específico do funcionário (cadastrado em <a href="#config" onclick="event.preventDefault();navegar('config')" style="color:var(--blue);text-decoration:none;font-weight:600">⚙️ Configurações</a>). Funcionários sem rate cadastrado usam o default global ($${costRatePerHour}/h). Hover no custo do projeto pra ver breakdown por funcionário.
+      <strong>💡 Lista padrão:</strong> Projetos criados em 2025+ OU com atividade em 2025+. Projetos antigos sem atividade recente ficam no arquivo — use a busca (digite 3+ letras) pra carregá-los sob demanda.
+      <br><strong style="display:inline-block;margin-top:6px">Custos = P&L contábil + Mão de obra por funcionário.</strong> Cada hora × cost rate específico (ou default $${costRatePerHour}/h se não cadastrado em <a href="#config" onclick="event.preventDefault();navegar('config')" style="color:var(--blue);text-decoration:none;font-weight:600">⚙️ Configurações</a>). Hover no custo pra ver breakdown por funcionário.
     </div>
   `;
 
@@ -1041,125 +1045,208 @@ function atualizarCostRate(v){
   localStorage.setItem('ksh_cost_rate_h', String(n));
 }
 
+// ─── HELPERS COM RETRY (429-aware) ───
+async function fetchQBOComRetry(url, maxRetries = 3){
+  for(let tentativa = 0; tentativa <= maxRetries; tentativa++){
+    try{
+      const r = await fetch(url);
+      if(r.status === 429){
+        if(tentativa >= maxRetries) return null;
+        // Backoff: 1.5s, 3s, 6s
+        const wait = 1500 * Math.pow(2, tentativa);
+        console.warn(`[QBO 429] backoff ${wait}ms (tentativa ${tentativa+1}/${maxRetries})`);
+        await new Promise(res => setTimeout(res, wait));
+        continue;
+      }
+      if(!r.ok) return null;
+      return await r.json();
+    }catch(e){
+      if(tentativa >= maxRetries) return null;
+      await new Promise(res => setTimeout(res, 1000 * (tentativa+1)));
+    }
+  }
+  return null;
+}
+
+// Cache de TimeActivity entre passes do mesmo load
+const _taCache = new Map();
+async function buscarTimeActivityComCache(projId){
+  if(_taCache.has(projId)) return _taCache.get(projId);
+  const qProjId = String(projId).replace(/'/g, "''");
+  const q = `query?query=select * from TimeActivity where CustomerRef='${qProjId}' MAXRESULTS 1000`;
+  const d = await fetchQBOComRetry('/api/quickbooks/proxy?endpoint=' + encodeURIComponent(q));
+  const lista = (d && d.QueryResponse && d.QueryResponse.TimeActivity) || [];
+  _taCache.set(projId, lista);
+  return lista;
+}
+
+async function buscarPLProjeto(projId){
+  const endpoint = `reports/ProfitAndLoss?customer=${projId}&date_macro=All&accounting_method=Accrual`;
+  return await fetchQBOComRetry('/api/quickbooks/proxy?endpoint=' + encodeURIComponent(endpoint));
+}
+
+// Verifica se o P&L tem alguma transação em 2025+
+function plTemAtividade2025plus(pnl){
+  if(!pnl) return false;
+  // Pega o range de datas do report header
+  const startDate = pnl.Header && pnl.Header.StartPeriod;
+  const endDate = pnl.Header && pnl.Header.EndPeriod;
+  // Verifica se tem algum valor não-zero
+  const receita = extrairValor(pnl, 'Income') || extrairValor(pnl, 'Total Income') || 0;
+  const cogs = extrairValor(pnl, 'COGS') || extrairValor(pnl, 'Total COGS') || 0;
+  const exp = extrairValor(pnl, 'Expenses') || extrairValor(pnl, 'Total Expenses') || 0;
+  if(receita === 0 && cogs === 0 && exp === 0) return false;
+  // Se o report cobre 2025+, tem atividade
+  if(endDate && endDate >= '2025-01-01') return true;
+  return false;
+}
+
+function temAtividade2025plus(timeActs){
+  return timeActs.some(ta => {
+    const d = ta.TxnDate || (ta.MetaData && ta.MetaData.CreateTime);
+    return d && d >= '2025-01-01';
+  });
+}
+
 async function carregarProjetos(){
+  const tbody = () => document.getElementById('proj-tbody');
   try{
     // 0. Carrega rates dos funcionários (cache 5min)
     await carregarEmployeeRates();
 
-    // 1. Lista de projetos (Customer com Job=true)
-    const rCust = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Customer where Job=true MAXRESULTS 200'));
-    if(!rCust.ok){
-      document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="6" class="proj-empty">Erro HTTP ${rCust.status} ao buscar projetos.</td></tr>`;
+    // 1. Lista TODOS os customer/jobs (1 chamada só)
+    if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">📋 Listando projetos no QuickBooks...</td></tr>`;
+    const dCust = await fetchQBOComRetry('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('query?query=select * from Customer where Job=true MAXRESULTS 500'));
+    if(!dCust){
+      if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">⚠️ Não foi possível listar projetos (rate limit ou erro).</td></tr>`;
       return;
     }
-    const dCust = await rCust.json();
-    const projetos = (dCust.QueryResponse && dCust.QueryResponse.Customer) || [];
-
-    if(projetos.length === 0){
-      document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="6" class="proj-empty">📭 Nenhum projeto encontrado no QuickBooks.<br><small style="color:var(--text3)">Verifique se a feature Projects está habilitada no seu QBO.</small></td></tr>`;
+    const todosProjetos = (dCust.QueryResponse && dCust.QueryResponse.Customer) || [];
+    if(todosProjetos.length === 0){
+      if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">📭 Nenhum projeto encontrado no QuickBooks.</td></tr>`;
       renderProjetosSummary([]);
       return;
     }
 
-    // 2. Pra cada projeto: P&L (custos contábeis) + TimeActivity (horas) em paralelo.
-    document.getElementById('proj-tbody').innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ Buscando P&L + tempo de ${projetos.length} projetos no QuickBooks...</td></tr>`;
+    // 2. PASS 1 - Triagem: projetos criados em 2025+ entram direto.
+    //    Pros demais: faz só TimeActivity (1 chamada) pra ver se tem atividade em 2025+.
+    _taCache.clear();
+    const limiteData = '2025-01-01';
+    const candidatosRapidos = [];   // criados em 2025+
+    const candidatosTriagem = [];    // criados antes, precisa checar atividade
 
-    const buscarPLProjeto = async (projId) => {
-      try{
-        const endpoint = `reports/ProfitAndLoss?customer=${projId}&date_macro=All&accounting_method=Accrual`;
-        const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent(endpoint));
-        if(!r.ok) return null;
-        return await r.json();
-      }catch(e){ console.warn('Falha P&L', projId, e); return null; }
-    };
+    todosProjetos.forEach(p => {
+      const criado = p.MetaData && p.MetaData.CreateTime;
+      if(criado && criado >= limiteData){
+        candidatosRapidos.push(p);
+      }else{
+        candidatosTriagem.push(p);
+      }
+    });
 
-    const buscarTimeActivityProjeto = async (projId) => {
-      try{
-        // Escape simples de aspas no ID (raro mas seguro)
-        const qProjId = String(projId).replace(/'/g, "''");
-        const q = `query?query=select * from TimeActivity where CustomerRef='${qProjId}' MAXRESULTS 1000`;
-        const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent(q));
-        if(!r.ok) return [];
-        const d = await r.json();
-        return (d.QueryResponse && d.QueryResponse.TimeActivity) || [];
-      }catch(e){ console.warn('Falha TimeActivity', projId, e); return []; }
-    };
+    if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">🔎 Triando ${todosProjetos.length} projetos (${candidatosRapidos.length} criados em 2025+, ${candidatosTriagem.length} sob avaliação)...</td></tr>`;
 
-    // Roda em batches de 10 (cada projeto faz 2 fetches → 20 paralelas por batch)
+    // Triagem em batches de 4 (carga leve, 1 chamada por projeto)
+    const relevantes = [...candidatosRapidos];
+    const BATCH_TRIAGEM = 4;
+    for(let i = 0; i < candidatosTriagem.length; i += BATCH_TRIAGEM){
+      const batch = candidatosTriagem.slice(i, i + BATCH_TRIAGEM);
+      const tas = await Promise.all(batch.map(p => buscarTimeActivityComCache(p.Id)));
+      batch.forEach((p, idx) => {
+        if(temAtividade2025plus(tas[idx])) relevantes.push(p);
+      });
+      if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">🔎 Triagem: ${Math.min(i+BATCH_TRIAGEM, candidatosTriagem.length)}/${candidatosTriagem.length} avaliados · ${relevantes.length} relevantes até agora</td></tr>`;
+    }
+
+    if(relevantes.length === 0){
+      if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">📭 Nenhum projeto com atividade em 2025+ encontrado.<br><small style="color:var(--text3)">Use a busca pra encontrar projetos antigos.</small></td></tr>`;
+      renderProjetosSummary([]);
+      projetosCache = [];
+      projetosArquivoIds = new Set(todosProjetos.map(p => p.Id));
+      return;
+    }
+
+    // 3. PASS 2 - Processa P&L + TimeActivity completo pros relevantes.
+    if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ Processando ${relevantes.length} projetos relevantes...</td></tr>`;
+
     const dados = [];
-    const BATCH_SIZE = 10;
-    for(let i = 0; i < projetos.length; i += BATCH_SIZE){
-      const batch = projetos.slice(i, i + BATCH_SIZE);
+    const BATCH_FULL = 4; // batch menor pra não estourar rate limit
+    for(let i = 0; i < relevantes.length; i += BATCH_FULL){
+      const batch = relevantes.slice(i, i + BATCH_FULL);
       const resultados = await Promise.all(batch.map(p => Promise.all([
         buscarPLProjeto(p.Id),
-        buscarTimeActivityProjeto(p.Id)
+        buscarTimeActivityComCache(p.Id)
       ])));
-
       batch.forEach((p, idx) => {
         const [pnl, timeActs] = resultados[idx];
-
-        // P&L
-        const receita = extrairValor(pnl, 'Income') || extrairValor(pnl, 'Total Income') || 0;
-        const cogs = extrairValor(pnl, 'COGS') || extrairValor(pnl, 'Total COGS') || 0;
-        const exp = extrairValor(pnl, 'Expenses') || extrairValor(pnl, 'Total Expenses') || 0;
-        const custoPL = Math.abs(cogs) + Math.abs(exp);
-
-        // TimeActivity → horas agrupadas por funcionário
-        let horas = 0;
-        let maoObra = 0;
-        const breakdown = new Map(); // empId → { name, horas, rate, total, custom }
-        timeActs.forEach(ta => {
-          const h = (Number(ta.Hours)||0) + (Number(ta.Minutes)||0)/60;
-          if(h <= 0) return;
-          horas += h;
-          const empId = ta.EmployeeRef && ta.EmployeeRef.value;
-          const empNameFromQBO = (ta.EmployeeRef && ta.EmployeeRef.name) || 'Sem funcionário';
-          const info = empId && employeeRateMap.get(empId);
-          const rate = info ? info.rate : costRatePerHour;
-          const name = info ? info.name : empNameFromQBO;
-          const custom = info ? info.custom : false;
-          const valor = h * rate;
-          maoObra += valor;
-          const key = empId || ('_'+empNameFromQBO);
-          if(breakdown.has(key)){
-            const b = breakdown.get(key);
-            b.horas += h;
-            b.total += valor;
-          }else{
-            breakdown.set(key, { name, rate, horas: h, total: valor, custom });
-          }
-        });
-
-        const custo = custoPL + maoObra;
-        const lucro = receita - custo;
-        const margem = receita > 0 ? (lucro / receita) * 100 : null;
-
-        dados.push({
-          id: p.Id,
-          nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
-          cliente: (p.ParentRef && p.ParentRef.name) || '—',
-          receita: receita,
-          custoPL: custoPL,
-          horas: horas,
-          maoObra: maoObra,
-          breakdown: Array.from(breakdown.values()).sort((a,b)=>b.horas-a.horas),
-          custo: custo,
-          lucro: lucro,
-          margem: margem,
-          ativo: p.Active !== false,
-          criado: p.MetaData ? p.MetaData.CreateTime : null
-        });
+        dados.push(processarProjeto(p, pnl, timeActs));
       });
-
-      document.getElementById('proj-tbody').innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ ${Math.min(i+BATCH_SIZE, projetos.length)}/${projetos.length} projetos processados...</td></tr>`;
+      if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ ${Math.min(i+BATCH_FULL, relevantes.length)}/${relevantes.length} projetos processados...</td></tr>`;
     }
 
     projetosCache = dados;
+    // Guarda IDs de projetos NÃO carregados pra permitir busca sob demanda
+    const idsCarregados = new Set(dados.map(d => d.id));
+    projetosArquivoIds = new Set(todosProjetos.filter(p => !idsCarregados.has(p.Id)).map(p => p.Id));
+    // Guarda metadata dos arquivados pra permitir busca por nome
+    projetosArquivoMeta = new Map(todosProjetos.filter(p => !idsCarregados.has(p.Id)).map(p => [p.Id, {
+      id: p.Id,
+      nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
+      cliente: (p.ParentRef && p.ParentRef.name) || '—',
+      ativo: p.Active !== false,
+      criado: p.MetaData ? p.MetaData.CreateTime : null
+    }]));
     renderProjetosTabela(dados);
   }catch(e){
     console.error('Erro projetos:', e);
-    document.getElementById('proj-tbody').innerHTML = `<tr><td colspan="6" class="proj-empty">⚠️ Erro: ${e.message}</td></tr>`;
+    if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">⚠️ Erro: ${e.message}</td></tr>`;
   }
+}
+
+// Constrói um item de projeto a partir do PNL + TimeActivity (factored out pra reusar na busca)
+function processarProjeto(p, pnl, timeActs){
+  const receita = extrairValor(pnl, 'Income') || extrairValor(pnl, 'Total Income') || 0;
+  const cogs = extrairValor(pnl, 'COGS') || extrairValor(pnl, 'Total COGS') || 0;
+  const exp = extrairValor(pnl, 'Expenses') || extrairValor(pnl, 'Total Expenses') || 0;
+  const custoPL = Math.abs(cogs) + Math.abs(exp);
+
+  let horas = 0, maoObra = 0;
+  const breakdown = new Map();
+  (timeActs||[]).forEach(ta => {
+    const h = (Number(ta.Hours)||0) + (Number(ta.Minutes)||0)/60;
+    if(h <= 0) return;
+    horas += h;
+    const empId = ta.EmployeeRef && ta.EmployeeRef.value;
+    const empNameFromQBO = (ta.EmployeeRef && ta.EmployeeRef.name) || 'Sem funcionário';
+    const info = empId && employeeRateMap.get(empId);
+    const rate = info ? info.rate : costRatePerHour;
+    const name = info ? info.name : empNameFromQBO;
+    const custom = info ? info.custom : false;
+    const valor = h * rate;
+    maoObra += valor;
+    const key = empId || ('_'+empNameFromQBO);
+    if(breakdown.has(key)){
+      const b = breakdown.get(key);
+      b.horas += h; b.total += valor;
+    }else{
+      breakdown.set(key, { name, rate, horas: h, total: valor, custom });
+    }
+  });
+
+  const custo = custoPL + maoObra;
+  const lucro = receita - custo;
+  const margem = receita > 0 ? (lucro / receita) * 100 : null;
+
+  return {
+    id: p.Id,
+    nome: p.DisplayName || p.FullyQualifiedName || 'Sem nome',
+    cliente: (p.ParentRef && p.ParentRef.name) || '—',
+    receita, custoPL, horas, maoObra,
+    breakdown: Array.from(breakdown.values()).sort((a,b)=>b.horas-a.horas),
+    custo, lucro, margem,
+    ativo: p.Active !== false,
+    criado: p.MetaData ? p.MetaData.CreateTime : null
+  };
 }
 
 function renderProjetosSummary(dados){
@@ -1327,6 +1414,73 @@ function filtrarProjetos(status){
     });
   }
   if(projetosCache) renderProjetosTabela(projetosCache);
+
+  // Lazy search no arquivo (projetos pré-2025 sem atividade em 2025+)
+  const searchInput = document.getElementById('proj-search');
+  if(!searchInput || !projetosArquivoMeta || projetosArquivoMeta.size === 0) return;
+  const termo = (searchInput.value || '').trim().toLowerCase();
+
+  clearTimeout(buscaProjetoTimer);
+  if(termo.length < 3) return;
+
+  // Procura no arquivo: nomes que combinam mas ainda não foram carregados
+  const candidatos = [];
+  projetosArquivoMeta.forEach(meta => {
+    if(meta.nome.toLowerCase().includes(termo) || (meta.cliente||'').toLowerCase().includes(termo)){
+      candidatos.push(meta);
+    }
+  });
+  if(candidatos.length === 0) return;
+
+  // Debounce de 500ms — só carrega se o usuário parou de digitar
+  buscaProjetoTimer = setTimeout(() => carregarProjetosDoArquivo(candidatos.slice(0, 15)), 500);
+}
+
+async function carregarProjetosDoArquivo(metas){
+  if(!metas || metas.length === 0) return;
+  const ids = metas.map(m => m.id);
+  const idsSet = new Set(ids);
+  // Remove dos arquivos pra não tentar de novo
+  ids.forEach(id => projetosArquivoMeta.delete(id));
+
+  // Mostra status no tbody
+  const tbody = document.getElementById('proj-tbody');
+  if(tbody){
+    const aviso = document.createElement('tr');
+    aviso.id = 'proj-busca-status';
+    aviso.innerHTML = `<td colspan="6" style="background:var(--blue-bg);color:var(--blue);padding:10px;text-align:center;font-size:12px">🔍 Buscando ${metas.length} projeto(s) no arquivo do QBO...</td>`;
+    tbody.prepend(aviso);
+  }
+
+  try{
+    const BATCH = 3;
+    for(let i = 0; i < metas.length; i += BATCH){
+      const batch = metas.slice(i, i + BATCH);
+      const resultados = await Promise.all(batch.map(async m => {
+        const [pnl, tas] = await Promise.all([
+          buscarPLProjeto(m.id),
+          buscarTimeActivityComCache(m.id)
+        ]);
+        // Reconstrói "p" no formato do Customer pra reusar processarProjeto
+        const pFake = {
+          Id: m.id,
+          DisplayName: m.nome,
+          ParentRef: m.cliente && m.cliente !== '—' ? { name: m.cliente } : null,
+          Active: m.ativo,
+          MetaData: m.criado ? { CreateTime: m.criado } : null
+        };
+        return processarProjeto(pFake, pnl, tas);
+      }));
+      projetosCache = (projetosCache || []).concat(resultados);
+    }
+    const statusEl = document.getElementById('proj-busca-status');
+    if(statusEl) statusEl.remove();
+    renderProjetosTabela(projetosCache);
+  }catch(e){
+    console.error('Erro busca arquivo', e);
+    const statusEl = document.getElementById('proj-busca-status');
+    if(statusEl) statusEl.innerHTML = `<td colspan="6" style="background:var(--red-bg);color:var(--red);padding:10px;text-align:center;font-size:12px">⚠️ Erro ao buscar no arquivo</td>`;
+  }
 }
 
 // === PÁGINA CONFIGURAÇÕES (Sprint 2.5) ===
