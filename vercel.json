@@ -1,8 +1,8 @@
 {
-  "buildCommand": "echo 'force rebuild for api/ai/'",
-  "functions": {
-    "api/**/*.js": {
-      "maxDuration": 30
-    }
+  "name": "portal-ksh",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.4"
   }
 }
