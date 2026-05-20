@@ -209,6 +209,84 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .pd-total-bar-val{font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:'DM Mono',monospace}
 .pd-total-bar-val.neg{color:var(--red)}
 .pd-total-bar-val.pos{color:var(--green)}
+
+/* === ANÁLISE INTELIGENTE (Sprint 2.8) === */
+.pa-section-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:30px 0 14px}
+.pa-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px}
+.pa-card-title{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:14px}
+.pa-bench-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.pa-bench-item{}
+.pa-bench-label{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.pa-bench-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.pa-bench-val.neg{color:var(--red)}
+.pa-bench-val.pos{color:var(--green)}
+.pa-bench-diff{font-size:11px;margin-top:3px;font-weight:500}
+.pa-bench-diff.up{color:var(--green)}
+.pa-bench-diff.down{color:var(--red)}
+.pa-bench-diff.warn{color:var(--amber)}
+.pa-bench-diff.neutral{color:var(--text3)}
+
+.pa-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media (max-width:760px){.pa-grid-2{grid-template-columns:1fr}}
+
+.pa-donut-wrap{display:flex;align-items:center;gap:18px}
+.pa-donut{width:130px;height:130px;flex-shrink:0;position:relative}
+.pa-donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.pa-donut-center-val{font-size:15px;font-weight:700;color:var(--text)}
+.pa-donut-center-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.pa-donut-legend{flex:1;font-size:11px}
+.pa-donut-legend-row{display:flex;justify-content:space-between;padding:4px 0;color:var(--text2)}
+.pa-donut-legend-row .swatch{display:inline-flex;align-items:center;gap:7px}
+.pa-donut-legend-row .swatch i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.pa-donut-legend-row .val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+
+.pa-mix-row{margin-bottom:11px}
+.pa-mix-row:last-child{margin-bottom:0}
+.pa-mix-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.pa-mix-name{color:var(--text);font-weight:500}
+.pa-mix-sub{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.pa-mix-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.pa-mix-bar-fill{height:100%;background:var(--purple);border-radius:3px}
+
+.pa-empty{padding:24px;text-align:center;color:var(--text3);font-size:12px}
+
+/* === IA: Tabs + Insight cards === */
+.pa-ai-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.pa-ai-trigger{padding:24px;text-align:center}
+.pa-ai-btn{background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform .15s ease,opacity .15s ease}
+.pa-ai-btn:hover{transform:translateY(-1px)}
+.pa-ai-btn:disabled{opacity:.6;cursor:wait}
+.pa-ai-hint{font-size:11px;color:var(--text3);margin-top:10px}
+
+.pa-tabs{display:flex;border-bottom:1px solid var(--border)}
+.pa-tab{flex:1;background:transparent;border:none;color:var(--text3);padding:13px 8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:all .15s ease}
+.pa-tab:hover{color:var(--text2)}
+.pa-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:rgba(59,130,246,.08)}
+.pa-tab-content{padding:18px;display:none}
+.pa-tab-content.active{display:block}
+
+.pa-insight{padding:14px 16px;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--text3);background:rgba(255,255,255,.02)}
+.pa-insight:last-child{margin-bottom:0}
+.pa-insight.sev-critico{border-left-color:var(--red);background:rgba(239,68,68,.07)}
+.pa-insight.sev-atencao{border-left-color:var(--amber);background:rgba(245,158,11,.06)}
+.pa-insight.sev-ok{border-left-color:var(--green);background:rgba(34,197,94,.06)}
+.pa-insight.sev-info{border-left-color:var(--blue);background:rgba(59,130,246,.07)}
+.pa-insight-title{font-size:12px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.pa-insight.sev-critico .pa-insight-title{color:var(--red)}
+.pa-insight.sev-atencao .pa-insight-title{color:var(--amber)}
+.pa-insight.sev-ok .pa-insight-title{color:var(--green)}
+.pa-insight.sev-info .pa-insight-title{color:var(--blue)}
+.pa-insight-diag{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:7px}
+.pa-insight-acao{font-size:12px;color:var(--text2);line-height:1.55;padding-top:7px;border-top:1px dashed var(--border)}
+.pa-insight-acao strong{color:var(--text)}
+
+.pa-ai-footer{border-top:1px solid var(--border);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.15);flex-wrap:wrap;gap:8px}
+.pa-ai-meta{font-size:10px;color:var(--text3)}
+.pa-ai-regen{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}
+.pa-ai-regen:hover{background:var(--bg3);color:var(--text)}
+
+.pa-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:pa-spin .8s linear infinite;margin-right:6px;vertical-align:-2px}
+@keyframes pa-spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
@@ -1368,9 +1446,12 @@ function renderProjetoDetalheHTML(data){
   const margemTxt = t.margem === null ? '—' : `${t.margem >= 0 ? '+' : ''}${t.margem.toFixed(1)}%`;
   const lucroCls = t.lucro >= 0 ? 'pos' : 'neg';
 
-  // Link pro QBO Projects (abre o projeto direto na ferramenta)
-  // Padrão: https://app.qbo.intuit.com/app/project/<id>
-  const qboUrl = `https://app.qbo.intuit.com/app/project/${p.id}`;
+  // Link pro QBO Projects (URL real do QBO Projects)
+  // Padrão correto: https://qbo.intuit.com/app/projects/projectdetails?id=<ProjectRef.value>
+  // Fallback (projeto sem TimeActivity): abre a lista geral de Projects
+  const qboUrl = p.qboProjectId
+    ? `https://qbo.intuit.com/app/projects/projectdetails?id=${p.qboProjectId}`
+    : `https://qbo.intuit.com/app/projects`;
 
   // Renderiza seções (Income, COGS, Expenses)
   const renderSecao = (id, icone, titulo, total, accounts, classe) => {
@@ -1496,7 +1577,275 @@ function renderProjetoDetalheHTML(data){
     <div class="info-box" style="margin-top:20px">
       <strong>💡 Fonte da verdade:</strong> Todos os números acima vêm direto da API do QuickBooks (Reports/ProfitAndLoss + TimeActivity). <strong>Bate 1:1 com a tela do QBO Projects.</strong> Para editar lançamentos, use o botão "Abrir no QBO".
     </div>
+
+    <div class="pa-section-label">📊 Análise inteligente</div>
+    <div id="pa-conteudo">
+      <div class="pa-empty">⏳ Calculando benchmarks vs. seus outros projetos...</div>
+    </div>
   `;
+
+  // Dispara análise em background (não bloqueia o resto)
+  carregarAnaliseProjeto(p.id);
+}
+
+// === ANÁLISE INTELIGENTE (Sprint 2.8 Etapa 1) ===
+async function carregarAnaliseProjeto(projId){
+  const cont = document.getElementById('pa-conteudo');
+  if(!cont) return;
+  try{
+    const r = await fetch('/api/quickbooks/projeto-analise?customer=' + encodeURIComponent(projId));
+    if(!r.ok){
+      cont.innerHTML = `<div class="pa-empty">⚠️ Não foi possível calcular análises.</div>`;
+      return;
+    }
+    const data = await r.json();
+    if(data.benchmark === null){
+      cont.innerHTML = `<div class="pa-empty">📊 ${data.mensagem || 'Sem dados pra comparar.'}</div>`;
+      return;
+    }
+    renderAnaliseHTML(data);
+  }catch(e){
+    console.error('Erro análise:', e);
+    cont.innerHTML = `<div class="pa-empty">⚠️ Erro: ${e.message}</div>`;
+  }
+}
+
+function renderAnaliseHTML(data){
+  const cont = document.getElementById('pa-conteudo');
+  const b = data.benchmark;
+  const c = data.composicao;
+  const mix = data.mixEquipe || [];
+
+  // Helper de formatar diff %
+  const fmtDiff = (val, isPp) => {
+    if(val === null || val === undefined || isNaN(val)) return '';
+    const sign = val >= 0 ? '+' : '';
+    return isPp ? `${sign}${val.toFixed(1)}pp` : `${sign}${val.toFixed(0)}%`;
+  };
+
+  // Helper pra decidir classe de cor (down=ruim, up=bom)
+  // Pra receita/margem: up = bom. Pra custo/horas: up = ruim.
+  const diffCls = (val, upBom) => {
+    if(val === null || val === undefined || Math.abs(val) < 2) return 'neutral';
+    const bom = upBom ? val > 0 : val < 0;
+    return bom ? 'up' : 'down';
+  };
+
+  // ─── BENCHMARK ───
+  const benchHtml = `
+    <div class="pa-card">
+      <div class="pa-card-title">Benchmark vs. seus outros projetos · base: ${b.receita.n} projetos</div>
+      <div class="pa-bench-grid">
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">💰 Receita</div>
+          <div class="pa-bench-val">${fmtMoney(b.receita.atual)}</div>
+          <div class="pa-bench-diff ${diffCls(b.receita.diffPct, true)}">
+            ${fmtDiff(b.receita.diffPct)} vs média (${fmtMoney(b.receita.media)})
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">📊 Margem</div>
+          <div class="pa-bench-val ${b.margem.atual !== null && b.margem.atual < 0 ? 'neg' : (b.margem.atual !== null && b.margem.atual > 0 ? 'pos' : '')}">
+            ${b.margem.atual === null ? '—' : (b.margem.atual >= 0 ? '+' : '') + b.margem.atual.toFixed(1) + '%'}
+          </div>
+          <div class="pa-bench-diff ${diffCls(b.margem.diffPp, true)}">
+            ${fmtDiff(b.margem.diffPp, true)} vs média (${b.margem.media >= 0 ? '+' : ''}${b.margem.media.toFixed(1)}%)
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">⏱️ Horas</div>
+          <div class="pa-bench-val">${fmtHoras(b.horas.atual)}</div>
+          <div class="pa-bench-diff ${diffCls(b.horas.diffPct, false)}">
+            ${fmtDiff(b.horas.diffPct)} vs média (${fmtHoras(b.horas.media)})
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">💵 $/Hora efetivo</div>
+          <div class="pa-bench-val">${b.ratePorHora.atual === null ? '—' : '$' + b.ratePorHora.atual.toFixed(0)}</div>
+          <div class="pa-bench-diff ${diffCls(b.ratePorHora.diffPct, true)}">
+            ${fmtDiff(b.ratePorHora.diffPct)} vs média ($${b.ratePorHora.media.toFixed(0)}/h)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // ─── DONUT DE COMPOSIÇÃO ───
+  const total = c.total || 1;
+  const pCogs = (c.cogs / total) * 100;
+  const pExp = (c.expenses / total) * 100;
+  const pMao = (c.maoObra / total) * 100;
+
+  // Calcula stroke-dasharray pra cada slice (circunferência = 2*π*15.9 ≈ 100)
+  const offset1 = 0;
+  const offset2 = -pCogs;
+  const offset3 = -(pCogs + pExp);
+
+  const donutHtml = total > 0 ? `
+    <div class="pa-card">
+      <div class="pa-card-title">Composição do custo</div>
+      <div class="pa-donut-wrap">
+        <div class="pa-donut">
+          <svg viewBox="0 0 42 42" style="width:100%;height:100%">
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--bg3)" stroke-width="6"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--blue)" stroke-width="6"
+              stroke-dasharray="${pCogs.toFixed(2)} 100" stroke-dashoffset="${offset1}" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--amber)" stroke-width="6"
+              stroke-dasharray="${pExp.toFixed(2)} 100" stroke-dashoffset="${offset2}" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--purple)" stroke-width="6"
+              stroke-dasharray="${pMao.toFixed(2)} 100" stroke-dashoffset="${offset3}" transform="rotate(-90 21 21)"></circle>
+          </svg>
+          <div class="pa-donut-center">
+            <div class="pa-donut-center-val">${fmtMoney(total)}</div>
+            <div class="pa-donut-center-lbl">Total</div>
+          </div>
+        </div>
+        <div class="pa-donut-legend">
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--blue)"></i>COGS · ${pCogs.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.cogs)}</span>
+          </div>
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--amber)"></i>Expenses · ${pExp.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.expenses)}</span>
+          </div>
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--purple)"></i>Mão de obra · ${pMao.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.maoObra)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  ` : `<div class="pa-card"><div class="pa-card-title">Composição do custo</div><div class="pa-empty">Sem custos lançados ainda.</div></div>`;
+
+  // ─── MIX DE EQUIPE ───
+  const mixHtml = mix.length > 0 ? `
+    <div class="pa-card">
+      <div class="pa-card-title">Mix de equipe</div>
+      ${mix.map(e => `
+        <div class="pa-mix-row">
+          <div class="pa-mix-head">
+            <span class="pa-mix-name">${e.name}</span>
+            <span class="pa-mix-sub">${fmtHoras(e.horas)} · ${fmtMoney(e.total)} · $${e.rateMedio.toFixed(0)}/h</span>
+          </div>
+          <div class="pa-mix-bar"><div class="pa-mix-bar-fill" style="width:${e.pctHoras.toFixed(1)}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+  ` : `<div class="pa-card"><div class="pa-card-title">Mix de equipe</div><div class="pa-empty">Nenhuma hora lançada ainda.</div></div>`;
+
+  cont.innerHTML = benchHtml + `<div class="pa-grid-2">${donutHtml}${mixHtml}</div>` + `
+    <div class="pa-ai-card" id="pa-ai-card">
+      <div class="pa-ai-trigger" id="pa-ai-trigger">
+        <button class="pa-ai-btn" id="pa-ai-btn" onclick="gerarAnaliseIA('${data.atual.id}')">
+          🤖 Gerar análise IA
+        </button>
+        <div class="pa-ai-hint">Claude vai analisar nas perspectivas de CFO, Operações e Smart Home Expert</div>
+      </div>
+    </div>
+  `;
+}
+
+// === IA: Gerar análise inteligente ===
+// Cache em memória pra não rebatir IA sem motivo
+const _aiCache = new Map();
+
+async function gerarAnaliseIA(projId, forcarRefresh){
+  const btn = document.getElementById('pa-ai-btn');
+  const card = document.getElementById('pa-ai-card');
+  if(!card) return;
+
+  // Cache hit?
+  if(!forcarRefresh && _aiCache.has(projId)){
+    renderAnaliseIA(card, projId, _aiCache.get(projId));
+    return;
+  }
+
+  // Loading state
+  card.innerHTML = `
+    <div class="pa-ai-trigger">
+      <button class="pa-ai-btn" disabled>
+        <span class="pa-spin"></span>Analisando dados do projeto...
+      </button>
+      <div class="pa-ai-hint">Isso leva uns 5-10 segundos</div>
+    </div>
+  `;
+
+  try{
+    const r = await fetch('/api/ai/analise-projeto', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ projetoId: projId })
+    });
+    if(!r.ok){
+      const err = await r.json().catch(()=>({error:'Erro desconhecido'}));
+      card.innerHTML = `
+        <div class="pa-ai-trigger">
+          <div style="color:var(--red);font-size:13px;margin-bottom:10px">⚠️ ${err.error || 'Falha na análise'}</div>
+          <button class="pa-ai-btn" onclick="gerarAnaliseIA('${projId}', true)">🔄 Tentar de novo</button>
+        </div>
+      `;
+      return;
+    }
+    const data = await r.json();
+    _aiCache.set(projId, data);
+    renderAnaliseIA(card, projId, data);
+  }catch(e){
+    console.error('Erro IA:', e);
+    card.innerHTML = `
+      <div class="pa-ai-trigger">
+        <div style="color:var(--red);font-size:13px;margin-bottom:10px">⚠️ ${e.message}</div>
+        <button class="pa-ai-btn" onclick="gerarAnaliseIA('${projId}', true)">🔄 Tentar de novo</button>
+      </div>
+    `;
+  }
+}
+
+function renderAnaliseIA(card, projId, data){
+  const cfo = Array.isArray(data.cfo) ? data.cfo : [];
+  const ops = Array.isArray(data.operacoes) ? data.operacoes : [];
+  const sh = Array.isArray(data.smartHome) ? data.smartHome : [];
+
+  const renderInsights = (arr) => arr.length === 0
+    ? `<div class="pa-empty">Sem insights nessa categoria.</div>`
+    : arr.map(i => `
+      <div class="pa-insight sev-${i.severidade || 'info'}">
+        <div class="pa-insight-title">${escapeHtml(i.titulo || '')}</div>
+        <div class="pa-insight-diag">${escapeHtml(i.diagnostico || '')}</div>
+        ${i.acao ? `<div class="pa-insight-acao"><strong>Ação:</strong> ${escapeHtml(i.acao)}</div>` : ''}
+      </div>
+    `).join('');
+
+  const meta = data._meta || {};
+  const tokens = (meta.inputTokens || 0) + (meta.outputTokens || 0);
+
+  card.innerHTML = `
+    <div class="pa-tabs">
+      <button class="pa-tab active" data-tab="cfo">💼 CFO <span style="opacity:.6">(${cfo.length})</span></button>
+      <button class="pa-tab" data-tab="ops">🔧 Operações <span style="opacity:.6">(${ops.length})</span></button>
+      <button class="pa-tab" data-tab="sh">🏠 Smart Home <span style="opacity:.6">(${sh.length})</span></button>
+    </div>
+    <div class="pa-tab-content active" data-tab-content="cfo">${renderInsights(cfo)}</div>
+    <div class="pa-tab-content" data-tab-content="ops">${renderInsights(ops)}</div>
+    <div class="pa-tab-content" data-tab-content="sh">${renderInsights(sh)}</div>
+    <div class="pa-ai-footer">
+      <div class="pa-ai-meta">🤖 ${meta.model || 'Claude'} · ${meta.tempoMs ? (meta.tempoMs/1000).toFixed(1)+'s' : '—'} · ${tokens} tokens</div>
+      <button class="pa-ai-regen" onclick="gerarAnaliseIA('${projId}', true)">🔄 Regenerar</button>
+    </div>
+  `;
+
+  // Liga os clicks das abas
+  card.querySelectorAll('.pa-tab').forEach(btn => {
+    btn.onclick = () => {
+      const tab = btn.dataset.tab;
+      card.querySelectorAll('.pa-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      card.querySelectorAll('.pa-tab-content').forEach(c => c.classList.toggle('active', c.dataset.tabContent === tab));
+    };
+  });
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
 // === PÁGINA CONFIGURAÇÕES (Sprint 2.5) ===
