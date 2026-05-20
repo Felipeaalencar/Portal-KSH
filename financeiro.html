@@ -287,6 +287,77 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 
 .pa-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:pa-spin .8s linear infinite;margin-right:6px;vertical-align:-2px}
 @keyframes pa-spin{to{transform:rotate(360deg)}}
+
+/* === ASSINATURAS === */
+.as-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.as-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.as-kpi.highlight{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)}
+.as-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600}
+.as-kpi.highlight .as-kpi-label{color:var(--green)}
+.as-kpi-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.as-kpi.highlight .as-kpi-val{color:var(--green)}
+.as-kpi-hint{font-size:10px;color:var(--text3);margin-top:3px}
+.as-kpi-hint.up{color:var(--red)}
+.as-kpi-hint.warn{color:var(--amber)}
+.as-kpi-hint.good{color:var(--green)}
+
+.as-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.as-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+
+.as-cat-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:10px;background:var(--bg3)}
+.as-cat-bar > div{height:100%}
+.as-cat-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--text2)}
+.as-cat-legend span{display:flex;align-items:center;gap:6px}
+.as-cat-legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+.as-alert{border-radius:10px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.as-alert.red{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3)}
+.as-alert.amber{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3)}
+.as-alert-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.as-alert.red .as-alert-title{color:var(--red)}
+.as-alert.amber .as-alert-title{color:var(--amber)}
+.as-alert-body{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px}
+.as-alert-hint{font-size:11px;color:var(--text3)}
+.as-alert-hint b{color:var(--text2)}
+
+.as-chart-wrap{padding:6px 0}
+.as-chart-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px}
+
+.as-filtros{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.as-fbtn{background:transparent;color:var(--text2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s ease}
+.as-fbtn:hover{background:var(--bg3)}
+.as-fbtn.active{background:rgba(59,130,246,.15);color:var(--blue);border-color:var(--blue);font-weight:600}
+.as-fbtn.warn{color:var(--amber);border-color:rgba(245,158,11,.4)}
+.as-fbtn.warn.active{background:rgba(245,158,11,.15);font-weight:600}
+.as-fbtn.green{color:var(--green);border-color:rgba(34,197,94,.4)}
+.as-fbtn.green.active{background:rgba(34,197,94,.15);font-weight:600}
+.as-search{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit}
+
+.as-tbl{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.as-tbl-head{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:10px 14px;background:rgba(0,0,0,.2);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;border-bottom:1px solid var(--border)}
+.as-row{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s ease}
+.as-row:last-child{border-bottom:none}
+.as-row:hover{background:rgba(255,255,255,.02)}
+.as-row.warn{background:rgba(245,158,11,.04)}
+.as-row.red{background:rgba(239,68,68,.04)}
+.as-vendor-name{font-weight:600;color:var(--text)}
+.as-vendor-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.as-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.as-badge.software{background:rgba(59,130,246,.15);color:var(--blue)}
+.as-badge.infra{background:rgba(124,58,237,.15);color:var(--purple)}
+.as-badge.marketing{background:rgba(245,158,11,.15);color:var(--amber)}
+.as-badge.outros{background:rgba(107,117,153,.15);color:var(--text3)}
+.as-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.as-date{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.as-qbo-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit}
+.as-qbo-btn:hover{background:var(--bg3);color:var(--text)}
+.as-tag{font-size:10px;margin-left:5px;font-weight:600}
+.as-tag.warn{color:var(--amber)}
+.as-tag.red{color:var(--red)}
+.as-tag.gray{color:var(--text3)}
+
+.as-empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:13px}
+
 </style>
 </head>
 <body>
@@ -610,6 +681,7 @@ function navegar(pagina){
   if(pagina === 'visao') renderVisaoGeral();
   else if(pagina === 'projetos') renderProjetos();
   else if(pagina === 'config') renderConfig();
+  else if(pagina === 'assin') renderAssinaturas();
   else renderPlaceholder(pagina);
 }
 
@@ -2019,6 +2091,265 @@ window.addEventListener('hashchange', () => {
     navegar(hash);
   }
 });
+
+// === ASSINATURAS (Sprint 3) ===
+let _assinaturasCache = null;
+let _assinFiltro = 'todas';
+let _assinBusca = '';
+
+async function renderAssinaturas(){
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">🔁 Assinaturas</div>
+        <div class="page-sub">Audit de pagamentos recorrentes (zombie subscriptions)</div>
+      </div>
+      <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+    </div>
+    <div id="as-conteudo">
+      <div class="as-empty">⏳ Detectando assinaturas recorrentes nas últimas 18 meses...</div>
+    </div>
+  `;
+
+  try {
+    if(!_assinaturasCache){
+      const r = await fetch('/api/quickbooks/assinaturas');
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      _assinaturasCache = await r.json();
+    }
+    renderAssinHTML();
+  } catch(e){
+    console.error('Erro assinaturas:', e);
+    document.getElementById('as-conteudo').innerHTML = `
+      <div class="as-empty" style="color:var(--red)">⚠️ Erro: ${escapeHtml(e.message)}</div>
+    `;
+  }
+}
+
+function renderAssinHTML(){
+  const d = _assinaturasCache;
+  const cont = document.getElementById('as-conteudo');
+  if(!d || !d.assinaturas){
+    cont.innerHTML = `<div class="as-empty">Sem assinaturas detectadas.</div>`;
+    return;
+  }
+
+  const r = d.resumo;
+  const assinaturas = d.assinaturas;
+  const alertas = d.alertas || [];
+
+  // Crescimento %
+  const cres = d.crescimento || [];
+  const primeiroMes = cres[0]?.total || 0;
+  const ultimoMes = cres[cres.length-1]?.total || 0;
+  const crescPct = primeiroMes > 0 ? ((ultimoMes - primeiroMes) / primeiroMes * 100) : 0;
+
+  // ─── KPIs ───
+  const kpisHtml = `
+    <div class="as-kpis">
+      <div class="as-kpi">
+        <div class="as-kpi-label">Total/mês</div>
+        <div class="as-kpi-val">${fmtMoney(r.totalMes)}</div>
+        ${crescPct !== 0 ? `<div class="as-kpi-hint ${crescPct > 0 ? 'up' : 'good'}">${crescPct > 0 ? '↑' : '↓'} ${Math.abs(crescPct).toFixed(0)}% vs 12 meses</div>` : ''}
+      </div>
+      <div class="as-kpi">
+        <div class="as-kpi-label">Total/ano</div>
+        <div class="as-kpi-val">${fmtMoney(r.totalAno)}</div>
+        <div class="as-kpi-hint">${r.qtdMensais} mensais + ${r.qtdAnuais} anuais</div>
+      </div>
+      <div class="as-kpi">
+        <div class="as-kpi-label">Ativas</div>
+        <div class="as-kpi-val">${r.qtdAtivas}</div>
+        ${r.qtdAumentaram > 0 ? `<div class="as-kpi-hint warn">${r.qtdAumentaram} aumentou de preço</div>` : `<div class="as-kpi-hint">Tudo estável</div>`}
+      </div>
+      ${r.economiaPotencialAno > 0 ? `
+        <div class="as-kpi highlight">
+          <div class="as-kpi-label">💰 Economia potencial</div>
+          <div class="as-kpi-val">${fmtMoney(r.economiaPotencialAno)}/ano</div>
+          <div class="as-kpi-hint">${fmtMoney(r.economiaPotencialAno/12)}/mês ao consolidar</div>
+        </div>
+      ` : `
+        <div class="as-kpi">
+          <div class="as-kpi-label">Status</div>
+          <div class="as-kpi-val" style="color:var(--green)">✓ Sem redundâncias</div>
+          <div class="as-kpi-hint good">Stack enxuto</div>
+        </div>
+      `}
+    </div>
+  `;
+
+  // ─── CATEGORIZAÇÃO ───
+  const catTotal = Object.values(r.totalPorCategoria || {}).reduce((s, v) => s + v, 0);
+  const catCores = {
+    'Software': '#3b82f6',
+    'Infraestrutura': '#a78bfa',
+    'Marketing': '#f59e0b',
+    'Outros': '#6b7599'
+  };
+  const cats = Object.entries(r.totalPorCategoria || {}).sort((a,b) => b[1]-a[1]);
+  const catBarHtml = cats.length > 0 ? `
+    <div class="as-section">
+      <div class="as-section-title">
+        <span>📂 Por categoria · ${fmtMoney(catTotal)}/mês</span>
+      </div>
+      <div class="as-cat-bar">
+        ${cats.map(([cat, val]) => `<div style="width:${(val/catTotal*100).toFixed(1)}%;background:${catCores[cat] || '#6b7599'}" title="${escapeHtml(cat)}"></div>`).join('')}
+      </div>
+      <div class="as-cat-legend">
+        ${cats.map(([cat, val]) => `<span><i style="background:${catCores[cat] || '#6b7599'}"></i>${escapeHtml(cat)} <b>${fmtMoney(val)}</b> · ${(val/catTotal*100).toFixed(0)}%</span>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // ─── ALERTAS DE REDUNDÂNCIA ───
+  const alertasHtml = alertas.map(a => `
+    <div class="as-alert red">
+      <div style="flex:1">
+        <div class="as-alert-title">🚨 Possível redundância · ${escapeHtml(a.grupo)}</div>
+        <div class="as-alert-body">Você tem <b>${a.qtd} ferramentas</b> nesta categoria: ${a.ferramentas.map(f => `<b>${escapeHtml(f)}</b>`).join(', ')}</div>
+        <div class="as-alert-hint">Custo combinado: <b style="color:var(--red)">${fmtMoney(a.totalMes)}/mês</b> · Consolidar pode economizar <b style="color:var(--green)">${fmtMoney(a.economiaMes)}/mês</b></div>
+      </div>
+    </div>
+  `).join('');
+
+  // ─── GRÁFICO DE CRESCIMENTO ───
+  const maxCres = Math.max(...cres.map(c => c.total), 1);
+  const pontos = cres.map((c, i) => {
+    const x = (i / (cres.length-1)) * 600;
+    const y = 100 - (c.total / maxCres) * 80;
+    return `${x},${y}`;
+  }).join(' L');
+  const crescHtml = cres.length > 0 ? `
+    <div class="as-section">
+      <div class="as-section-title">
+        <span>📈 Crescimento de gastos · últimos 12 meses</span>
+        <span style="color:${crescPct > 0 ? 'var(--amber)' : 'var(--green)'};font-weight:600">${crescPct > 0 ? '+' : ''}${crescPct.toFixed(0)}% no período</span>
+      </div>
+      <div class="as-chart-wrap">
+        <svg viewBox="0 0 600 100" style="width:100%;height:80px">
+          <defs><linearGradient id="as-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity=".25"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="M${pontos} L600,100 L0,100 Z" fill="url(#as-grad)"/>
+          <path d="M${pontos}" fill="none" stroke="#3b82f6" stroke-width="2"/>
+          ${cres.map((c, i) => {
+            const x = (i / (cres.length-1)) * 600;
+            const y = 100 - (c.total / maxCres) * 80;
+            return `<circle cx="${x}" cy="${y}" r="${i === cres.length-1 ? 3 : 1.5}" fill="#3b82f6"/>`;
+          }).join('')}
+        </svg>
+        <div class="as-chart-axis">
+          <span>${fmtMes(cres[0]?.mes)} · ${fmtMoney(cres[0]?.total)}</span>
+          ${cres.length > 6 ? `<span>${fmtMes(cres[Math.floor(cres.length/2)]?.mes)} · ${fmtMoney(cres[Math.floor(cres.length/2)]?.total)}</span>` : ''}
+          <span>${fmtMes(cres[cres.length-1]?.mes)} · ${fmtMoney(cres[cres.length-1]?.total)}</span>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  // ─── FILTROS + TABELA ───
+  const aumentaramQtd = assinaturas.filter(a => a.ativa && a.aumentoPct > 0).length;
+  const redundantesSet = new Set();
+  alertas.forEach(a => a.ferramentas.forEach(f => redundantesSet.add(f.toLowerCase())));
+
+  const filtrosHtml = `
+    <div class="as-filtros">
+      <button class="as-fbtn ${_assinFiltro==='todas'?'active':''}" onclick="filtrarAssin('todas')">Todas (${assinaturas.filter(a=>a.ativa).length})</button>
+      <button class="as-fbtn ${_assinFiltro==='mensais'?'active':''}" onclick="filtrarAssin('mensais')">Mensais (${r.qtdMensais})</button>
+      <button class="as-fbtn ${_assinFiltro==='anuais'?'active':''}" onclick="filtrarAssin('anuais')">Anuais (${r.qtdAnuais})</button>
+      ${aumentaramQtd > 0 ? `<button class="as-fbtn warn ${_assinFiltro==='aumentou'?'active':''}" onclick="filtrarAssin('aumentou')">⚠ Aumentou (${aumentaramQtd})</button>` : ''}
+      ${redundantesSet.size > 0 ? `<button class="as-fbtn green ${_assinFiltro==='cortar'?'active':''}" onclick="filtrarAssin('cortar')">💰 Cortar (${redundantesSet.size})</button>` : ''}
+      <input type="search" class="as-search" placeholder="Buscar vendor..." value="${escapeHtml(_assinBusca)}" oninput="buscaAssin(this.value)"/>
+    </div>
+  `;
+
+  // Filtrar
+  let lista = assinaturas.filter(a => a.ativa);
+  if(_assinFiltro === 'mensais') lista = lista.filter(a => a.frequencia === 'Mensal');
+  else if(_assinFiltro === 'anuais') lista = lista.filter(a => a.frequencia === 'Anual');
+  else if(_assinFiltro === 'aumentou') lista = lista.filter(a => a.aumentoPct > 0);
+  else if(_assinFiltro === 'cortar') lista = lista.filter(a => redundantesSet.has(a.vendor.toLowerCase()));
+  if(_assinBusca) lista = lista.filter(a => a.vendor.toLowerCase().includes(_assinBusca.toLowerCase()));
+
+  const linhasHtml = lista.length === 0 ? `
+    <div class="as-empty">Nenhuma assinatura encontrada com esses filtros.</div>
+  ` : lista.map(a => {
+    const ehRedundante = redundantesSet.has(a.vendor.toLowerCase());
+    const aumentou = a.aumentoPct > 0;
+    const rowCls = ehRedundante ? 'red' : (aumentou ? 'warn' : '');
+    const catKey = (a.categoria || 'Outros').toLowerCase().replace(/[^a-z]/g, '');
+    const catCls = catKey.includes('software') ? 'software' : catKey.includes('infra') ? 'infra' : catKey.includes('marketing') ? 'marketing' : 'outros';
+
+    let sub = `${a.frequencia} · ${a.ocorrencias}x · desde ${fmtMesAbrev(a.primeiraCobranca)}`;
+    if(aumentou && a.valorAnterior) {
+      sub = `${a.frequencia} · ${a.ocorrencias}x · era ${fmtMoney(a.valorAnterior)} → ${fmtMoney(a.valorAtual)}`;
+    }
+
+    let tag = '';
+    if(ehRedundante) tag = `<span class="as-tag red">🚨 redundante</span>`;
+    else if(aumentou) tag = `<span class="as-tag warn">⚠ +${a.aumentoPct.toFixed(0)}%</span>`;
+
+    return `
+      <div class="as-row ${rowCls}">
+        <div>
+          <div class="as-vendor-name">${escapeHtml(a.vendor)}${tag}</div>
+          <div class="as-vendor-sub">${escapeHtml(sub)}</div>
+        </div>
+        <div><span class="as-badge ${catCls}">${escapeHtml(a.categoria)}</span></div>
+        <div class="as-val">${fmtMoney(a.valorAtual)}</div>
+        <div class="as-date">${fmtDataBR(a.proximaCobranca)}</div>
+        <div class="as-val">${fmtMoney(a.totalAnual)}</div>
+        <div style="text-align:right">
+          ${a.qboLink ? `<a href="${a.qboLink}" target="_blank" class="as-qbo-btn" title="Abrir no QBO">↗</a>` : '—'}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const tblHtml = `
+    <div class="as-tbl">
+      <div class="as-tbl-head">
+        <div>Fornecedor</div><div>Categoria</div><div>Por cobrança</div><div>Próxima</div><div>Ano</div><div></div>
+      </div>
+      ${linhasHtml}
+    </div>
+  `;
+
+  cont.innerHTML = kpisHtml + catBarHtml + alertasHtml + crescHtml + filtrosHtml + tblHtml + `
+    <div class="info-box" style="margin-top:20px">
+      <strong>💡 Como funciona:</strong> Detecta automaticamente cobranças recorrentes nas suas transações Purchase + Bill do QBO dos últimos 18 meses. Agrupa por fornecedor + valor (±5%) e identifica padrões mensais/trimestrais/anuais. <strong>3+ ocorrências = assinatura.</strong>
+    </div>
+  `;
+}
+
+function filtrarAssin(filtro){
+  _assinFiltro = filtro;
+  renderAssinHTML();
+}
+function buscaAssin(termo){
+  _assinBusca = termo || '';
+  renderAssinHTML();
+}
+
+function fmtMes(yyyymm){
+  if(!yyyymm) return '';
+  const [y,m] = yyyymm.split('-');
+  const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${nomes[parseInt(m)-1]}/${y.slice(2)}`;
+}
+function fmtMesAbrev(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${nomes[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+}
+function fmtDataBR(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
 
 carregar();
 </script>
