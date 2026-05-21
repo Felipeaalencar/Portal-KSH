@@ -5,62 +5,81 @@
 // Agrupa contas QBO em super-categorias usando keywords no nome da CONTA.
 
 // ─── SUPER-CATEGORIAS baseadas no NOME DA CONTA QBO ───
-// Keywords são checadas no nome da CONTA contábil, não no vendor.
+// IMPORTANTE: ordem importa! Categorias mais específicas vêm ANTES das genéricas.
+// Keywords são matched como PALAVRA INTEIRA (word boundary), pra evitar
+// falsos positivos tipo "it" matchando "credit".
 const SUPER_CATEGORIAS = {
-  'Software & SaaS': [
-    'software', 'subscription', 'subscriptions', 'saas', 'app', 'apps',
-    'computer software', 'online software', 'dues and subscriptions',
-    'subscription dues', 'cloud', 'license', 'licenses', 'computer', 'it'
-  ],
   'Seguros': [
     'insurance', 'liability', 'workers comp', 'workers compensation',
     'general liability', 'auto insurance', 'vehicle insurance',
-    'health insurance', 'medical insurance', 'umbrella', 'commercial insurance'
-  ],
-  'Veículos & Combustível': [
-    'vehicle', 'fuel', 'gas', 'gasoline', 'auto', 'automobile',
-    'truck', 'mileage', 'tolls', 'parking', 'car repair', 'auto repair',
-    'lease', 'leasing', 'gas and oil', 'gas/oil', 'gasoline expense'
+    'health insurance', 'medical insurance', 'umbrella insurance',
+    'commercial insurance', 'seguro', 'seguros'
   ],
   'Bancos & Taxas': [
-    'bank', 'bank charge', 'bank service', 'service charge', 'fee',
-    'fees', 'interest expense', 'credit card', 'merchant', 'processing',
-    'transaction fee', 'wire', 'finance charge', 'late fee'
+    'bank', 'bank charge', 'bank service', 'service charge', 'bank fee',
+    'interest expense', 'credit card', 'cc fee', 'merchant fee',
+    'merchant processing', 'processing fee', 'transaction fee', 'wire fee',
+    'wire transfer', 'finance charge', 'late fee', 'ach fee'
+  ],
+  'Veículos & Combustível': [
+    'vehicle', 'fuel', 'gas', 'gasoline', 'auto expense', 'automobile',
+    'truck expense', 'mileage', 'tolls', 'parking', 'car repair',
+    'auto repair', 'gas and oil', 'gasoline expense', 'vehicle expense',
+    'auto and truck', 'truck'
   ],
   'Utilities & Telefonia': [
-    'utility', 'utilities', 'electric', 'electricity', 'water', 'gas bill',
-    'phone', 'telephone', 'internet', 'cell phone', 'cellular',
-    'telecommunications', 'wifi'
+    'utility', 'utilities', 'electric', 'electricity', 'water',
+    'gas bill', 'phone', 'telephone', 'internet', 'cell phone',
+    'cellular', 'telecommunications', 'wifi'
   ],
   'Aluguel & Imóveis': [
-    'rent', 'rental', 'lease real estate', 'real estate', 'property',
-    'office rent', 'storage', 'warehouse'
+    'rent expense', 'rent', 'rental', 'real estate', 'property',
+    'office rent', 'storage', 'warehouse', 'lease real estate'
   ],
   'Folha & Contractors': [
     'payroll', 'wages', 'salary', 'salaries', 'commission', 'commissions',
     'contractor', 'contractors', 'subcontractor', 'subcontractors',
-    'labor', 'employee'
+    'labor', 'employee benefit'
   ],
   'Materiais & Equipamentos': [
     'supplies', 'materials', 'equipment', 'tools', 'parts',
-    'inventory', 'cogs', 'cost of goods', 'job materials', 'job supplies'
+    'inventory', 'cogs', 'cost of goods', 'job materials',
+    'job supplies', 'office supplies'
   ],
   'Marketing & Publicidade': [
     'marketing', 'advertising', 'ads', 'promotion', 'promotional',
     'website', 'web hosting', 'seo', 'social media'
   ],
   'Sócios & Distribuições': [
-    'owner', 'distribution', 'distributions', 'draws', 'dividend',
-    'capital', 'equity', 'shareholder', 'partner'
+    'owner draw', 'owner distribution', 'distribution', 'distributions',
+    'draws', 'dividend', 'shareholder', 'partner draw',
+    'capital contribution', 'equity'
+  ],
+  'Software & SaaS': [
+    'software', 'subscription', 'subscriptions', 'saas',
+    'computer software', 'online software', 'dues and subscriptions',
+    'subscription dues', 'cloud service', 'license fee',
+    'software license', 'app store', 'computer expense'
   ]
 };
 
 const NAO_VENDOR = ['checking', 'savings', 'credit card', 'debit card', 'cartao', 'cartão', 'account', 'conta', 'wallet'];
 
+// Helper: escape regex special chars
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+// Match palavra inteira (word boundary), case-insensitive.
+// Ex: "credit card" matcheia "Credit Card" mas "it" NÃO matcheia "credit".
+function matchKeyword(texto, keyword){
+  const re = new RegExp('\\b' + escapeRegex(keyword) + '\\b', 'i');
+  return re.test(texto);
+}
+
 function classificarConta(contaNome){
   const n = (contaNome||'').toLowerCase();
+  if(!n) return 'Outros';
   for(const [cat, keys] of Object.entries(SUPER_CATEGORIAS)){
-    if(keys.some(k => n.includes(k))) return cat;
+    if(keys.some(k => matchKeyword(n, k))) return cat;
   }
   return 'Outros';
 }
@@ -89,13 +108,12 @@ function detectFreq(diasArr){
 function ymKey(s){ return s.slice(0,7); }
 
 // ─── EXTRAÇÃO DE CONTA QBO PRA CADA TRANSAÇÃO ───
-// Purchase: pode ter AccountRef no topo OU em Line[].AccountBasedExpenseLineDetail.AccountRef
-// Bill: idem (AccountBasedExpenseLineDetail.AccountRef em cada Line)
+// IMPORTANTE: No QBO, Purchase.AccountRef (topo) é a CONTA DE PAGAMENTO
+// (cartão/banco de onde saiu o $$), NÃO a categoria de despesa.
+// A categoria REAL de despesa fica em Line[].AccountBasedExpenseLineDetail.AccountRef
+// Então sempre prioriza Lines antes do topo.
 function extrairConta(tx, type){
-  // Tenta primeiro no topo
-  if(tx?.AccountRef?.name) return tx.AccountRef.name;
-
-  // Tenta nas linhas — pega a primeira linha com AccountRef
+  // Prioridade 1: AccountRef DENTRO das linhas (categoria de despesa real)
   const lines = tx?.Line || [];
   for(const line of lines){
     const det = line?.AccountBasedExpenseLineDetail
@@ -103,6 +121,10 @@ function extrairConta(tx, type){
              || line?.JournalEntryLineDetail;
     if(det?.AccountRef?.name) return det.AccountRef.name;
   }
+
+  // Prioridade 2: AccountRef do topo (fallback - geralmente é só a conta de pagamento)
+  if(tx?.AccountRef?.name) return tx.AccountRef.name;
+
   return null;
 }
 
