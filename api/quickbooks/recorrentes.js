@@ -273,7 +273,11 @@ module.exports = async (req, res) => {
         ativa,
         diasDesdeUltima,
         isConta: g.isConta,
-        qboLink: null
+        qboLink: null,
+        // ─── PRA RECATEGORIZAÇÃO ───
+        // ID/tipo da ÚLTIMA transação (a que será recategorizada)
+        ultimaTxnId: ts[ts.length-1].id || null,
+        ultimaTxnType: ts[ts.length-1].src || null
       });
     });
 
