@@ -614,6 +614,39 @@ function checkPin(){
 
 
 // ─── CRIAR OS NO PORTAL AO FECHAR LEAD ──────────────
+// Cria um cliente ativo em crm_clients quando um lead de empresa RECORRENTE é fechado.
+// Isso alimenta o MRR Real. Empresas tipo "projeto" não entram aqui (viram só OS).
+async function criarClienteRecorrente(lead){
+  if(!lead) return;
+  // Só cria para empresa do tipo recorrência
+  if(!isRecorrencia(lead.empresa)) return;
+  try{
+    // Evita duplicar: se já existe cliente com esse lead_id, não cria de novo
+    if(Array.isArray(clients) && clients.find(c=>c.lead_id===lead.id)) return;
+    // contract_months: tenta extrair número de l.parcelas (ex: "12 meses" -> 12)
+    let meses=null;
+    if(lead.parcelas){
+      const m=String(lead.parcelas).match(/\d+/);
+      if(m) meses=parseInt(m[0]);
+    }
+    const payload={
+      name:lead.name,
+      service:lead.service||'',
+      empresa:lead.empresa,
+      ticket:lead.ticket||0,
+      vendor_id:lead.vendor_id||null,
+      lead_id:lead.id,
+      contract_months:meses,
+      started:new Date().toISOString().split('T')[0]
+    };
+    const novo=await POST('crm_clients',payload);
+    if(Array.isArray(novo)&&novo[0]){
+      if(!Array.isArray(clients)) clients=[];
+      clients.push(novo[0]);
+    }
+  }catch(e){ console.error('Erro ao criar cliente recorrente:',e); }
+}
+
 async function criarOSdoLead(lead) {
   if (!lead) return;
   try {
@@ -744,8 +777,76 @@ let cfg=(()=>{try{const s=localStorage.getItem('crm_cfg');return s?JSON.parse(s)
 
 const STAGES=['Novo lead','Em contato','Proposta enviada','Negociação','Fechado','Perdido'];
 const LOSS_REASONS=['Preço alto','Escolheu concorrente','Sem verba no momento','Sem retorno / sumiu','Não tinha interesse real','Outro'];
-const SERVICES=['Portaria Virtual','Portaria Autônoma','Seg. Armada','Seg. Eletrônica','Drone','Controle Acesso','Pacote de Tecnologia'];
-const EMPRESAS=['AKG','KSH'];
+let SERVICES=['Portaria Virtual','Portaria Autônoma','Seg. Armada','Seg. Eletrônica','Drone','Controle Acesso','Pacote de Tecnologia'];
+// EMPRESAS_CFG: [{nome, tipo}] — tipo é 'recorrencia' ou 'projeto'. Carregado do banco (app_settings) com fallback abaixo.
+let EMPRESAS_CFG=[{nome:'KSH Recorrência',tipo:'recorrencia'},{nome:'KSH Projetos',tipo:'projeto'}];
+// EMPRESAS = só os nomes, para compatibilidade com selects e listas antigas
+let EMPRESAS=EMPRESAS_CFG.map(e=>e.nome);
+// Helper central: dado o NOME da empresa, retorna o tipo ('recorrencia' | 'projeto').
+// Fallback: nomes antigos 'AKG' = recorrência, 'KSH' = projeto. Default = projeto.
+function tipoEmpresa(nome){
+  if(!nome) return 'projeto';
+  const e=EMPRESAS_CFG.find(x=>x.nome===nome);
+  if(e) return e.tipo;
+  if(nome==='AKG') return 'recorrencia';
+  if(nome==='KSH') return 'projeto';
+  return 'projeto';
+}
+// Helper: é recorrência? (usado para mostrar campos de contrato/mensalidade e alimentar o MRR)
+const isRecorrencia=nome=>tipoEmpresa(nome)==='recorrencia';
+
+// Salva uma chave em app_settings (upsert: insere ou atualiza)
+async function saveSetting(key,value){
+  await sb('app_settings',{
+    method:'POST',
+    headers:{...H,'Prefer':'resolution=merge-duplicates,return=minimal'},
+    body:JSON.stringify({key,value,updated_at:new Date().toISOString()})
+  });
+}
+
+// Botão "+" Empresa: pergunta nome e tipo (recorrência ou projeto), salva no banco
+async function addEmpresaPrompt(){
+  const nome=(prompt('Nome da nova empresa:')||'').trim();
+  if(!nome) return;
+  if(EMPRESAS_CFG.find(e=>e.nome.toLowerCase()===nome.toLowerCase())){
+    toast('Essa empresa já existe','err');return;
+  }
+  // Pergunta o tipo de forma simples e clara
+  const resp=(prompt('Essa empresa é:\n\n1 = Com recorrência (mensalidade)\n2 = Apenas 1x (projeto)\n\nDigite 1 ou 2:')||'').trim();
+  if(resp!=='1'&&resp!=='2'){toast('Cancelado — digite 1 ou 2','err');return;}
+  const tipo=resp==='1'?'recorrencia':'projeto';
+  EMPRESAS_CFG=[...EMPRESAS_CFG,{nome,tipo}];
+  EMPRESAS=EMPRESAS_CFG.map(e=>e.nome);
+  try{
+    await saveSetting('empresas',EMPRESAS_CFG);
+    // Atualiza o select na tela e já seleciona a nova empresa
+    const sel=document.getElementById('ne');
+    if(sel){
+      const opt=document.createElement('option');opt.textContent=nome;sel.appendChild(opt);
+      sel.value=nome;onNovoEmpresaChange(nome);
+    }
+    toast('Empresa "'+nome+'" adicionada ('+(tipo==='recorrencia'?'recorrência':'projeto')+')');
+  }catch(e){toast('Erro ao salvar empresa','err');console.error(e);}
+}
+
+// Botão "+" Serviço: pergunta nome, salva no banco
+async function addServicoPrompt(){
+  const nome=(prompt('Nome do novo serviço:')||'').trim();
+  if(!nome) return;
+  if(SERVICES.find(s=>s.toLowerCase()===nome.toLowerCase())){
+    toast('Esse serviço já existe','err');return;
+  }
+  SERVICES=[...SERVICES,nome];
+  try{
+    await saveSetting('servicos',SERVICES);
+    const sel=document.getElementById('ns');
+    if(sel){
+      const opt=document.createElement('option');opt.textContent=nome;sel.appendChild(opt);
+      sel.value=nome;onServiceChange(nome);
+    }
+    toast('Serviço "'+nome+'" adicionado');
+  }catch(e){toast('Erro ao salvar serviço','err');console.error(e);}
+}
 const ORIGINS=['WhatsApp','Instagram','Indicação','Site','LinkedIn','Ligação fria','Evento','Outro'];
 const ORIGIN_COLORS={'WhatsApp':'#22c55e','Instagram':'#a855f7','Indicação':'#f59e0b'};
 const ACT_TYPES=['Anotação','Ligação','Proposta enviada','Reunião','Pedido Fechado'];
@@ -787,6 +888,21 @@ async function loadAll(){
       GET('crm_leads?select=*&order=created_at.desc'),
       GET('crm_clients?select=*&order=renew_in'),
     ]);
+    // Carregar config de empresas e serviços do banco (app_settings). Se falhar, mantém o fallback.
+    try{
+      const cfgRows=await GET('app_settings?select=key,value&key=in.(empresas,servicos)');
+      if(Array.isArray(cfgRows)){
+        const emp=cfgRows.find(r=>r.key==='empresas');
+        const srv=cfgRows.find(r=>r.key==='servicos');
+        if(emp&&Array.isArray(emp.value)&&emp.value.length){
+          EMPRESAS_CFG=emp.value;
+          EMPRESAS=EMPRESAS_CFG.map(e=>e.nome);
+        }
+        if(srv&&Array.isArray(srv.value)&&srv.value.length){
+          SERVICES=srv.value;
+        }
+      }
+    }catch(e){ console.warn('Config empresas/servicos não carregada, usando padrão:',e); }
     const allNotes=await GET('crm_lead_notes?select=*&order=created_at.asc');
     notes={};
     allNotes.forEach(n=>{if(!notes[n.lead_id])notes[n.lead_id]=[];notes[n.lead_id].push(n)});
@@ -1031,7 +1147,7 @@ function rPipeline(){
               <div class="origin-dot" style="background:${ORIGIN_COLORS[l.origin]||'#666'}"></div>
               ${l.service}
             </div>
-            ${l.empresa?`<div style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;background:${l.empresa==='AKG'?'rgba(59,130,246,.15)':'rgba(168,85,247,.15)'};color:${l.empresa==='AKG'?'var(--blue)':'var(--purple)'}">${l.empresa}</div>`:''}
+            ${l.empresa?`<div style="font-size:9px;font-weight:600;padding:1px 6px;border-radius:4px;display:inline-block;margin-top:2px;background:${isRecorrencia(l.empresa)?'rgba(59,130,246,.15)':'rgba(168,85,247,.15)'};color:${isRecorrencia(l.empresa)?'var(--blue)':'var(--purple)'}">${l.empresa}</div>`:''}
             ${isLostCard&&lossNote?`<div class="loss-reason">${lossNote.text}</div>`:!isLostCard&&l.next_contact?`<div class="badge-next">${l.next_contact}</div>`:''}
             <div class="card-foot">
               <div class="av" style="${avStyle(v)}" title="${v.name}">${v.ini}</div>
@@ -1187,9 +1303,9 @@ function openLead(id){
     <div class="field"><div class="field-label">Fase</div>
       <select id="ls" onchange="onStageChange(this.value)" data-prev="${l.stage}">${STAGES.map(s=>`<option${s===l.stage?' selected':''}>${s}</option>`).join('')}</select></div>
 
-    ${l.empresa==='AKG'?`
+    ${isRecorrencia(l.empresa)?`
     <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 AKG — Mensalidade</div>
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💰 ${l.empresa||'Recorrência'} — Mensalidade</div>
       <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor da mensalidade ($)</div>
         <input id="l-vprod" type="text" inputmode="decimal"
           value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
@@ -1201,7 +1317,7 @@ function openLead(id){
       </div>
     </div>`:`
     <div style="background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:8px;padding:12px;margin-bottom:14px">
-      <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 KSH — Projeto</div>
+      <div style="font-size:10px;font-weight:600;color:var(--purple);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px">💜 ${l.empresa||'Projeto'} — Projeto</div>
       <div class="field" style="margin:0 0 8px 0"><div class="field-label">Valor do projeto ($)</div>
         <input id="l-vprod" type="text" inputmode="decimal"
           value="${l.ticket>0?l.ticket.toLocaleString('pt-BR',{minimumFractionDigits:2}):'0,00'}"
@@ -1230,11 +1346,11 @@ function openLead(id){
   document.getElementById('ov1').classList.add('on');
   setTimeout(function(){
     onServiceChange(document.getElementById('lsvc')?.value||'');
-    var emp = document.getElementById('le')?.value||'AKG';
+    var emp = document.getElementById('le')?.value||(EMPRESAS[0]||'');
     var shlSec = document.getElementById('shl-section');
     var cnnSec = document.getElementById('cnn-section');
-    if(shlSec) shlSec.style.display = emp==='AKG' ? 'block' : 'none';
-    if(cnnSec) cnnSec.style.display = emp==='KSH' ? 'block' : 'none';
+    if(shlSec) shlSec.style.display = isRecorrencia(emp) ? 'block' : 'none';
+    if(cnnSec) cnnSec.style.display = !isRecorrencia(emp) ? 'block' : 'none';
   },50);
 }
 
@@ -1262,7 +1378,7 @@ async function saveLead(id){
       if(faltando.length>0){mostrarAvisoFechamento(faltando);return;}
     }
   }
-  const empresa=document.getElementById('le')?.value||l.empresa||'AKG';
+  const empresa=document.getElementById('le')?.value||l.empresa||(EMPRESAS[0]||'');
   const txt=document.getElementById('lnt').value.trim();
   const type=document.getElementById('lat').value;
 
@@ -1313,6 +1429,7 @@ async function saveLead(id){
       cm('ov1');render();toast('🤝 Pedido fechado! Criando OS no Portal...');
       const lFechado=leads.find(x=>x.id===id);
       criarOSdoLead(lFechado);
+      criarClienteRecorrente(lFechado);
     }catch(e){toast('Erro: '+e.message,'err');}
     return;
   }
@@ -1356,9 +1473,15 @@ function openNew(){
     <div class="field"><div class="field-label">Nome do cliente</div>
       <input id="nn" placeholder="Ex: Condomínio Aurora" autocomplete="off" oninput="acSearch(this.value)" style="width:100%"><div id="ac-list"></div></div>
     <div class="field"><div class="field-label">Empresa</div>
-      <select id="ne" onchange="onNovoEmpresaChange(this.value)"><option value="">Selecione...</option>${EMPRESAS.map(e=>`<option>${e}</option>`).join('')}</select></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="ne" onchange="onNovoEmpresaChange(this.value)" style="flex:1"><option value="">Selecione...</option>${EMPRESAS.map(e=>`<option>${e}</option>`).join('')}</select>
+        ${currentUser&&currentUser.role==='admin'?`<button type="button" onclick="addEmpresaPrompt()" title="Adicionar empresa" style="flex-shrink:0;width:36px;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:18px;font-weight:600;cursor:pointer;line-height:1">+</button>`:''}
+      </div></div>
     <div class="field"><div class="field-label">Serviço</div>
-      <select id="ns" onchange="onServiceChange(this.value)"><option value="">Selecione...</option>${SERVICES.map(s=>`<option>${s}</option>`).join('')}</select></div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <select id="ns" onchange="onServiceChange(this.value)" style="flex:1"><option value="">Selecione...</option>${SERVICES.map(s=>`<option>${s}</option>`).join('')}</select>
+        ${currentUser&&currentUser.role==='admin'?`<button type="button" onclick="addServicoPrompt()" title="Adicionar serviço" style="flex-shrink:0;width:36px;height:36px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:18px;font-weight:600;cursor:pointer;line-height:1">+</button>`:''}
+      </div></div>
     <div class="field" id="pkg-field" style="display:none">
       <div class="field-label">Itens do pacote</div>
       <div id="pkg-tags-wrap">${renderPkgTags()}</div>
@@ -1405,13 +1528,13 @@ async function createLead(){
   if(!nm){document.getElementById('nn').style.borderColor='var(--red)';return;}
   const svcSel=document.getElementById('ns').value;
   const service=svcSel==='Pacote de Tecnologia'?getPkgLabel():svcSel;
-  const empresa=document.getElementById('ne')?.value||'AKG';
+  const empresa=document.getElementById('ne')?.value||(EMPRESAS[0]||'');
   try{
-    const isKSH = empresa === 'KSH';
-    const ticket = isKSH
+    const isProjeto = !isRecorrencia(empresa);
+    const ticket = isProjeto
       ? parseVal('n-vprod-ksh') || parseVal('nt2') || 0
       : parseVal('n-vprod') || parseVal('nt2') || 0;
-    const tempoOuForma = isKSH
+    const tempoOuForma = isProjeto
       ? (document.getElementById('n-forma-pgto')?.value || '')
       : (document.getElementById('n-tempo-contrato')?.value || '');
     const r=await POST('crm_leads',{name:nm,service,empresa,origin:document.getElementById('no').value,ticket:ticket||0,vendor_id:document.getElementById('nv').value||null,stage:'Novo lead',days:0,next_contact:'',parcelas:tempoOuForma,acordo:tempoOuForma});
@@ -1492,7 +1615,7 @@ async function drop(e,stage){
     const n=await POST('crm_lead_notes',{lead_id:id,type:'Anotação',text:'Movido de "'+oldStage+'" para "'+stage+'"'});
     if(!notes[id])notes[id]=[];notes[id].push(n[0]);
     toast(l.name+' → '+stage);
-    if(stage==='Fechado') criarOSdoLead(l);
+    if(stage==='Fechado'){ criarOSdoLead(l); criarClienteRecorrente(l); }
   }catch(err){l.stage=oldStage;render();toast('Erro: '+err.message,'err');console.error('drop error:',err);}
 }
 
@@ -1583,7 +1706,7 @@ const CINCO_PCT_SVCS=['Controle Acesso','Pacote de Tecnologia'];
 const SEM_COMISSAO_SVCS=['Seg. Armada','Drone'];
 function calcComissao(lead){
   const ticket = lead.ticket||0;
-  const empresa = lead.empresa||'AKG';
+  const empresa = lead.empresa||(EMPRESAS[0]||'');
   const vendor = vendors.find(v=>v.id===lead.vendor_id);
 
   // Definir base de cálculo: ticket total ou só produtos
@@ -1593,16 +1716,16 @@ function calcComissao(lead){
   const base = base_tipo==='valor_produtos' && valor_produtos>0 ? valor_produtos : ticket;
   const base_label = base_tipo==='valor_produtos' ? ' (só produtos)' : '';
 
-  if(empresa==='KSH'){
+  if(!isRecorrencia(empresa)){
     const pct = vendor&&vendor.comissao_cnn!=null ? parseFloat(vendor.comissao_cnn) : 5;
-    if(pct===0) return {valor:0, label:'Sem comissão — KSH'};
-    return {valor:Math.round(base*(pct/100)), label:pct+'% — KSH'+base_label};
+    if(pct===0) return {valor:0, label:'Sem comissão — '+empresa};
+    return {valor:Math.round(base*(pct/100)), label:pct+'% — '+empresa+base_label};
   }
 
-  // SHIELD
+  // RECORRÊNCIA (mensalidade)
   const shl = vendor&&vendor.comissao_shl ? vendor.comissao_shl : 'primeira_parcela';
-  if(shl==='sem_comissao') return {valor:0, label:'Sem comissão — AKG'};
-  return {valor:base, label:'1ª parcela — AKG'+base_label};
+  if(shl==='sem_comissao') return {valor:0, label:'Sem comissão — '+empresa};
+  return {valor:base, label:'1ª parcela — '+empresa+base_label};
 }
 function initComMes(){
   const sel=document.getElementById('com-mes');
@@ -1640,11 +1763,12 @@ function rComissoes(){
   const tableEl=document.getElementById('com-table');
   if(tableEl)tableEl.innerHTML=pedidos.length===0?'<div style="font-size:12px;color:var(--text3);text-align:center;padding:20px">Nenhum pedido fechado neste mês</div>':pedidos.map(l=>{
     const v=gv(l.vendor_id),n=(notes[l.id]||[]).find(x=>x.type==='Pedido Fechado'),cd=calcComissao(l);
-    const isCNN=l.empresa==='KSH';
+    const isCNN=!isRecorrencia(l.empresa);
     const nparcelas=parseInt(l.parcelas)||0;
     const comEntrada=isCNN&&l.entrada?Math.round((l.entrada)*(cd.valor/(l.ticket||1))):'';
     const comParcela=isCNN&&l.valor_parcela&&nparcelas?Math.round((l.valor_parcela)*(cd.valor/(l.ticket||1))):'';
-    return '<div class="com-row"><div style="flex:1;min-width:0"><div class="com-cliente">'+l.name+'</div><div class="com-service">'+(l.empresa?'<span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;margin-right:4px;background:'+(l.empresa==='AKG'?'rgba(59,130,246,.15)':'rgba(168,85,247,.15)')+';color:'+(l.empresa==='AKG'?'#60a5fa':'#c084fc')+'">'+l.empresa+'</span>':'')+l.service+(n?' · '+n.text.split(' · ')[0]:'')+'</div></div>'+(isAdmin?'<span class="com-vendedor-badge">'+v.name+'</span>':'')+'<div style="text-align:right;flex-shrink:0"><div class="com-valor">'+fmt(l.ticket||0)+'/mês</div><div class="com-com">'+(cd.valor>0?cd.label+' = '+fmt(cd.valor):cd.label)+'</div>'+
+    const sufixoValor=isRecorrencia(l.empresa)?'/mês':'';
+    return '<div class="com-row"><div style="flex:1;min-width:0"><div class="com-cliente">'+l.name+'</div><div class="com-service">'+(l.empresa?'<span style="font-size:9px;font-weight:600;padding:1px 5px;border-radius:3px;margin-right:4px;background:'+(isRecorrencia(l.empresa)?'rgba(59,130,246,.15)':'rgba(168,85,247,.15)')+';color:'+(isRecorrencia(l.empresa)?'#60a5fa':'#c084fc')+'">'+l.empresa+'</span>':'')+l.service+(n?' · '+n.text.split(' · ')[0]:'')+'</div></div>'+(isAdmin?'<span class="com-vendedor-badge">'+v.name+'</span>':'')+'<div style="text-align:right;flex-shrink:0"><div class="com-valor">'+fmt(l.ticket||0)+sufixoValor+'</div><div class="com-com">'+(cd.valor>0?cd.label+' = '+fmt(cd.valor):cd.label)+'</div>'+
       (isCNN&&nparcelas>0?'<div style="font-size:10px;color:var(--text3);margin-top:3px">Entrada: <b>'+fmt(l.entrada||0)+'</b> · '+nparcelas+'x de <b>'+fmt(l.valor_parcela||0)+'</b></div>':'')+
     '</div></div>';
   }).join('');
@@ -1872,7 +1996,7 @@ function openEditVendor(uid){
     <button class="btn btn-primary" style="width:100%;padding:10px" onclick="saveEditVendor('${uid}')">Salvar</button>`;
   document.getElementById('ov2').classList.add('on');
   setTimeout(function(){
-    onNovoEmpresaChange(document.getElementById('ne')?.value||'AKG');
+    onNovoEmpresaChange(document.getElementById('ne')?.value||(EMPRESAS[0]||''));
     onServiceChange(document.getElementById('ns')?.value||'');
   },50);
 }
@@ -2065,13 +2189,13 @@ function rPerdidos(){
   const statsEl=document.getElementById('perd-stats');
   if(statsEl){
     const totalTicket=perdidos.reduce((a,l)=>a+(l.ticket||0),0);
-    const shieldPerd=perdidos.filter(l=>l.empresa==='AKG').length;
-    const connPerd=perdidos.filter(l=>l.empresa==='KSH').length;
+    const recPerd=perdidos.filter(l=>isRecorrencia(l.empresa)).length;
+    const projPerd=perdidos.filter(l=>!isRecorrencia(l.empresa)).length;
     statsEl.innerHTML=
       '<div class="stat-card" style="border-left:2px solid var(--red)"><div class="stat-label">Total perdidos</div><div class="stat-val red">'+perdidos.length+'</div><div class="stat-delta">leads no funil perdido</div></div>'+
-      '<div class="stat-card"><div class="stat-label">Valor perdido</div><div class="stat-val amber">'+fmt(totalTicket)+'/mês</div><div class="stat-delta">receita que não veio</div></div>'+
-      '<div class="stat-card"><div class="stat-label">AKG perdidos</div><div class="stat-val">'+shieldPerd+'</div><div class="stat-delta">de '+perdidos.length+' total</div></div>'+
-      '<div class="stat-card"><div class="stat-label">KSH perdidos</div><div class="stat-val">'+connPerd+'</div><div class="stat-delta">de '+perdidos.length+' total</div></div>';
+      '<div class="stat-card"><div class="stat-label">Valor perdido</div><div class="stat-val amber">'+fmt(totalTicket)+'</div><div class="stat-delta">receita que não veio</div></div>'+
+      '<div class="stat-card"><div class="stat-label">Recorrência perdidos</div><div class="stat-val">'+recPerd+'</div><div class="stat-delta">de '+perdidos.length+' total</div></div>'+
+      '<div class="stat-card"><div class="stat-label">Projetos perdidos</div><div class="stat-val">'+projPerd+'</div><div class="stat-delta">de '+perdidos.length+' total</div></div>';
   }
 
   // Motivos
@@ -2267,9 +2391,10 @@ function onNovoEmpresaChange(empresa){
   const shlSection=document.getElementById('n-shl-section');
   const shlPrazo=document.getElementById('n-shl-prazo-field');
   const cnnSection=document.getElementById('n-cnn-section');
-  if(shlSection) shlSection.style.display=empresa==='AKG'?'block':'none';
-  if(shlPrazo) shlPrazo.style.display=empresa==='AKG'?'block':'none';
-  if(cnnSection) cnnSection.style.display=empresa==='KSH'?'block':'none';
+  const rec=isRecorrencia(empresa);
+  if(shlSection) shlSection.style.display=rec?'block':'none';
+  if(shlPrazo) shlPrazo.style.display=rec?'block':'none';
+  if(cnnSection) cnnSection.style.display=!rec?'block':'none';
   calcNovoTotal();
 }
 
@@ -2280,8 +2405,8 @@ function parseVal(id){
   return parseFloat(raw)||0;
 }
 function calcNovoTotal(){
-  const empresa=document.getElementById('ne')?.value||'AKG';
-  if(empresa==='KSH'){
+  const empresa=document.getElementById('ne')?.value||(EMPRESAS[0]||'');
+  if(!isRecorrencia(empresa)){
     const ticket=parseVal('n-vprod-ksh') || parseVal('nt2');
     const prazoEl=document.getElementById('n-parcelas-ksh');
     const prazoOutro=document.getElementById('n-parcelas-ksh-outro');
@@ -2397,9 +2522,9 @@ function validarFechamento(l){
   if(!l.name||l.name.trim()==='') faltando.push('Nome do cliente');
   if(!l.cpf_cnpj||l.cpf_cnpj.trim()==='') faltando.push('CPF / CNPJ');
   if(!l.telefone||l.telefone.trim()==='') faltando.push('Telefone');
-  if(!l.empresa||l.empresa.trim()==='') faltando.push('Empresa (AKG ou KSH)');
+  if(!l.empresa||l.empresa.trim()==='') faltando.push('Empresa');
   if(!l.ticket||l.ticket<=0) faltando.push('Valor do ticket');
-  if(l.empresa==='KSH'){
+  if(!isRecorrencia(l.empresa)){
     if(!l.parcelas||l.parcelas==='0') faltando.push('Parcelamento (nº de parcelas)');
     if(!l.entrada&&l.entrada!==0) faltando.push('Valor de entrada');
   }
