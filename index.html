@@ -292,31 +292,6 @@ textarea{resize:vertical;min-height:80px}
       <div class="login-title">Portal Kilian Smart Homes</div>
       <div class="login-sub">Selecione seu perfil para continuar</div>
       <div class="user-grid" id="user-grid">
-  <div class="user-card admin-card" onclick="selectUser('u1')">
-    <div class="user-av" style="background:rgba(231,76,60,.2);color:#e74c3c">FK</div>
-    <div class="user-name">Felippe K</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card admin-card" onclick="selectUser('u2')">
-    <div class="user-av" style="background:rgba(168,85,247,.2);color:#a855f7">PA</div>
-    <div class="user-name">Patricia</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card admin-card" onclick="selectUser('u3')">
-    <div class="user-av" style="background:rgba(59,130,246,.2);color:#60a5fa">FA</div>
-    <div class="user-name">Felipe A</div>
-    <div class="user-role">Gestor</div>
-  </div>
-  <div class="user-card" onclick="selectUser('u4')">
-    <div class="user-av" style="background:rgba(34,197,94,.15);color:#22c55e">JE</div>
-    <div class="user-name">Jesse</div>
-    <div class="user-role">Tecnico</div>
-  </div>
-  <div class="user-card" onclick="selectUser('u5')">
-    <div class="user-av" style="background:rgba(245,158,11,.15);color:#f59e0b">YU</div>
-    <div class="user-name">Yuri</div>
-    <div class="user-role">Tecnico</div>
-  </div>
 </div>
     </div>
     <div class="pin-section" id="step-pin">
@@ -326,20 +301,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="pin-dot" id="d0"></div><div class="pin-dot" id="d1"></div>
         <div class="pin-dot" id="d2"></div><div class="pin-dot" id="d3"></div>
       </div>
-      <div class="pin-grid" id="pin-grid">
-  <button class="pin-btn" onclick="pinPress('1')">1</button>
-  <button class="pin-btn" onclick="pinPress('2')">2</button>
-  <button class="pin-btn" onclick="pinPress('3')">3</button>
-  <button class="pin-btn" onclick="pinPress('4')">4</button>
-  <button class="pin-btn" onclick="pinPress('5')">5</button>
-  <button class="pin-btn" onclick="pinPress('6')">6</button>
-  <button class="pin-btn" onclick="pinPress('7')">7</button>
-  <button class="pin-btn" onclick="pinPress('8')">8</button>
-  <button class="pin-btn" onclick="pinPress('9')">9</button>
-  <div></div>
-  <button class="pin-btn" onclick="pinPress('0')">0</button>
-  <button class="pin-btn del" onclick="pinPress('DEL')">DEL</button>
-</div>
+      <div class="pin-grid" id="pin-grid"></div>
       <div class="pin-error" id="pin-error"></div>
       <button class="back-btn" onclick="backToUsers()">← Trocar usuário</button>
     </div>
@@ -373,6 +335,11 @@ textarea{resize:vertical;min-height:80px}
       <div style="font-size:40px;margin-bottom:12px">📊</div>
       <div style="font-size:17px;font-weight:700;margin-bottom:6px">Financeiro</div>
       <div style="font-size:12px;color:var(--text3)">BI, Cash Flow,<br>P&amp;L e Indicadores</div>
+    </div>
+    <div onclick="entrarTarefas()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s;position:relative" onmouseover="this.style.borderColor='var(--purple)';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">📋</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Tarefas</div>
+      <div style="font-size:12px;color:var(--text3)">Kanban, Anotações<br>e Relatórios</div>
     </div>
   </div>
   <button onclick="logoutSelector()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:inherit;margin-top:8px">← Trocar usuário</button>
@@ -4449,10 +4416,14 @@ function init() {
   renderLogin();
 
   // PASSO 2: Tentar carregar do Supabase em background
+  // SÓ atualiza os cards se o usuário ainda NÃO selecionou ninguém (evita race condition)
   sbGet('usuarios?ativo=eq.true&order=funcao').then(function(data) {
     if (data && data.length > 0) {
       USERS = data;
-      renderLogin(); // Atualiza com dados reais
+      // Só re-renderiza se nenhum usuário foi selecionado ainda
+      if (!selectedUser && !currentUser) {
+        renderLogin();
+      }
     }
   }).catch(function(e) {
     console.warn('Supabase offline - usando usuarios padrao');
@@ -4507,6 +4478,19 @@ function entrarFinanceiro() {
     pin: currentUser.pin
   }));
   window.location.href = 'financeiro.html';
+}
+
+function entrarTarefas() {
+  document.getElementById('selector-wrap').style.display='none';
+  sessionStorage.setItem('ksh_user', JSON.stringify({
+    id: currentUser.id,
+    nome: currentUser.nome || currentUser.name,
+    ini: currentUser.ini,
+    funcao: currentUser.funcao,
+    av_style: currentUser.av_style,
+    pin: currentUser.pin
+  }));
+  window.location.href = 'tarefas.html';
 }
 
 function irParaFerramentas() {
