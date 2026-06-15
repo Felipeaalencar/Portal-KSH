@@ -136,6 +136,28 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── LOADING ── */
 .loading{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);font-size:13px}
+
+/* ── BANNER ALERTAS ── */
+.alerts-banner{padding:10px 20px;border-bottom:1px solid var(--border);display:none}
+.alerts-banner.on{display:block}
+.alerts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:8px}
+.alert-card{border-radius:var(--r);padding:9px 12px;display:flex;align-items:center;gap:9px;cursor:pointer;transition:opacity .15s}
+.alert-card:hover{opacity:.85}
+.ac-red{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.25)}
+.ac-amber{background:var(--amber-bg);border:1px solid rgba(245,158,11,.25)}
+.ac-green{background:var(--green-bg);border:1px solid rgba(34,197,94,.25)}
+.ac-icon{font-size:18px;flex-shrink:0}
+.ac-title{font-size:12px;font-weight:600}
+.ac-red .ac-title{color:#f87171}
+.ac-amber .ac-title{color:var(--amber)}
+.ac-green .ac-title{color:var(--green)}
+.ac-sub{font-size:11px;margin-top:1px}
+.ac-red .ac-sub{color:rgba(248,113,113,.8)}
+.ac-amber .ac-sub{color:rgba(245,158,11,.8)}
+.ac-green .ac-sub{color:rgba(34,197,94,.8)}
+
+/* ── RECORRÊNCIA ── */
+.recur-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(168,85,247,.25);margin-top:4px}
 </style>
 </head>
 <body>
@@ -166,6 +188,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <button class="filter-btn" id="f-as" onclick="setFiltroResp('Assuncao',this)">Assunção</button>
   <button class="filter-btn" id="f-ki" onclick="setFiltroResp('Kilian',this)">Kilian</button>
   <button class="filter-btn" id="f-pa" onclick="setFiltroResp('Patricia',this)">Patricia</button>
+</div>
+
+<div class="alerts-banner" id="alerts-banner">
+  <div class="alerts-row" id="alerts-row"></div>
 </div>
 
 <div class="kanban-wrap" id="kanban-wrap">
@@ -209,6 +235,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
     <div class="modal-sec">Prazo</div>
     <input type="date" class="date-input" id="tf-prazo">
+
+    <div class="modal-sec">Recorrência</div>
+    <div class="pills" id="pills-recur">
+      <button class="pill" data-recur="unica" onclick="selecionarRecur(this)">Única</button>
+      <button class="pill" data-recur="semanal" onclick="selecionarRecur(this)">🔁 Semanal</button>
+      <button class="pill" data-recur="mensal" onclick="selecionarRecur(this)">🔁 Mensal</button>
+    </div>
 
     <div class="modal-sec">Anotação</div>
     <textarea class="note-area" id="tf-nota" placeholder="O que foi feito, impedimentos, observações..."></textarea>
@@ -261,7 +294,7 @@ let tarefas=[];
 let filtroStatus='todos';
 let filtroResp=null;
 let editId=null;
-let respSel=null,statusSel=null,prioSel=null;
+let respSel=null,statusSel=null,prioSel=null,recurSel='unica';
 
 const AV_STYLES={
   'Assuncao':'background:rgba(83,74,183,.2);color:#a895f7',
@@ -345,6 +378,7 @@ function renderBoard(){
   ];
   const today=new Date(); today.setHours(0,0,0,0);
   const wrap=document.getElementById('kanban-wrap');
+  renderBanner();
   wrap.innerHTML=cols.map(col=>{
     let cards=tarefas.filter(t=>t.responsavel===col.resp);
     if(filtroStatus!=='todos') cards=cards.filter(t=>t.status===filtroStatus);
@@ -381,6 +415,8 @@ function cardHTML(t,today){
     else if(diff<=2&&t.status!=='done') cardClass+=' due-soon';
   }
   const temNota=(t.historico||[]).some(h=>h.tipo==='nota');
+  const ciclos=t.ciclos||0;
+  const recurLabel={'semanal':'Semanal','mensal':'Mensal'}[t.recorrencia]||null;
   return `<div class="${cardClass}" onclick="abrirModal('${t.id}')">
     <div class="card-inner">
       <div class="prio-bar prio-${t.prioridade||'med'}"></div>
@@ -391,6 +427,7 @@ function cardHTML(t,today){
           ${dateLabel?`<span class="${dateClass}">${dateLabel}</span>`:''}
         </div>
         ${temNota?`<div class="has-note">💬 ${(t.historico||[]).filter(h=>h.tipo==='nota').length} anotação</div>`:''}
+        ${recurLabel?`<div class="recur-pill">🔁 ${recurLabel} · ${ciclos}x</div>`:''}
       </div>
     </div>
   </div>`;
@@ -408,6 +445,7 @@ function abrirModalNova(respPresel){
   respSel=respPresel||null;
   statusSel='todo';
   prioSel='med';
+  recurSel='unica';
   atualizarPills();
   document.getElementById('ov-tarefa').classList.add('on');
   setTimeout(()=>document.getElementById('tf-titulo').focus(),100);
@@ -423,6 +461,7 @@ function abrirModal(id){
   respSel=t.responsavel||null;
   statusSel=t.status||'todo';
   prioSel=t.prioridade||'med';
+  recurSel=t.recorrencia||'unica';
   atualizarPills();
   document.getElementById('btn-delete').style.display='';
   document.getElementById('btn-pdf').style.display=t.status==='done'?'':'none';
@@ -452,6 +491,10 @@ function selecionarPrio(btn){
   prioSel=btn.dataset.prio;
   atualizarPills();
 }
+function selecionarRecur(btn){
+  recurSel=btn.dataset.recur;
+  atualizarPills();
+}
 
 function atualizarPills(){
   document.querySelectorAll('#pills-resp .pill').forEach(p=>{
@@ -465,6 +508,10 @@ function atualizarPills(){
   document.querySelectorAll('#pills-prio .pill').forEach(p=>{
     const pr=p.dataset.prio;
     p.className='pill'+(prioSel===pr?' sel-'+pr:'');
+  });
+  document.querySelectorAll('#pills-recur .pill').forEach(p=>{
+    const r=p.dataset.recur;
+    p.className='pill'+(recurSel===r?' sel-doing':'');
   });
 }
 
@@ -516,12 +563,21 @@ async function salvarTarefa(){
     if(notaTexto) historico.push({tipo:'nota',usuario:currentUser.nome,ts:agora,texto:notaTexto});
   }
 
+  // ciclos: incrementa se estava doing/todo e vai para done
+  let ciclos=0;
+  if(editId){
+    const orig=tarefas.find(t=>t.id===editId);
+    ciclos=orig.ciclos||0;
+    if(orig.status!=='done'&&statusSel==='done') ciclos++;
+  }
   const payload={
     titulo,
     responsavel:respSel,
     status:statusSel,
     prioridade:prioSel,
     prazo,
+    recorrencia:recurSel,
+    ciclos,
     historico,
     atualizado_em:agora
   };
@@ -543,6 +599,8 @@ async function salvarTarefa(){
     }else{
       payload.criado_em=agora;
       payload.criado_por=currentUser.nome;
+      payload.recorrencia=recurSel;
+      payload.ciclos=0;
       let nova;
       try{
         const res=await sbPost('tarefas',payload);
@@ -732,6 +790,55 @@ function fmtDatetime(iso){
 function escHtml(s){
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function renderBanner(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  const ativas=tarefas.filter(t=>t.status!=='done');
+  const vencidas=ativas.filter(t=>{
+    if(!t.prazo)return false;
+    return new Date(t.prazo+'T12:00:00')<today;
+  });
+  const amanha=ativas.filter(t=>{
+    if(!t.prazo)return false;
+    const diff=Math.ceil((new Date(t.prazo+'T12:00:00')-today)/(1000*60*60*24));
+    return diff>=0&&diff<=1;
+  });
+  const hojeConcluidas=tarefas.filter(t=>{
+    if(t.status!=='done')return false;
+    const at=t.atualizado_em;
+    if(!at)return false;
+    const d=new Date(at); d.setHours(0,0,0,0);
+    return d.getTime()===today.getTime();
+  });
+  const banner=document.getElementById('alerts-banner');
+  const row=document.getElementById('alerts-row');
+  if(vencidas.length===0&&amanha.length===0&&hojeConcluidas.length===0){
+    banner.classList.remove('on'); return;
+  }
+  banner.classList.add('on');
+  let html='';
+  if(vencidas.length>0){
+    const nomes=vencidas.map(t=>t.titulo.substring(0,20)).slice(0,2).join(' · ')+(vencidas.length>2?'...':'');
+    html+=`<div class="alert-card ac-red" onclick="setFiltro('todo',document.querySelector('.filter-btn'))">
+      <span class="ac-icon">⚠️</span>
+      <div><div class="ac-title">${vencidas.length} tarefa${vencidas.length>1?'s':''} vencida${vencidas.length>1?'s':''}</div>
+      <div class="ac-sub">${escHtml(nomes)}</div></div></div>`;
+  }
+  if(amanha.length>0){
+    const nomes=amanha.map(t=>t.responsavel+': '+t.titulo.substring(0,15)).slice(0,2).join(' · ');
+    html+=`<div class="alert-card ac-amber">
+      <span class="ac-icon">⏰</span>
+      <div><div class="ac-title">${amanha.length} vence${amanha.length>1?'m':''} hoje/amanhã</div>
+      <div class="ac-sub">${escHtml(nomes)}</div></div></div>`;
+  }
+  if(hojeConcluidas.length>0){
+    html+=`<div class="alert-card ac-green">
+      <span class="ac-icon">✅</span>
+      <div><div class="ac-title">${hojeConcluidas.length} concluída${hojeConcluidas.length>1?'s':''} hoje</div>
+      <div class="ac-sub">Bom trabalho!</div></div></div>`;
+  }
+  row.innerHTML=html;
+}
+
 function showToast(msg,tipo){
   const t=document.getElementById('toast');
   t.textContent=msg;
