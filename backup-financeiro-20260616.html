@@ -1,0 +1,2385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSH · Financeiro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--bg4:#2a2f45;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--text:#f0f2f8;--text2:#b0b8d0;--text3:#6b7599;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--green-bg:rgba(34,197,94,.1);--red-bg:rgba(231,76,60,.1);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.1);--purple:#a855f7;--purple-bg:rgba(168,85,247,.1)}
+*{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans',system-ui,sans-serif}
+body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-logo{font-size:24px}
+.brand-name{font-size:15px;font-weight:600;color:var(--text)}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.btn-voltar{background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:13px;font-weight:500;padding:8px 16px;border-radius:8px;font-family:inherit;transition:all .15s}
+.btn-voltar:hover{background:var(--bg3);color:var(--text);border-color:var(--text3)}
+.container{flex:1;max-width:1200px;margin:0 auto;padding:32px 24px;width:100%}
+.page-hd{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+.page-title{font-size:28px;font-weight:700;letter-spacing:-0.5px}
+.page-sub{font-size:13px;color:var(--text3);margin-top:4px}
+.qbo-status{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);background:var(--bg3);border:1px solid var(--border);padding:7px 12px;border-radius:8px}
+.qbo-status .dot{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.qbo-status.connected .dot{background:var(--green);box-shadow:0 0 8px rgba(34,197,94,.6)}
+.connect-card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:16px;padding:48px 32px;text-align:center;max-width:560px;margin:60px auto}
+.connect-icon{font-size:56px;margin-bottom:16px}
+.connect-title{font-size:22px;font-weight:700;margin-bottom:10px}
+.connect-sub{font-size:14px;color:var(--text2);line-height:1.6;margin-bottom:28px}
+.btn-connect{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border:none;padding:14px 32px;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:10px;transition:transform .15s;box-shadow:0 4px 16px rgba(44,160,28,.3)}
+.btn-connect:hover{transform:translateY(-1px)}
+.connect-foot{margin-top:20px;font-size:11px;color:var(--text3)}
+
+/* === FILTRO DE PERÍODO === */
+.filter-bar{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.filter-shortcuts{display:flex;gap:6px;flex-wrap:wrap}
+.shortcut-btn{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:12px;font-weight:600;padding:7px 13px;border-radius:7px;cursor:pointer;font-family:inherit;transition:all .15s}
+.shortcut-btn:hover{background:var(--bg4);color:var(--text);border-color:var(--border2)}
+.shortcut-btn.active{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border-color:#2ca01c;box-shadow:0 2px 8px rgba(44,160,28,.3)}
+.filter-dropdowns{display:flex;gap:8px;align-items:center}
+.filter-dropdowns select{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:12px;font-weight:500;padding:7px 10px;border-radius:7px;font-family:inherit;cursor:pointer;outline:none}
+.filter-dropdowns select:hover{border-color:var(--border2)}
+.filter-dropdowns select:focus{border-color:var(--blue)}
+.custom-range{display:none;gap:8px;align-items:center;flex-basis:100%;padding-top:10px;border-top:1px solid var(--border)}
+.custom-range.visible{display:flex}
+.custom-range input{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 10px;border-radius:7px;font-family:inherit;outline:none}
+.custom-range input:focus{border-color:var(--blue)}
+.custom-range label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.btn-apply{background:var(--blue);border:none;color:#fff;font-size:12px;font-weight:600;padding:7px 14px;border-radius:7px;cursor:pointer;font-family:inherit}
+.periodo-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:10px;padding-left:2px}
+
+/* === SALDOS === */
+.saldos-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-bottom:24px}
+.saldo-card{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:12px;padding:18px;position:relative;overflow:hidden}
+.saldo-card.bank::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--green),#16a34a)}
+.saldo-card.credit::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--amber),#d97706)}
+.saldo-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.saldo-icon{font-size:24px}
+.saldo-tipo{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--bg)}
+.saldo-card.bank .saldo-tipo{color:var(--green);background:var(--green-bg)}
+.saldo-card.credit .saldo-tipo{color:var(--amber);background:var(--amber-bg)}
+.saldo-nome{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
+.saldo-valor{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
+.saldo-card.bank .saldo-valor{color:var(--green)}
+.saldo-card.credit .saldo-valor.negativo{color:var(--amber)}
+.saldo-sub{font-size:10px;color:var(--text3);margin-top:6px}
+
+/* === AVISO DE PENDINGS === */
+.aviso-pendings{background:linear-gradient(135deg,rgba(245,158,11,.12),rgba(245,158,11,.04));border:1px solid rgba(245,158,11,.35);border-radius:12px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.aviso-pendings-icon{font-size:28px;flex-shrink:0;line-height:1}
+.aviso-pendings-text{flex:1;font-size:13px;color:var(--text2);line-height:1.5;min-width:240px}
+.aviso-pendings-text .titulo{color:var(--amber);font-weight:700;font-size:13px;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+.aviso-pendings-text .destaque{color:var(--text);font-weight:600}
+.aviso-pendings-link{background:var(--amber);color:#0f1117;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:transform .15s}
+.aviso-pendings-link:hover{transform:translateY(-1px)}
+.saldo-card .saldo-sub.warn{color:var(--amber);font-weight:600}
+
+/* === KPIs === */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:8px}
+.kpi-value{font-size:26px;font-weight:700;letter-spacing:-0.5px}
+.kpi-sub{font-size:11px;color:var(--text3);margin-top:6px}
+.kpi-loading{color:var(--text3);font-size:14px;font-weight:500}
+.kpi.green .kpi-value{color:var(--green)}
+.kpi.red .kpi-value{color:var(--red)}
+.kpi.blue .kpi-value{color:var(--blue)}
+.kpi.amber .kpi-value{color:var(--amber)}
+
+/* === SECTION / CHART === */
+.section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
+.section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.section-action{color:var(--blue);font-size:11px;cursor:pointer;text-transform:none;letter-spacing:0;font-weight:600;background:none;border:none;font-family:inherit}
+.chart-container{position:relative;height:340px;margin-top:8px}
+.info-box{background:var(--blue-bg);border:1px solid rgba(59,130,246,.2);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--text2);line-height:1.5;margin-top:20px}
+.info-box strong{color:var(--blue)}
+.error-box{background:var(--red-bg);border:1px solid rgba(231,76,60,.3);border-radius:10px;padding:14px 16px;font-size:13px;color:var(--text);margin-bottom:20px}
+.btn-disconnect{background:none;border:1px solid var(--border);color:var(--text3);font-size:11px;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.btn-disconnect:hover{color:var(--red);border-color:rgba(231,76,60,.3)}
+.skel{background:linear-gradient(90deg,var(--bg3) 0%,var(--bg4) 50%,var(--bg3) 100%);background-size:200% 100%;animation:skel 1.2s infinite;border-radius:6px;height:18px}
+@keyframes skel{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* === LAYOUT APP (sidebar + main) === */
+.app-layout{flex:1;display:flex;min-height:0}
+.sidebar{width:210px;background:var(--bg2);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:2px;flex-shrink:0;overflow-y:auto}
+.sidebar-section{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;padding:10px 10px 6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:7px;cursor:pointer;font-size:12px;color:var(--text2);transition:all .15s;border:1px solid transparent;user-select:none;font-family:inherit;background:none;width:100%;text-align:left}
+.sidebar-item:hover{background:var(--bg3);color:var(--text)}
+.sidebar-item.active{background:linear-gradient(135deg,rgba(44,160,28,.18),rgba(28,122,19,.08));color:var(--text);border-color:rgba(44,160,28,.35);font-weight:600}
+.sidebar-item .ic{font-size:14px;flex-shrink:0;width:18px;text-align:center}
+.sidebar-item .bg{background:rgba(245,158,11,.18);color:var(--amber);font-size:9px;padding:2px 6px;border-radius:4px;margin-left:auto;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+.sidebar-item .bg.purple{background:var(--purple-bg);color:var(--purple)}
+.sidebar-spacer{flex:1}
+.sidebar-divider{height:1px;background:var(--border);margin:12px 0}
+.main-content{flex:1;padding:32px 28px;min-width:0;overflow-x:hidden}
+.main-content-inner{max-width:1200px;margin:0 auto}
+
+/* === PLACEHOLDER GENÉRICO === */
+.placeholder-page{background:var(--bg2);border:1px dashed var(--border2);border-radius:14px;padding:60px 40px;text-align:center;margin-top:20px}
+.placeholder-icon{font-size:48px;margin-bottom:14px}
+.placeholder-title{font-size:18px;font-weight:700;margin-bottom:8px}
+.placeholder-sub{font-size:13px;color:var(--text3);max-width:480px;margin:0 auto;line-height:1.6}
+.placeholder-tag{display:inline-block;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;padding:4px 10px;border-radius:6px;margin-top:14px;font-weight:600}
+
+/* === PROJETOS === */
+.projetos-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+.proj-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.proj-kpi-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:6px}
+.proj-kpi-value{font-size:20px;font-weight:700;letter-spacing:-0.3px}
+.proj-kpi-value.green{color:var(--green)}
+.proj-kpi-value.red{color:var(--red)}
+.proj-kpi-value.amber{color:var(--amber)}
+.proj-filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+.proj-filter-pill{background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:11px;font-weight:600;padding:6px 12px;border-radius:6px;cursor:pointer;font-family:inherit}
+.proj-filter-pill:hover{background:var(--bg4);color:var(--text)}
+.proj-filter-pill.active{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border-color:#2ca01c}
+.proj-search{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-size:12px;padding:7px 12px;border-radius:6px;font-family:inherit;outline:none;min-width:220px;margin-left:auto}
+.proj-search:focus{border-color:var(--blue)}
+.proj-table{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.proj-table table{width:100%;border-collapse:collapse;font-size:12px}
+.proj-table th{background:var(--bg3);text-align:left;padding:11px 14px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;font-weight:700;border-bottom:1px solid var(--border)}
+.proj-table th.right{text-align:right}
+.proj-table td{padding:13px 14px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle}
+.proj-table tr:last-child td{border-bottom:none}
+.proj-table tr:hover td{background:var(--bg3)}
+.proj-table td.right{text-align:right}
+.proj-nome{color:var(--text);font-weight:600;font-size:13px}
+.proj-cliente{color:var(--text3);font-size:11px;margin-top:2px}
+.proj-bar-wrap{display:flex;flex-direction:column;gap:5px;min-width:170px}
+.proj-bar-row{display:flex;align-items:center;gap:8px;font-size:10px}
+.proj-bar-row .lbl{color:var(--text3);width:36px;flex-shrink:0;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.proj-bar-row .bar{flex:1;height:5px;background:var(--bg);border-radius:3px;overflow:hidden}
+.proj-bar-row .bar .fill{height:100%;border-radius:3px;transition:width .4s}
+.proj-bar-row .bar .fill.income{background:linear-gradient(90deg,#22c55e,#16a34a)}
+.proj-bar-row .bar .fill.cost{background:linear-gradient(90deg,#0ea5e9,#0284c7)}
+.proj-bar-row .val{color:var(--text);font-weight:600;font-size:10px;min-width:70px;text-align:right}
+.margem-tag{display:inline-block;padding:5px 11px;border-radius:6px;font-size:12px;font-weight:700;letter-spacing:-0.2px}
+.margem-tag.green{background:var(--green-bg);color:var(--green)}
+.margem-tag.red{background:var(--red-bg);color:var(--red)}
+.margem-tag.amber{background:var(--amber-bg);color:var(--amber)}
+.margem-tag.gray{background:var(--bg3);color:var(--text3)}
+.margem-sub{font-size:10px;color:var(--text3);margin-top:3px}
+.proj-row.danger{background:rgba(239,68,68,.04)}
+.proj-empty{text-align:center;padding:60px 20px;color:var(--text3);font-size:13px}
+.proj-loading-row td{padding:30px;text-align:center;color:var(--text3)}
+
+/* === DETALHE DO PROJETO (Sprint 2.7 Etapa 2) === */
+.pd-header{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.pd-header-left{flex:1;min-width:240px}
+.pd-back{background:transparent;border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:12px;padding:6px 12px;border-radius:7px;font-family:inherit;margin-bottom:14px;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.pd-back:hover{background:var(--bg3);color:var(--text)}
+.pd-title{font-size:26px;font-weight:700;letter-spacing:-0.4px;display:flex;align-items:center;gap:10px}
+.pd-status-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:5px}
+.pd-status-pill.ativo{background:rgba(34,197,94,.12);color:var(--green)}
+.pd-status-pill.inativo{background:rgba(255,255,255,.06);color:var(--text3)}
+.pd-meta{color:var(--text3);font-size:13px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
+.pd-meta-item{display:flex;align-items:center;gap:4px}
+.pd-qbo-link{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.pd-qbo-link:hover{transform:translateY(-1px)}
+.pd-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.pd-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px}
+.pd-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:6px}
+.pd-kpi-val{font-size:24px;font-weight:700;letter-spacing:-0.5px}
+.pd-kpi-sub{font-size:11px;color:var(--text3);margin-top:4px}
+.pd-kpi.income .pd-kpi-val{color:var(--green)}
+.pd-kpi.cost .pd-kpi-val{color:var(--amber)}
+.pd-kpi.profit.neg .pd-kpi-val{color:var(--red)}
+.pd-kpi.profit.pos .pd-kpi-val{color:var(--green)}
+.pd-section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.pd-section-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;cursor:pointer;user-select:none;transition:background .15s}
+.pd-section-head:hover{background:var(--bg3)}
+.pd-section-head-left{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:600}
+.pd-section-icon{font-size:18px}
+.pd-section-toggle{font-size:11px;color:var(--text3);transition:transform .2s}
+.pd-section.open .pd-section-toggle{transform:rotate(90deg)}
+.pd-section-total{font-family:'DM Mono',monospace;font-size:15px;font-weight:700}
+.pd-section-total.income{color:var(--green)}
+.pd-section-total.cost{color:var(--amber)}
+.pd-section-body{display:none;border-top:1px solid var(--border);padding:8px 0}
+.pd-section.open .pd-section-body{display:block}
+.pd-row{display:flex;justify-content:space-between;align-items:center;padding:9px 18px 9px 38px;font-size:13px;color:var(--text2);transition:background .1s}
+.pd-row:hover{background:rgba(255,255,255,.02);color:var(--text)}
+.pd-row-name{display:flex;align-items:center;gap:8px}
+.pd-row-sub{font-size:10px;color:var(--text3);margin-left:6px}
+.pd-row-val{font-family:'DM Mono',monospace;font-weight:600;color:var(--text)}
+.pd-section-empty{padding:18px 38px;color:var(--text3);font-size:12px;font-style:italic}
+.pd-total-bar{background:linear-gradient(135deg,var(--bg2),var(--bg3));border:1px solid var(--border2);border-radius:12px;padding:18px 22px;margin-top:18px;display:flex;justify-content:space-between;align-items:center}
+.pd-total-bar-label{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.pd-total-bar-val{font-size:26px;font-weight:700;letter-spacing:-0.5px;font-family:'DM Mono',monospace}
+.pd-total-bar-val.neg{color:var(--red)}
+.pd-total-bar-val.pos{color:var(--green)}
+
+/* === ANÁLISE INTELIGENTE (Sprint 2.8) === */
+.pa-section-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin:30px 0 14px}
+.pa-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px}
+.pa-card-title{font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:14px}
+.pa-bench-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px}
+.pa-bench-item{}
+.pa-bench-label{font-size:10px;color:var(--text3);margin-bottom:4px;text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.pa-bench-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.pa-bench-val.neg{color:var(--red)}
+.pa-bench-val.pos{color:var(--green)}
+.pa-bench-diff{font-size:11px;margin-top:3px;font-weight:500}
+.pa-bench-diff.up{color:var(--green)}
+.pa-bench-diff.down{color:var(--red)}
+.pa-bench-diff.warn{color:var(--amber)}
+.pa-bench-diff.neutral{color:var(--text3)}
+
+.pa-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+@media (max-width:760px){.pa-grid-2{grid-template-columns:1fr}}
+
+.pa-donut-wrap{display:flex;align-items:center;gap:18px}
+.pa-donut{width:130px;height:130px;flex-shrink:0;position:relative}
+.pa-donut-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center}
+.pa-donut-center-val{font-size:15px;font-weight:700;color:var(--text)}
+.pa-donut-center-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.3px}
+.pa-donut-legend{flex:1;font-size:11px}
+.pa-donut-legend-row{display:flex;justify-content:space-between;padding:4px 0;color:var(--text2)}
+.pa-donut-legend-row .swatch{display:inline-flex;align-items:center;gap:7px}
+.pa-donut-legend-row .swatch i{width:9px;height:9px;border-radius:2px;display:inline-block}
+.pa-donut-legend-row .val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+
+.pa-mix-row{margin-bottom:11px}
+.pa-mix-row:last-child{margin-bottom:0}
+.pa-mix-head{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.pa-mix-name{color:var(--text);font-weight:500}
+.pa-mix-sub{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.pa-mix-bar{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.pa-mix-bar-fill{height:100%;background:var(--purple);border-radius:3px}
+
+.pa-empty{padding:24px;text-align:center;color:var(--text3);font-size:12px}
+
+/* === IA: Tabs + Insight cards === */
+.pa-ai-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:12px}
+.pa-ai-trigger{padding:24px;text-align:center}
+.pa-ai-btn{background:linear-gradient(135deg,#7c3aed,#3b82f6);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:transform .15s ease,opacity .15s ease}
+.pa-ai-btn:hover{transform:translateY(-1px)}
+.pa-ai-btn:disabled{opacity:.6;cursor:wait}
+.pa-ai-hint{font-size:11px;color:var(--text3);margin-top:10px}
+
+.pa-tabs{display:flex;border-bottom:1px solid var(--border)}
+.pa-tab{flex:1;background:transparent;border:none;color:var(--text3);padding:13px 8px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;border-bottom:2px solid transparent;transition:all .15s ease}
+.pa-tab:hover{color:var(--text2)}
+.pa-tab.active{color:var(--blue);border-bottom-color:var(--blue);background:rgba(59,130,246,.08)}
+.pa-tab-content{padding:18px;display:none}
+.pa-tab-content.active{display:block}
+
+.pa-insight{padding:14px 16px;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--text3);background:rgba(255,255,255,.02)}
+.pa-insight:last-child{margin-bottom:0}
+.pa-insight.sev-critico{border-left-color:var(--red);background:rgba(239,68,68,.07)}
+.pa-insight.sev-atencao{border-left-color:var(--amber);background:rgba(245,158,11,.06)}
+.pa-insight.sev-ok{border-left-color:var(--green);background:rgba(34,197,94,.06)}
+.pa-insight.sev-info{border-left-color:var(--blue);background:rgba(59,130,246,.07)}
+.pa-insight-title{font-size:12px;font-weight:700;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.pa-insight.sev-critico .pa-insight-title{color:var(--red)}
+.pa-insight.sev-atencao .pa-insight-title{color:var(--amber)}
+.pa-insight.sev-ok .pa-insight-title{color:var(--green)}
+.pa-insight.sev-info .pa-insight-title{color:var(--blue)}
+.pa-insight-diag{font-size:13px;color:var(--text);line-height:1.6;margin-bottom:7px}
+.pa-insight-acao{font-size:12px;color:var(--text2);line-height:1.55;padding-top:7px;border-top:1px dashed var(--border)}
+.pa-insight-acao strong{color:var(--text)}
+
+.pa-ai-footer{border-top:1px solid var(--border);padding:11px 16px;display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,.15);flex-wrap:wrap;gap:8px}
+.pa-ai-meta{font-size:10px;color:var(--text3)}
+.pa-ai-regen{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}
+.pa-ai-regen:hover{background:var(--bg3);color:var(--text)}
+
+.pa-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:pa-spin .8s linear infinite;margin-right:6px;vertical-align:-2px}
+@keyframes pa-spin{to{transform:rotate(360deg)}}
+
+/* === ASSINATURAS === */
+.rec-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px}
+.rec-kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px}
+.rec-kpi.highlight{background:linear-gradient(135deg,rgba(34,197,94,.10),rgba(34,197,94,.03));border-color:rgba(34,197,94,.3)}
+.rec-kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600}
+.rec-kpi.highlight .rec-kpi-label{color:var(--green)}
+.rec-kpi-val{font-size:18px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.rec-kpi.highlight .rec-kpi-val{color:var(--green)}
+.rec-kpi-hint{font-size:10px;color:var(--text3);margin-top:3px}
+.rec-kpi-hint.up{color:var(--red)}
+.rec-kpi-hint.warn{color:var(--amber)}
+.rec-kpi-hint.good{color:var(--green)}
+
+.rec-section{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px}
+.rec-section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+
+.rec-cat-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-bottom:10px;background:var(--bg3)}
+.rec-cat-bar > div{height:100%}
+.rec-cat-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11px;color:var(--text2)}
+.rec-cat-legend span{display:flex;align-items:center;gap:6px}
+.rec-cat-legend i{width:8px;height:8px;border-radius:2px;display:inline-block}
+
+.rec-alert{border-radius:10px;padding:14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.rec-alert.red{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3)}
+.rec-alert.amber{background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.3)}
+.rec-alert-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-bottom:5px}
+.rec-alert.red .rec-alert-title{color:var(--red)}
+.rec-alert.amber .rec-alert-title{color:var(--amber)}
+.rec-alert-body{font-size:13px;color:var(--text);line-height:1.5;margin-bottom:6px}
+.rec-alert-hint{font-size:11px;color:var(--text3)}
+.rec-alert-hint b{color:var(--text2)}
+
+.rec-chart-wrap{padding:6px 0}
+.rec-chart-axis{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:5px}
+
+.rec-filtros{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.rec-fbtn{background:transparent;color:var(--text2);border:1px solid var(--border);padding:5px 11px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s ease}
+.rec-fbtn:hover{background:var(--bg3)}
+.rec-fbtn.active{background:rgba(59,130,246,.15);color:var(--blue);border-color:var(--blue);font-weight:600}
+.rec-fbtn.warn{color:var(--amber);border-color:rgba(245,158,11,.4)}
+.rec-fbtn.warn.active{background:rgba(245,158,11,.15);font-weight:600}
+.rec-fbtn.green{color:var(--green);border-color:rgba(34,197,94,.4)}
+.rec-fbtn.green.active{background:rgba(34,197,94,.15);font-weight:600}
+.rec-search{flex:1;min-width:120px;background:var(--bg2);border:1px solid var(--border);color:var(--text);padding:5px 10px;border-radius:6px;font-size:11px;font-family:inherit}
+
+.rec-tbl{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.rec-tbl-head{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:10px 14px;background:rgba(0,0,0,.2);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;border-bottom:1px solid var(--border)}
+.rec-row{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s ease}
+.rec-row:last-child{border-bottom:none}
+.rec-row:hover{background:rgba(255,255,255,.02)}
+.rec-row.warn{background:rgba(245,158,11,.04)}
+.rec-row.red{background:rgba(239,68,68,.04)}
+.rec-vendor-name{font-weight:600;color:var(--text)}
+.rec-vendor-sub{font-size:10px;color:var(--text3);margin-top:2px}
+.rec-badge{padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.rec-badge.software{background:rgba(59,130,246,.15);color:var(--blue)}
+.rec-badge.infra{background:rgba(124,58,237,.15);color:var(--purple)}
+.rec-badge.marketing{background:rgba(245,158,11,.15);color:var(--amber)}
+.rec-badge.seguros{background:rgba(34,197,94,.15);color:var(--green)}
+.rec-badge.bancostaxas{background:rgba(148,163,184,.15);color:#94a3b8}
+.rec-badge.outros{background:rgba(107,117,153,.15);color:var(--text3)}
+.rec-val{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.rec-date{color:var(--text3);font-size:11px;font-variant-numeric:tabular-nums}
+.rec-qbo-btn{background:transparent;border:1px solid var(--border);color:var(--text3);padding:3px 7px;border-radius:5px;font-size:10px;cursor:pointer;font-family:inherit}
+.rec-qbo-btn:hover{background:var(--bg3);color:var(--text)}
+.rec-tag{font-size:10px;margin-left:5px;font-weight:600}
+.rec-tag.warn{color:var(--amber)}
+.rec-tag.red{color:var(--red)}
+.rec-tag.gray{color:var(--text3)}
+
+.rec-empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:13px}
+
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-logo">📊</span>
+    <div>
+      <div class="brand-name">Financeiro</div>
+      <div class="brand-sub">KSH · Kilian Smart Homes</div>
+    </div>
+  </div>
+  <button class="btn-voltar" onclick="voltarSeletor()">← Voltar</button>
+</div>
+
+<div class="app-layout">
+  <aside class="sidebar" id="sidebar" style="display:none"></aside>
+  <main class="main-content">
+    <div class="main-content-inner" id="conteudo">
+      <div style="text-align:center;padding:80px 20px;color:var(--text3)">⏳ Carregando...</div>
+    </div>
+  </main>
+</div>
+
+<script>
+if (!sessionStorage.getItem('ksh_user')) {
+  window.location.href = '/';
+}
+
+function voltarSeletor(){
+  sessionStorage.setItem('ksh_show_selector','1');
+  window.location.href = '/';
+}
+
+function conectarQBO(){ window.location.href = '/api/quickbooks/connect'; }
+
+function desconectarQBO(){
+  alert('Por enquanto, pra desconectar tem que deletar a linha em qbo_tokens no Supabase. Faremos botão dedicado em breve.');
+}
+
+function fmtMoney(v){
+  if(v==null||isNaN(v)) return '-';
+  return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function fmtDate(d){
+  if(typeof d==='string') d = new Date(d+'T12:00:00');
+  return d.toLocaleDateString('pt-BR');
+}
+
+function isoDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+const MESES_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const MESES_ABREV = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+// === ESTADO GLOBAL DE PERÍODO ===
+const periodo = {
+  start: null,
+  end: null,
+  label: '',
+  atalho: null
+};
+
+function calcularAtalho(tipo){
+  const hoje = new Date();
+  const ano = hoje.getFullYear();
+  const mes = hoje.getMonth();
+
+  if(tipo==='mes-atual'){
+    const start = new Date(ano, mes, 1);
+    return { start: isoDate(start), end: isoDate(hoje), label: 'Mês atual ('+MESES_ABREV[mes]+'/'+ano+')' };
+  }
+  if(tipo==='mes-passado'){
+    const start = new Date(ano, mes-1, 1);
+    const end = new Date(ano, mes, 0);
+    return { start: isoDate(start), end: isoDate(end), label: 'Mês passado ('+MESES_ABREV[start.getMonth()]+'/'+start.getFullYear()+')' };
+  }
+  if(tipo==='trimestre'){
+    const qStart = Math.floor(mes/3)*3;
+    const start = new Date(ano, qStart, 1);
+    return { start: isoDate(start), end: isoDate(hoje), label: 'Trimestre atual (Q'+(Math.floor(mes/3)+1)+'/'+ano+')' };
+  }
+  if(tipo==='ano'){
+    const start = new Date(ano, 0, 1);
+    return { start: isoDate(start), end: isoDate(hoje), label: 'Ano atual ('+ano+')' };
+  }
+  return null;
+}
+
+function aplicarAtalho(tipo){
+  const r = calcularAtalho(tipo);
+  if(!r) return;
+  periodo.start = r.start;
+  periodo.end = r.end;
+  periodo.label = r.label;
+  periodo.atalho = tipo;
+  document.getElementById('custom-range').classList.remove('visible');
+  sincronizarDropdowns();
+  atualizarBotoesAtalho();
+  atualizarLabelPeriodo();
+  recarregarTudo();
+}
+
+function aplicarDropdowns(){
+  const m = parseInt(document.getElementById('select-mes').value, 10);
+  const a = parseInt(document.getElementById('select-ano').value, 10);
+  const start = new Date(a, m, 1);
+  const end = new Date(a, m+1, 0);
+  periodo.start = isoDate(start);
+  periodo.end = isoDate(end);
+  periodo.label = MESES_PT[m]+' / '+a;
+  periodo.atalho = null;
+  document.getElementById('custom-range').classList.remove('visible');
+  atualizarBotoesAtalho();
+  atualizarLabelPeriodo();
+  recarregarTudo();
+}
+
+function mostrarCustom(){
+  const cr = document.getElementById('custom-range');
+  cr.classList.add('visible');
+  document.getElementById('custom-start').value = periodo.start;
+  document.getElementById('custom-end').value = periodo.end;
+  periodo.atalho = 'custom';
+  atualizarBotoesAtalho();
+}
+
+function aplicarCustom(){
+  const s = document.getElementById('custom-start').value;
+  const e = document.getElementById('custom-end').value;
+  if(!s || !e){ alert('Selecione data inicial e final.'); return; }
+  if(s > e){ alert('Data inicial deve ser anterior à data final.'); return; }
+  periodo.start = s;
+  periodo.end = e;
+  periodo.label = fmtDate(s)+' até '+fmtDate(e);
+  periodo.atalho = 'custom';
+  atualizarLabelPeriodo();
+  recarregarTudo();
+}
+
+function sincronizarDropdowns(){
+  const d = new Date(periodo.end+'T12:00:00');
+  const selM = document.getElementById('select-mes');
+  const selA = document.getElementById('select-ano');
+  if(selM) selM.value = d.getMonth();
+  if(selA) selA.value = d.getFullYear();
+}
+
+function atualizarBotoesAtalho(){
+  ['mes-atual','mes-passado','trimestre','ano','custom'].forEach(t=>{
+    const b = document.getElementById('btn-'+t);
+    if(!b) return;
+    if(periodo.atalho===t) b.classList.add('active');
+    else b.classList.remove('active');
+  });
+}
+
+function atualizarLabelPeriodo(){
+  const el = document.getElementById('periodo-atual-label');
+  if(el) el.textContent = 'Exibindo: '+periodo.label;
+}
+
+const params = new URLSearchParams(window.location.search);
+const qboError = params.get('qbo_error');
+const qboConnected = params.get('qbo_connected');
+
+// === ESTADO GLOBAL DO APP ===
+let qboStatus = null;
+let paginaAtual = 'visao';
+let dadosVisaoMsg = '';
+let projetosCache = null;
+let projetosArquivoMeta = new Map(); // id → { id, nome, cliente, ativo, criado } dos não carregados
+let projetosArquivoIds = new Set();
+let buscaProjetoTimer = null;
+let costRatePerHour = Number(localStorage.getItem('ksh_cost_rate_h')) || 40;
+
+// ─── Sprint 2.5: cost rate por funcionário ───
+let employeeRateMap = new Map();
+let employeesCache = null;
+let employeesLoadedAt = 0;
+
+async function carregarEmployeeRates(forceReload = false){
+  if(!forceReload && employeesCache && (Date.now() - employeesLoadedAt) < 300000) return employeesCache;
+  try{
+    const r = await fetch('/api/quickbooks/employees');
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    employeesCache = d;
+    employeesLoadedAt = Date.now();
+    employeeRateMap = new Map();
+    (d.employees||[]).forEach(emp => {
+      employeeRateMap.set(emp.qbo_employee_id, {
+        name: emp.display_name,
+        rate: emp.effective_rate,
+        custom: emp.has_custom_rate
+      });
+    });
+    costRatePerHour = d.default_cost_rate || 40;
+    return d;
+  }catch(e){
+    console.warn('Falha ao carregar employee rates', e);
+    return null;
+  }
+}
+
+const PAGINAS = {
+  visao:    { titulo:'Visão Geral', sub:'Filtros, saldos, KPIs e P&L', sprint:'Sprint 1 ✅' },
+  bancos:   { titulo:'Saldos & Bancos', sub:'Saldos REAIS dos bancos via Plaid', sprint:'Sprint 1.5 ⏳ aguardando você criar conta Plaid' },
+  categ:    { titulo:'Categorização', sub:'IA caça transações sem categoria no QBO', sprint:'Sprint 3 ⏳' },
+  assin:    { titulo:'Pagamentos recorrentes', sub:'Análise de gastos recorrentes', sprint:'' },
+  projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto em aberto', sprint:'Sprint 2.7 ✅ números 100% iguais QBO' },
+  cfo:      { titulo:'CFO Insights', sub:'Alertas críticos + dica do expert smart home', sprint:'Sprint 4 ⏳' },
+  config:   { titulo:'Configurações', sub:'Cost rate atual dos funcionários (read-only)', sprint:'Sprint 2.6 ✅' }
+};
+
+async function carregar(){
+  const cont = document.getElementById('conteudo');
+  let errorHtml = '';
+  if(qboError){
+    errorHtml = `<div class="error-box">⚠️ Erro ao conectar: ${qboError}</div>`;
+    history.replaceState({},'','/financeiro.html');
+  }
+
+  let status;
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=_status');
+    const txt = await r.text();
+    try{
+      status = JSON.parse(txt);
+    }catch(parseErr){
+      cont.innerHTML = errorHtml + `<div class="error-box">
+        <strong>API não retornou JSON</strong> (HTTP ${r.status})<br>
+        <div style="margin-top:8px;font-size:11px;color:var(--text3)">Conteúdo retornado pelo /api/quickbooks/proxy:</div>
+        <pre style="white-space:pre-wrap;font-size:11px;margin-top:6px;background:var(--bg);padding:10px;border-radius:6px;max-height:300px;overflow:auto;color:var(--text2)">${txt.substring(0,1000).replace(/</g,'&lt;')}</pre>
+      </div>`;
+      return;
+    }
+  }catch(e){
+    cont.innerHTML = errorHtml + `<div class="error-box">Erro de rede ao chamar API: ${e.message}</div>`;
+    return;
+  }
+
+  if(!status.connected){
+    cont.innerHTML = errorHtml + `
+      <div class="connect-card">
+        <div class="connect-icon">📊</div>
+        <div class="connect-title">Conectar QuickBooks</div>
+        <div class="connect-sub">
+          Conecte sua conta do QuickBooks Online para trazer dados financeiros (receita, despesas, lucro, A/R, A/P) direto pro Portal KSH em tempo real.
+        </div>
+        <button class="btn-connect" onclick="conectarQBO()">
+          <span>🔗</span>
+          <span>Conectar com QuickBooks</span>
+        </button>
+        <div class="connect-foot">
+          Você será redirecionado pra Intuit pra autorizar.<br>
+          Apenas leitura — não modificamos nada no QuickBooks.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // === QBO CONECTADO — MONTA SHELL E NAVEGA ===
+  qboStatus = status;
+  dadosVisaoMsg = (qboConnected ? `<div style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:10px;padding:12px 16px;font-size:13px;color:var(--text);margin-bottom:20px">✅ Conectado com sucesso ao QuickBooks!</div>` : '') + errorHtml;
+  if(qboConnected){ history.replaceState({},'','/financeiro.html'); }
+
+  montarSidebar();
+  document.getElementById('sidebar').style.display = 'flex';
+
+  const hash = window.location.hash.replace('#','');
+  if(hash.startsWith('projeto/')){
+    navegar(hash);
+  } else {
+    navegar(hash && PAGINAS[hash] ? hash : 'visao');
+  }
+}
+
+function montarSidebar(){
+  document.getElementById('sidebar').innerHTML = `
+    <div class="sidebar-section">Visão</div>
+    <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
+    <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
+    <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Pagamentos recorrentes</span></button>
+    <div class="sidebar-section">Análises</div>
+    <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
+    <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-divider"></div>
+    <button class="sidebar-item" data-pagina="config" onclick="navegar('config')"><span class="ic">⚙️</span><span>Configurações</span></button>
+  `;
+}
+
+function navegar(pagina){
+  // Suporte a rotas com parâmetro: projeto/{id}
+  if(pagina && pagina.startsWith('projeto/')){
+    const projId = pagina.split('/')[1];
+    paginaAtual = pagina;
+    if(window.location.hash !== '#'+pagina) window.location.hash = '#'+pagina;
+    document.querySelectorAll('.sidebar-item').forEach(it=>{
+      it.classList.toggle('active', it.dataset.pagina === 'projetos');
+    });
+    if(chartLP){ try{ chartLP.destroy(); }catch(e){} chartLP = null; }
+    window.scrollTo(0,0);
+    renderProjetoDetalhe(projId);
+    return;
+  }
+
+  if(!PAGINAS[pagina]) pagina = 'visao';
+  paginaAtual = pagina;
+  if(window.location.hash !== '#'+pagina) window.location.hash = '#'+pagina;
+  document.querySelectorAll('.sidebar-item').forEach(it=>{
+    it.classList.toggle('active', it.dataset.pagina === pagina);
+  });
+  if(chartLP){ try{ chartLP.destroy(); }catch(e){} chartLP = null; }
+  window.scrollTo(0,0);
+  if(pagina === 'visao') renderVisaoGeral();
+  else if(pagina === 'projetos') renderProjetos();
+  else if(pagina === 'config') renderConfig();
+  else if(pagina === 'assin') renderRecorrentes();
+  else renderPlaceholder(pagina);
+}
+
+function renderPlaceholder(pagina){
+  const p = PAGINAS[pagina];
+  document.getElementById('conteudo').innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">${p.titulo}</div>
+        <div class="page-sub">${p.sub}</div>
+      </div>
+      <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+    </div>
+    <div class="placeholder-page">
+      <div class="placeholder-icon">🚧</div>
+      <div class="placeholder-title">${p.titulo}</div>
+      <div class="placeholder-sub">${p.sub}</div>
+      <div class="placeholder-tag">${p.sprint}</div>
+    </div>
+  `;
+}
+
+function renderVisaoGeral(){
+  const cont = document.getElementById('conteudo');
+  const status = qboStatus || {};
+
+  const hoje = new Date();
+  const anoAtual = hoje.getFullYear();
+  let mesesOpts = '';
+  MESES_PT.forEach((nome, i)=>{ mesesOpts += `<option value="${i}">${nome}</option>`; });
+  let anosOpts = '';
+  for(let a=anoAtual; a>=anoAtual-5; a--){ anosOpts += `<option value="${a}">${a}</option>`; }
+
+  cont.innerHTML = dadosVisaoMsg + `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">Visão Geral</div>
+        <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+        <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
+      </div>
+    </div>
+
+    <div class="periodo-label" id="periodo-atual-label">Exibindo: ...</div>
+    <div class="filter-bar">
+      <div class="filter-shortcuts">
+        <button id="btn-mes-atual" class="shortcut-btn" onclick="aplicarAtalho('mes-atual')">Mês atual</button>
+        <button id="btn-mes-passado" class="shortcut-btn" onclick="aplicarAtalho('mes-passado')">Mês passado</button>
+        <button id="btn-trimestre" class="shortcut-btn" onclick="aplicarAtalho('trimestre')">Trimestre</button>
+        <button id="btn-ano" class="shortcut-btn" onclick="aplicarAtalho('ano')">Ano</button>
+        <button id="btn-custom" class="shortcut-btn" onclick="mostrarCustom()">Customizado</button>
+      </div>
+      <div class="filter-dropdowns">
+        <select id="select-mes" onchange="aplicarDropdowns()">${mesesOpts}</select>
+        <select id="select-ano" onchange="aplicarDropdowns()">${anosOpts}</select>
+      </div>
+      <div class="custom-range" id="custom-range">
+        <label>De</label>
+        <input type="date" id="custom-start">
+        <label>Até</label>
+        <input type="date" id="custom-end">
+        <button class="btn-apply" onclick="aplicarCustom()">Aplicar</button>
+      </div>
+    </div>
+
+    <div class="aviso-pendings">
+      <div class="aviso-pendings-icon">⚠️</div>
+      <div class="aviso-pendings-text">
+        <span class="titulo">Atenção · saldos podem não refletir a realidade</span>
+        Os valores abaixo são apenas o que está <span class="destaque">categorizado</span> no QuickBooks. Transações importadas do banco que ainda estão em <span class="destaque">"For Review"</span> não aparecem aqui. O <span class="destaque">saldo real do banco</span> pode ser bem diferente — <span id="aviso-pending-count"></span>verifique no QBO Banking.
+      </div>
+      <a href="https://qbo.intuit.com/app/banking" target="_blank" class="aviso-pendings-link">Ver Banking no QBO →</a>
+    </div>
+
+    <div class="section-title" style="margin-top:8px">💳 Saldos · Conta Corrente e Cartões <button class="section-action" onclick="carregarSaldos()">Atualizar</button></div>
+    <div class="saldos-grid" id="saldos-grid">
+      <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
+      <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
+      <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi green"><div class="kpi-label">Receita</div><div class="kpi-value kpi-loading" id="kpi-receita">⏳</div><div class="kpi-sub" id="kpi-receita-sub"></div></div>
+      <div class="kpi red"><div class="kpi-label">Despesas</div><div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div><div class="kpi-sub" id="kpi-despesas-sub"></div></div>
+      <div class="kpi blue"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div><div class="kpi-sub" id="kpi-lucro-sub"></div></div>
+      <div class="kpi amber"><div class="kpi-label">A Receber</div><div class="kpi-value kpi-loading" id="kpi-ar">⏳</div><div class="kpi-sub" id="kpi-ar-sub"></div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span>📈 Receita × Despesa × Lucro (últimos 12 meses)</span><button class="section-action" onclick="carregarGraficoLP()">Atualizar</button></div>
+      <div class="chart-container">
+        <canvas id="chart-lp"></canvas>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title"><span>📋 P&L Detalhado do Período</span><button class="section-action" onclick="carregarPL()">Atualizar</button></div>
+      <div id="pl-container" style="color:var(--text3);font-size:13px">Carregando...</div>
+    </div>
+
+    <div class="info-box">
+      <strong>💡 Sprint 2 ativa.</strong> Sidebar à esquerda + página "Projetos" funcional. Próxima: Sprint 1.5 (Plaid - aguardando você criar conta).
+    </div>
+  `;
+
+  dadosVisaoMsg = '';
+  aplicarAtalho('mes-atual');
+}
+
+function extrairValor(plReport, nomeLinha){
+  if(!plReport||!plReport.Rows||!plReport.Rows.Row) return null;
+  function buscar(rows){
+    for(const row of rows){
+      if(row.Summary&&row.Summary.ColData){
+        const label = (row.Summary.ColData[0]&&row.Summary.ColData[0].value)||'';
+        if(label.toLowerCase().includes(nomeLinha.toLowerCase())){
+          const v = row.Summary.ColData[row.Summary.ColData.length-1];
+          return v ? parseFloat(v.value)||0 : 0;
+        }
+      }
+      if(row.Rows&&row.Rows.Row){
+        const r = buscar(row.Rows.Row);
+        if(r!=null) return r;
+      }
+    }
+    return null;
+  }
+  return buscar(plReport.Rows.Row);
+}
+
+function extrairSerieMensal(plReport, nomeLinha){
+  if(!plReport||!plReport.Rows||!plReport.Rows.Row) return [];
+  function buscar(rows){
+    for(const row of rows){
+      if(row.Summary&&row.Summary.ColData){
+        const label = (row.Summary.ColData[0]&&row.Summary.ColData[0].value)||'';
+        if(label.toLowerCase().includes(nomeLinha.toLowerCase())){
+          const cols = row.Summary.ColData;
+          const valores = [];
+          for(let i=1;i<cols.length-1;i++){
+            valores.push(parseFloat(cols[i].value)||0);
+          }
+          return valores;
+        }
+      }
+      if(row.Rows&&row.Rows.Row){
+        const r = buscar(row.Rows.Row);
+        if(r&&r.length) return r;
+      }
+    }
+    return [];
+  }
+  return buscar(plReport.Rows.Row);
+}
+
+function extrairColunasMensal(plReport){
+  if(!plReport||!plReport.Columns||!plReport.Columns.Column) return [];
+  const cols = plReport.Columns.Column;
+  const labels = [];
+  for(let i=1;i<cols.length-1;i++){
+    labels.push(cols[i].ColTitle || '');
+  }
+  return labels;
+}
+
+function recarregarTudo(){
+  carregarSaldos();
+  carregarContagemUncategorized();
+  carregarKPIs();
+  carregarPL();
+  carregarGraficoLP();
+}
+
+async function carregarSaldos(){
+  const grid = document.getElementById('saldos-grid');
+  if(!grid) return;
+  try{
+    const qboQuery = "select * from Account where AccountType in ('Bank','Credit Card') and Active = true";
+    const r = await fetch('/api/quickbooks/proxy?endpoint=query&query=' + encodeURIComponent(qboQuery) + '&minorversion=70');
+    const data = await r.json();
+    if(data.error){
+      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--red);font-size:13px">Erro ao carregar saldos: '+JSON.stringify(data.error)+'</div></div>';
+      return;
+    }
+    const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
+
+    // Filtra contas com movimentação nos últimos 180 dias (descarta históricas/inativas)
+    const CORTE_DIAS = 180;
+    const dataCorte = new Date();
+    dataCorte.setDate(dataCorte.getDate() - CORTE_DIAS);
+    const accounts = accountsRaw.filter(acc => {
+      if(!acc.MetaData || !acc.MetaData.LastUpdatedTime) return false;
+      const ult = new Date(acc.MetaData.LastUpdatedTime);
+      return ult >= dataCorte;
+    });
+
+    if(!accounts.length){
+      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhuma conta com movimentação nos últimos '+CORTE_DIAS+' dias. ('+accountsRaw.length+' contas no plano total, todas paradas)</div></div>';
+      return;
+    }
+
+    accounts.sort((a,b)=>{
+      if(a.AccountType==='Bank' && b.AccountType!=='Bank') return -1;
+      if(b.AccountType==='Bank' && a.AccountType!=='Bank') return 1;
+      return (a.Name||'').localeCompare(b.Name||'');
+    });
+
+    let html = '';
+    accounts.forEach(acc=>{
+      const isBank = acc.AccountType === 'Bank';
+      const tipo = isBank ? 'bank' : 'credit';
+      const tipoLabel = isBank ? 'Conta Corrente' : 'Cartão de Crédito';
+      const icon = isBank ? '🏦' : '💳';
+      const saldo = parseFloat(acc.CurrentBalance) || 0;
+      const saldoExibido = isBank ? saldo : -saldo;
+      const isNegativo = saldoExibido < 0;
+      const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
+        ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+        : '-';
+
+      html += `
+        <div class="saldo-card ${tipo}">
+          <div class="saldo-head">
+            <div class="saldo-icon">${icon}</div>
+            <div class="saldo-tipo">${tipoLabel}</div>
+          </div>
+          <div class="saldo-nome">${acc.Name}</div>
+          <div class="saldo-valor ${isNegativo?'negativo':''}">${fmtMoney(saldoExibido)}</div>
+          <div class="saldo-sub warn">⚠️ Só categorizado · não reflete saldo real do banco</div>
+          <div class="saldo-sub">Atualizado: ${ultUpdate}</div>
+        </div>
+      `;
+    });
+    grid.innerHTML = html;
+  }catch(e){
+    grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--red);font-size:13px">Erro: '+e.message+'</div></div>';
+  }
+}
+
+// Tenta contar transações com AccountRef = "Uncategorized Expense" / "Uncategorized Income"
+// Não conta o que está em "For Review" do Banking (API não expõe), mas captura
+// transações JÁ POSTADAS porém sem categorização adequada.
+async function carregarContagemUncategorized(){
+  const el = document.getElementById('aviso-pending-count');
+  if(!el) return;
+  try{
+    // 1) Acha contas "Uncategorized" no chart of accounts
+    const q1 = "select * from Account where Name like '%Uncategorized%' and Active = true";
+    const r1 = await fetch('/api/quickbooks/proxy?endpoint=query&query=' + encodeURIComponent(q1) + '&minorversion=70');
+    const d1 = await r1.json();
+    const uncatAccounts = (d1.QueryResponse && d1.QueryResponse.Account) || [];
+    if(!uncatAccounts.length){ el.textContent = ''; return; }
+
+    // 2) Conta Purchases referenciando essas contas
+    let totalCount = 0;
+    let totalAmt = 0;
+    for(const acc of uncatAccounts){
+      const q2 = "select * from Purchase where AccountRef = '" + acc.Id + "' MAXRESULTS 1000";
+      const r2 = await fetch('/api/quickbooks/proxy?endpoint=query&query=' + encodeURIComponent(q2) + '&minorversion=70');
+      const d2 = await r2.json();
+      const purchases = (d2.QueryResponse && d2.QueryResponse.Purchase) || [];
+      totalCount += purchases.length;
+      for(const p of purchases){ totalAmt += parseFloat(p.TotalAmt) || 0; }
+    }
+
+    if(totalCount > 0){
+      el.innerHTML = `há <span class="destaque">${totalCount} transações postadas como "Uncategorized" (${fmtMoney(totalAmt)})</span> e provavelmente outras no Banking · `;
+    }else{
+      el.textContent = '';
+    }
+  }catch(e){
+    console.warn('Não consegui contar uncategorized:', e.message);
+    el.textContent = '';
+  }
+}
+
+async function carregarKPIs(){
+  if(!periodo.start || !periodo.end) return;
+  ['kpi-receita','kpi-despesas','kpi-lucro','kpi-ar'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el){ el.textContent='⏳'; el.classList.add('kpi-loading'); }
+  });
+
+  try{
+    const url = '/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss')
+      + '&start_date=' + encodeURIComponent(periodo.start)
+      + '&end_date=' + encodeURIComponent(periodo.end)
+      + '&minorversion=70';
+    const r = await fetch(url);
+    const data = await r.json();
+    if(data.error){
+      ['kpi-receita','kpi-despesas','kpi-lucro'].forEach(id=>{document.getElementById(id).textContent='Erro';});
+      console.error('Erro P&L:', data);
+      return;
+    }
+    const report = data.Report || data;
+    const receita = extrairValor(report,'Total Income') || extrairValor(report,'Total Revenue') || 0;
+    const despesas = extrairValor(report,'Total Expenses') || 0;
+    const cogs = extrairValor(report,'Total Cost of Goods Sold') || extrairValor(report,'Total COGS') || 0;
+    const lucro = extrairValor(report,'Net Income') || (receita - despesas - cogs);
+
+    document.getElementById('kpi-receita').textContent = fmtMoney(receita);
+    document.getElementById('kpi-receita').classList.remove('kpi-loading');
+    document.getElementById('kpi-receita-sub').textContent = periodo.label;
+
+    document.getElementById('kpi-despesas').textContent = fmtMoney(despesas + cogs);
+    document.getElementById('kpi-despesas').classList.remove('kpi-loading');
+    document.getElementById('kpi-despesas-sub').textContent = 'Inclui COGS';
+
+    document.getElementById('kpi-lucro').textContent = fmtMoney(lucro);
+    document.getElementById('kpi-lucro').classList.remove('kpi-loading');
+    const margem = receita > 0 ? ((lucro/receita)*100).toFixed(1) : 0;
+    document.getElementById('kpi-lucro-sub').textContent = `Margem: ${margem}%`;
+  }catch(e){
+    console.error('Erro KPIs:',e);
+  }
+
+  try{
+    const r = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/AgedReceivables') + '&minorversion=70');
+    const data = await r.json();
+    const report = data.Report || data;
+    const total = extrairValor(report,'Total') || extrairValor(report,'TOTAL') || 0;
+    document.getElementById('kpi-ar').textContent = fmtMoney(total);
+    document.getElementById('kpi-ar').classList.remove('kpi-loading');
+    document.getElementById('kpi-ar-sub').textContent = 'Total em aberto (atual)';
+  }catch(e){
+    console.error('Erro A/R:',e);
+    document.getElementById('kpi-ar').textContent = '-';
+  }
+}
+
+async function carregarPL(){
+  const cont = document.getElementById('pl-container');
+  if(!cont || !periodo.start || !periodo.end) return;
+  cont.innerHTML = 'Carregando...';
+  try{
+    const url = '/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss')
+      + '&start_date=' + encodeURIComponent(periodo.start)
+      + '&end_date=' + encodeURIComponent(periodo.end)
+      + '&minorversion=70';
+    const r = await fetch(url);
+    const data = await r.json();
+    if(data.error){ cont.innerHTML = '<div style="color:var(--red)">Erro: '+JSON.stringify(data.error)+'</div>'; return; }
+    const report = data.Report || data;
+
+    function renderRow(row, depth=0){
+      let html='';
+      if(row.Summary&&row.Summary.ColData){
+        const label = (row.Summary.ColData[0]&&row.Summary.ColData[0].value) || '';
+        const valorRaw = (row.Summary.ColData[row.Summary.ColData.length-1]&&row.Summary.ColData[row.Summary.ColData.length-1].value) || '0';
+        const fw = depth===0 ? '700' : '500';
+        const color = depth===0 ? 'var(--text)' : 'var(--text2)';
+        html += `<div style="display:flex;justify-content:space-between;padding:6px 0;padding-left:${depth*16}px;font-size:13px;font-weight:${fw};color:${color};border-bottom:1px dashed var(--border)"><span>${label}</span><span>${fmtMoney(parseFloat(valorRaw)||0)}</span></div>`;
+      }
+      if(row.Rows&&row.Rows.Row){
+        for(const sub of row.Rows.Row){
+          html += renderRow(sub, depth+1);
+        }
+      }
+      return html;
+    }
+
+    let html = '';
+    if(report.Rows&&report.Rows.Row){
+      for(const row of report.Rows.Row){
+        html += renderRow(row, 0);
+      }
+    }
+    cont.innerHTML = html || '<div style="color:var(--text3)">Sem dados no período.</div>';
+  }catch(e){
+    cont.innerHTML = '<div style="color:var(--red)">Erro: '+e.message+'</div>';
+  }
+}
+
+let chartLP = null;
+async function carregarGraficoLP(){
+  const canvas = document.getElementById('chart-lp');
+  if(!canvas) return;
+
+  const fim = new Date(periodo.end+'T12:00:00');
+  const start12 = new Date(fim.getFullYear(), fim.getMonth()-11, 1);
+  const end12 = new Date(fim.getFullYear(), fim.getMonth()+1, 0);
+
+  try{
+    const url = '/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss')
+      + '&start_date=' + encodeURIComponent(isoDate(start12))
+      + '&end_date=' + encodeURIComponent(isoDate(end12))
+      + '&summarize_column_by=Month'
+      + '&minorversion=70';
+    const r = await fetch(url);
+    const data = await r.json();
+    if(data.error){
+      console.error('Erro gráfico L/P:', data);
+      return;
+    }
+    const report = data.Report || data;
+
+    const labels = extrairColunasMensal(report);
+    const receita = extrairSerieMensal(report, 'Total Income');
+    const despesasOp = extrairSerieMensal(report, 'Total Expenses');
+    const cogs = extrairSerieMensal(report, 'Total Cost of Goods Sold');
+    const lucro = extrairSerieMensal(report, 'Net Income');
+
+    const despesasTotal = receita.map((_, i)=> (despesasOp[i]||0) + (cogs[i]||0));
+
+    if(chartLP){ chartLP.destroy(); }
+
+    const ctx = canvas.getContext('2d');
+    chartLP = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Receita',
+            data: receita,
+            backgroundColor: 'rgba(34,197,94,.7)',
+            borderColor: 'rgba(34,197,94,1)',
+            borderWidth: 1,
+            order: 2
+          },
+          {
+            label: 'Despesa total (COGS + Op)',
+            data: despesasTotal,
+            backgroundColor: 'rgba(239,68,68,.7)',
+            borderColor: 'rgba(239,68,68,1)',
+            borderWidth: 1,
+            order: 2
+          },
+          {
+            label: 'Lucro líquido',
+            type: 'line',
+            data: lucro,
+            borderColor: 'rgba(59,130,246,1)',
+            backgroundColor: 'rgba(59,130,246,.1)',
+            borderWidth: 2.5,
+            pointRadius: 4,
+            pointBackgroundColor: 'rgba(59,130,246,1)',
+            tension: 0.3,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            labels: { color: '#b0b8d0', font: { size: 12, family: 'DM Sans' }, usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(15,17,23,.95)',
+            titleColor: '#f0f2f8',
+            bodyColor: '#b0b8d0',
+            borderColor: 'rgba(255,255,255,.15)',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function(ctx){
+                const v = ctx.parsed.y;
+                return ctx.dataset.label + ': ' + fmtMoney(v);
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: { color: '#6b7599', font: { size: 11 } },
+            grid: { color: 'rgba(255,255,255,.04)' }
+          },
+          y: {
+            ticks: {
+              color: '#6b7599',
+              font: { size: 11 },
+              callback: function(v){ return '$' + (Math.abs(v)>=1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0)); }
+            },
+            grid: { color: 'rgba(255,255,255,.04)' }
+          }
+        }
+      }
+    });
+  }catch(e){
+    console.error('Erro gráfico L/P:', e);
+  }
+}
+
+// === PÁGINA PROJETOS ===
+function renderProjetos(){
+  const status = qboStatus || {};
+
+  // Status: cost rates agora vêm direto do QBO em cada TimeActivity
+  let ratePillHtml = `
+    <button onclick="navegar('config')" title="Cost rates lidos direto do QBO Payroll em cada TimeActivity" style="display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid rgba(34,197,94,.3);color:var(--text2);padding:6px 10px;border-radius:7px;font-family:inherit;font-size:11px;cursor:pointer">
+      <span style="font-size:13px">✅</span>
+      <span>Rates do <strong style="color:var(--text)">QBO</strong></span>
+      <span style="color:var(--text3);font-weight:600">⚙️</span>
+    </button>`;
+
+  document.getElementById('conteudo').innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">📁 Projetos</div>
+        <div class="page-sub">Projetos com atividade em 2025+ · busque pra encontrar antigos</div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        ${ratePillHtml}
+        <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+        <button class="section-action" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 12px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px" onclick="projetosCache=null;carregarProjetos()">🔄 Atualizar</button>
+      </div>
+    </div>
+
+    <div class="projetos-summary" id="projetos-summary">
+      <div class="proj-kpi"><div class="proj-kpi-label">Total Projetos</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Receita Total</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Custos Totais</div><div class="proj-kpi-value">⏳</div></div>
+      <div class="proj-kpi"><div class="proj-kpi-label">Margem Média</div><div class="proj-kpi-value">⏳</div></div>
+    </div>
+
+    <div class="proj-filters">
+      <button class="proj-filter-pill active" data-status="ativos" onclick="filtrarProjetos('ativos')">Em andamento</button>
+      <button class="proj-filter-pill" data-status="este-mes" onclick="filtrarProjetos('este-mes')">Este mês</button>
+      <button class="proj-filter-pill" data-status="mes-passado" onclick="filtrarProjetos('mes-passado')">Mês passado</button>
+      <button class="proj-filter-pill" data-status="negativos" onclick="filtrarProjetos('negativos')">⚠️ Margem negativa</button>
+      <button class="proj-filter-pill" data-status="todos" onclick="filtrarProjetos('todos')">Todos</button>
+      <input class="proj-search" id="proj-search" placeholder="🔍 Buscar projeto ou cliente..." oninput="filtrarProjetos()">
+    </div>
+
+    <div class="proj-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Projeto</th>
+            <th>Cliente</th>
+            <th style="min-width:220px">Renda vs. Custo</th>
+            <th class="right">Margem de Lucro</th>
+            <th class="right">Tempo</th>
+            <th class="right">Data de Início</th>
+          </tr>
+        </thead>
+        <tbody id="proj-tbody">
+          <tr class="proj-loading-row"><td colspan="6">⏳ Buscando projetos no QuickBooks (P&L + TimeActivity por projeto)...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="info-box" style="margin-top:20px">
+      <strong>💡 Lista:</strong> Projetos criados em 2025+ OU com qualquer atividade (P&L ou TimeActivity) em 2025+. Dados vêm de <strong>1 chamada agregada</strong> ao QBO (~3-6s).
+      <br><strong style="display:inline-block;margin-top:6px">Custos = P&L contábil + Mão de obra com cost rate REAL do QBO.</strong> P&L = Total Cost of Goods Sold + Total Expenses do relatório oficial. Mão de obra = horas × CostRate da época do lançamento. <strong>Os números batem 1:1 com o QBO.</strong> Hover no custo pra ver breakdown.
+    </div>
+  `;
+
+  if(projetosCache){
+    renderProjetosTabela(projetosCache);
+  }else{
+    carregarProjetos();
+  }
+}
+
+// Kept for backward compatibility / Config page hook.
+// Default rate changes are now made in #config and trigger full reload of project cache.
+function atualizarCostRate(v){
+  const n = Number(v);
+  if(isNaN(n) || n < 0) return;
+  costRatePerHour = n;
+  localStorage.setItem('ksh_cost_rate_h', String(n));
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CARREGAMENTO DE PROJETOS (Sprint 2.7 - Etapa 1)
+// 
+// Substitui ~400 chamadas QBO por 1 chamada agregada ao endpoint
+// /api/quickbooks/projetos-overview que faz no servidor:
+//   1) Lista de Customer/Job
+//   2) P&L com summarize_column_by=Customers (todos os números num shot)
+//   3) TimeActivity 2025+ (todas as horas num shot)
+// → resultado pronto em 3-6s, números IDÊNTICOS ao QBO
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function carregarProjetos(){
+  const tbody = () => document.getElementById('proj-tbody');
+  try{
+    // Carrega rates dos funcionários (não bloqueante, só pro display da página Config)
+    carregarEmployeeRates();
+
+    if(tbody()) tbody().innerHTML = `<tr class="proj-loading-row"><td colspan="6">⏳ Buscando projetos no QuickBooks (1 chamada agregada)...</td></tr>`;
+
+    const t0 = Date.now();
+    const r = await fetch('/api/quickbooks/projetos-overview');
+    if(!r.ok){
+      if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">⚠️ Erro HTTP ${r.status} ao carregar projetos.</td></tr>`;
+      return;
+    }
+    const data = await r.json();
+    const tempoMs = Date.now() - t0;
+    console.log(`[projetos] ${data.projetos.length} projetos carregados em ${tempoMs}ms`, data.tempos);
+
+    if(!data.projetos || data.projetos.length === 0){
+      if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">📭 Nenhum projeto com atividade em 2025+ encontrado.</td></tr>`;
+      renderProjetosSummary([]);
+      projetosCache = [];
+      return;
+    }
+
+    projetosCache = data.projetos;
+    // Como a busca no arquivo agora é trivial (todos vêm no overview), não precisamos mais do meta separado
+    projetosArquivoMeta = new Map();
+    projetosArquivoIds = new Set();
+    renderProjetosTabela(data.projetos);
+  }catch(e){
+    console.error('Erro projetos:', e);
+    if(tbody()) tbody().innerHTML = `<tr><td colspan="6" class="proj-empty">⚠️ Erro: ${e.message}</td></tr>`;
+  }
+}
+
+function renderProjetosSummary(dados){
+  const el = document.getElementById('projetos-summary');
+  if(!el) return;
+  const totReceita = dados.reduce((a,d) => a + (d.receita||0), 0);
+  const totCusto = dados.reduce((a,d) => a + (d.custo||0), 0);
+  const margemMedia = totReceita > 0 ? ((totReceita - totCusto)/totReceita * 100) : 0;
+  const ativos = dados.filter(d => d.ativo).length;
+
+  el.innerHTML = `
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Total Projetos</div>
+      <div class="proj-kpi-value">${dados.length}</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${ativos} ativos</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Receita Total</div>
+      <div class="proj-kpi-value green">${fmtMoney(totReceita)}</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Custos Totais</div>
+      <div class="proj-kpi-value amber">${fmtMoney(totCusto)}</div>
+    </div>
+    <div class="proj-kpi">
+      <div class="proj-kpi-label">Margem Média</div>
+      <div class="proj-kpi-value ${margemMedia < 0 ? 'red' : margemMedia < 20 ? 'amber' : 'green'}">${margemMedia.toFixed(1)}%</div>
+      <div style="font-size:10px;color:var(--text3);margin-top:4px">${fmtMoney(totReceita - totCusto)} lucro</div>
+    </div>
+  `;
+}
+
+function fmtHoras(h){
+  if(!h || isNaN(h)) return '—';
+  const total = Math.round(h * 60);
+  const hh = Math.floor(total / 60);
+  const mm = total % 60;
+  return hh + ':' + String(mm).padStart(2,'0');
+}
+
+function renderProjetosTabela(dados){
+  const tbody = document.getElementById('proj-tbody');
+  if(!tbody) return;
+
+  let filtroStatus = 'ativos';
+  document.querySelectorAll('.proj-filter-pill').forEach(b => {
+    if(b.classList.contains('active')) filtroStatus = b.dataset.status;
+  });
+  const buscaEl = document.getElementById('proj-search');
+  const busca = (buscaEl && buscaEl.value) || '';
+
+  let filtrados = dados.slice();
+  if(filtroStatus === 'ativos') filtrados = filtrados.filter(d => d.ativo);
+  else if(filtroStatus === 'negativos') filtrados = filtrados.filter(d => d.margem !== null && d.margem < 0);
+  else if(filtroStatus === 'este-mes'){
+    const hoje = new Date();
+    const ini = new Date(hoje.getFullYear(), hoje.getMonth(), 1).getTime();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0, 23,59,59).getTime();
+    filtrados = filtrados.filter(d => {
+      if(!d.criado) return false;
+      const t = new Date(d.criado).getTime();
+      return t >= ini && t <= fim;
+    });
+  }
+  else if(filtroStatus === 'mes-passado'){
+    const hoje = new Date();
+    const ini = new Date(hoje.getFullYear(), hoje.getMonth()-1, 1).getTime();
+    const fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23,59,59).getTime();
+    filtrados = filtrados.filter(d => {
+      if(!d.criado) return false;
+      const t = new Date(d.criado).getTime();
+      return t >= ini && t <= fim;
+    });
+  }
+
+  if(busca.trim()){
+    const q = busca.toLowerCase();
+    filtrados = filtrados.filter(d =>
+      (d.nome||'').toLowerCase().includes(q) ||
+      (d.cliente||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Ordena por data de criação DESC (mais novos primeiro). Sem data vai pro fim.
+  filtrados.sort((a,b) => {
+    if(!a.criado && !b.criado) return 0;
+    if(!a.criado) return 1;
+    if(!b.criado) return -1;
+    return new Date(b.criado).getTime() - new Date(a.criado).getTime();
+  });
+
+  // KPIs reagem ao filtro
+  renderProjetosSummary(filtrados);
+
+  if(filtrados.length === 0){
+    tbody.innerHTML = `<tr><td colspan="6" class="proj-empty">Nenhum projeto com esses filtros.</td></tr>`;
+    return;
+  }
+
+  const maxAbs = Math.max(
+    ...filtrados.map(d => Math.max(d.receita||0, d.custo||0)),
+    1
+  );
+
+  let html = '';
+  filtrados.forEach(d => {
+    const dangerCls = (d.margem !== null && d.margem < 0) ? 'danger' : '';
+
+    let margemCls = 'gray';
+    let margemTxt = '—';
+    if(d.margem !== null){
+      if(d.margem < 0) margemCls = 'red';
+      else if(d.margem < 20) margemCls = 'amber';
+      else margemCls = 'green';
+      margemTxt = (d.margem > 0 ? '+' : '') + d.margem.toFixed(1) + '%';
+    }
+
+    const dataInicio = d.criado ? new Date(d.criado).toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'}) : '—';
+
+    const wReceita = Math.min(100, (d.receita/maxAbs)*100);
+    const wCusto = Math.min(100, (d.custo/maxAbs)*100);
+
+    // Tooltip dos custos: breakdown P&L + Mão de Obra (rate do próprio QBO)
+    let breakdownStr = '';
+    if(d.breakdown && d.breakdown.length){
+      breakdownStr = '\n' + d.breakdown.map(b => `  ${b.name}: ${fmtHoras(b.horas)} × $${b.rate.toFixed(2)}/h = ${fmtMoney(b.total)}${b.fromQbo?'':' (default)'}`).join('\n');
+    }
+    const tooltipCusto = `P&L (lançamentos): ${fmtMoney(d.custoPL||0)}\n\nMão de obra (${fmtHoras(d.horas||0)}): ${fmtMoney(d.maoObra||0)}${breakdownStr}\n──────\nTotal: ${fmtMoney(d.custo)}`;
+
+    html += `
+      <tr class="proj-row ${dangerCls}" style="cursor:pointer" onclick="navegar('projeto/${d.id}')" title="Clique pra ver detalhes do projeto">
+        <td><div class="proj-nome">⭐ ${d.nome}</div></td>
+        <td><span style="color:var(--text2);font-size:12px">${d.cliente}</span></td>
+        <td>
+          <div class="proj-bar-wrap">
+            <div class="proj-bar-row">
+              <span class="lbl">Renda</span>
+              <span class="bar"><span class="fill income" style="width:${wReceita}%"></span></span>
+              <span class="val">${fmtMoney(d.receita)}</span>
+            </div>
+            <div class="proj-bar-row" title="${tooltipCusto}">
+              <span class="lbl">Custos</span>
+              <span class="bar"><span class="fill cost" style="width:${wCusto}%"></span></span>
+              <span class="val">${fmtMoney(d.custo)}</span>
+            </div>
+          </div>
+        </td>
+        <td class="right">
+          <span class="margem-tag ${margemCls}">${margemTxt}</span>
+          ${d.margem !== null ? `<div class="margem-sub">${d.lucro >= 0 ? '+' : ''}${fmtMoney(d.lucro)}</div>` : ''}
+        </td>
+        <td class="right" style="color:var(--text2);font-size:12px;font-variant-numeric:tabular-nums">${fmtHoras(d.horas||0)}</td>
+        <td class="right" style="color:var(--text3);font-size:11px">${dataInicio}</td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+function filtrarProjetos(status){
+  if(status){
+    document.querySelectorAll('.proj-filter-pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.status === status);
+    });
+  }
+  if(projetosCache) renderProjetosTabela(projetosCache);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DETALHE DO PROJETO (Sprint 2.7 - Etapa 2)
+// Tela individual com KPIs + breakdown expandível, igual à tela do QBO Projects
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function renderProjetoDetalhe(projId){
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = `
+    <div style="display:flex;justify-content:center;align-items:center;padding:80px 20px">
+      <div style="text-align:center;color:var(--text3)">
+        <div style="font-size:32px;margin-bottom:12px">⏳</div>
+        <div style="font-size:14px">Carregando detalhes do projeto...</div>
+        <div style="font-size:11px;margin-top:4px">3 chamadas em paralelo (P&L + TimeActivity + Customer)</div>
+      </div>
+    </div>
+  `;
+
+  try{
+    const t0 = Date.now();
+    const r = await fetch('/api/quickbooks/projeto-detalhe?customer=' + encodeURIComponent(projId));
+    if(!r.ok){
+      cont.innerHTML = `
+        <button class="pd-back" onclick="navegar('projetos')">← Voltar pra Projetos</button>
+        <div class="proj-empty">⚠️ Erro HTTP ${r.status} ao carregar projeto.</div>
+      `;
+      return;
+    }
+    const data = await r.json();
+    console.log(`[detalhe] carregado em ${Date.now()-t0}ms`, data);
+    renderProjetoDetalheHTML(data);
+  }catch(e){
+    console.error('Erro detalhe projeto:', e);
+    cont.innerHTML = `
+      <button class="pd-back" onclick="navegar('projetos')">← Voltar pra Projetos</button>
+      <div class="proj-empty">⚠️ Erro: ${e.message}</div>
+    `;
+  }
+}
+
+function renderProjetoDetalheHTML(data){
+  const cont = document.getElementById('conteudo');
+  const p = data.projeto;
+  const t = data.totais;
+
+  const dataInicio = p.criado ? new Date(p.criado).toLocaleDateString('pt-BR') : '—';
+  const dataMod = p.modificado ? new Date(p.modificado).toLocaleDateString('pt-BR') : '—';
+  const statusCls = p.ativo ? 'ativo' : 'inativo';
+  const statusTxt = p.ativo ? '🟢 Ativo' : '⚫ Inativo';
+
+  const margemTxt = t.margem === null ? '—' : `${t.margem >= 0 ? '+' : ''}${t.margem.toFixed(1)}%`;
+  const lucroCls = t.lucro >= 0 ? 'pos' : 'neg';
+
+  // Link pro QBO Projects (URL real do QBO Projects)
+  // Padrão correto: https://qbo.intuit.com/app/projects/projectdetails?id=<ProjectRef.value>
+  // Fallback (projeto sem TimeActivity): abre a lista geral de Projects
+  const qboUrl = p.qboProjectId
+    ? `https://qbo.intuit.com/app/projects/projectdetails?id=${p.qboProjectId}`
+    : `https://qbo.intuit.com/app/projects`;
+
+  // Renderiza seções (Income, COGS, Expenses)
+  const renderSecao = (id, icone, titulo, total, accounts, classe) => {
+    const tem = accounts && accounts.length > 0;
+    return `
+      <div class="pd-section open" id="pd-sec-${id}">
+        <div class="pd-section-head" onclick="document.getElementById('pd-sec-${id}').classList.toggle('open')">
+          <div class="pd-section-head-left">
+            <span class="pd-section-toggle">▶</span>
+            <span class="pd-section-icon">${icone}</span>
+            <span>${titulo}</span>
+            <span style="font-size:11px;color:var(--text3);font-weight:400">${tem ? `· ${accounts.length} conta(s)` : ''}</span>
+          </div>
+          <div class="pd-section-total ${classe}">${fmtMoney(total)}</div>
+        </div>
+        <div class="pd-section-body">
+          ${tem ? accounts.map(a => `
+            <div class="pd-row">
+              <div class="pd-row-name">${a.name}</div>
+              <div class="pd-row-val">${fmtMoney(a.valor)}</div>
+            </div>
+          `).join('') : `<div class="pd-section-empty">Nenhum lançamento nessa categoria.</div>`}
+        </div>
+      </div>
+    `;
+  };
+
+  // Seção de Mão de obra (Hourly Time Cost)
+  const time = data.time;
+  const renderTime = () => {
+    if(!time.funcionarios || time.funcionarios.length === 0){
+      return `
+        <div class="pd-section">
+          <div class="pd-section-head">
+            <div class="pd-section-head-left">
+              <span class="pd-section-icon">⏱️</span>
+              <span>Hourly Time Cost</span>
+            </div>
+            <div class="pd-section-total cost">$0.00</div>
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="pd-section open" id="pd-sec-time">
+        <div class="pd-section-head" onclick="document.getElementById('pd-sec-time').classList.toggle('open')">
+          <div class="pd-section-head-left">
+            <span class="pd-section-toggle">▶</span>
+            <span class="pd-section-icon">⏱️</span>
+            <span>Hourly Time Cost</span>
+            <span style="font-size:11px;color:var(--text3);font-weight:400">· ${time.funcionarios.length} funcionário(s) · ${fmtHoras(time.totalHoras)}</span>
+          </div>
+          <div class="pd-section-total cost">${fmtMoney(time.totalCost)}</div>
+        </div>
+        <div class="pd-section-body">
+          ${time.funcionarios.map(f => `
+            <div class="pd-row">
+              <div class="pd-row-name">
+                ${f.name}
+                <span class="pd-row-sub">${fmtHoras(f.horas)} × $${f.rate.toFixed(2)}/h${f.fromQbo ? '' : ' (default)'}${f.transactions > 1 ? ` · ${f.transactions} lançamentos` : ''}</span>
+              </div>
+              <div class="pd-row-val">${fmtMoney(f.total)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  };
+
+  cont.innerHTML = `
+    <div class="pd-header">
+      <div class="pd-header-left">
+        <button class="pd-back" onclick="navegar('projetos')">← Voltar pra Projetos</button>
+        <div class="pd-title">
+          ⭐ ${p.nome}
+          <span class="pd-status-pill ${statusCls}">${statusTxt}</span>
+        </div>
+        <div class="pd-meta">
+          <div class="pd-meta-item">👤 ${p.cliente}</div>
+          <div class="pd-meta-item">📅 Criado: ${dataInicio}</div>
+          <div class="pd-meta-item">🔄 Modificado: ${dataMod}</div>
+        </div>
+      </div>
+      <a class="pd-qbo-link" href="${qboUrl}" target="_blank">Abrir no QBO ↗</a>
+    </div>
+
+    <div class="pd-kpis">
+      <div class="pd-kpi income">
+        <div class="pd-kpi-label">💰 Income</div>
+        <div class="pd-kpi-val">${fmtMoney(t.receita)}</div>
+        <div class="pd-kpi-sub">Total Income do P&L</div>
+      </div>
+      <div class="pd-kpi cost">
+        <div class="pd-kpi-label">📉 Total Cost</div>
+        <div class="pd-kpi-val">${fmtMoney(t.custoTotal)}</div>
+        <div class="pd-kpi-sub">P&L (${fmtMoney(t.custoPL)}) + Mão de obra (${fmtMoney(t.custoMaoObra)})</div>
+      </div>
+      <div class="pd-kpi profit ${lucroCls}">
+        <div class="pd-kpi-label">📊 Profit</div>
+        <div class="pd-kpi-val">${t.lucro >= 0 ? '' : '-'}${fmtMoney(Math.abs(t.lucro))}</div>
+        <div class="pd-kpi-sub">${margemTxt} de margem</div>
+      </div>
+      <div class="pd-kpi">
+        <div class="pd-kpi-label">⏱️ Hours</div>
+        <div class="pd-kpi-val">${fmtHoras(time.totalHoras)}</div>
+        <div class="pd-kpi-sub">${time.funcionarios.length} funcionário(s)</div>
+      </div>
+    </div>
+
+    ${renderSecao('income', '💰', 'Income', data.income.total, data.income.accounts, 'income')}
+    ${renderSecao('cogs', '🛒', 'Cost of Goods Sold', data.cogs.total, data.cogs.accounts, 'cost')}
+    ${renderSecao('expenses', '💸', 'Expenses', data.expenses.total, data.expenses.accounts, 'cost')}
+    ${renderTime()}
+
+    <div class="pd-total-bar">
+      <div>
+        <div class="pd-total-bar-label">Resultado final · Income − (P&L + Mão de obra)</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">Mesma fórmula que o QBO Projects usa no card "Income vs Cost"</div>
+      </div>
+      <div class="pd-total-bar-val ${lucroCls}">${t.lucro >= 0 ? '+' : '−'}${fmtMoney(Math.abs(t.lucro))}</div>
+    </div>
+
+    <div class="info-box" style="margin-top:20px">
+      <strong>💡 Fonte da verdade:</strong> Todos os números acima vêm direto da API do QuickBooks (Reports/ProfitAndLoss + TimeActivity). <strong>Bate 1:1 com a tela do QBO Projects.</strong> Para editar lançamentos, use o botão "Abrir no QBO".
+    </div>
+
+    <div class="pa-section-label">📊 Análise inteligente</div>
+    <div id="pa-conteudo">
+      <div class="pa-empty">⏳ Calculando benchmarks vs. seus outros projetos...</div>
+    </div>
+  `;
+
+  // Dispara análise em background (não bloqueia o resto)
+  carregarAnaliseProjeto(p.id);
+}
+
+// === ANÁLISE INTELIGENTE (Sprint 2.8 Etapa 1) ===
+async function carregarAnaliseProjeto(projId){
+  const cont = document.getElementById('pa-conteudo');
+  if(!cont) return;
+  try{
+    const r = await fetch('/api/quickbooks/projeto-analise?customer=' + encodeURIComponent(projId));
+    if(!r.ok){
+      cont.innerHTML = `<div class="pa-empty">⚠️ Não foi possível calcular análises.</div>`;
+      return;
+    }
+    const data = await r.json();
+    if(data.benchmark === null){
+      cont.innerHTML = `<div class="pa-empty">📊 ${data.mensagem || 'Sem dados pra comparar.'}</div>`;
+      return;
+    }
+    renderAnaliseHTML(data);
+  }catch(e){
+    console.error('Erro análise:', e);
+    cont.innerHTML = `<div class="pa-empty">⚠️ Erro: ${e.message}</div>`;
+  }
+}
+
+function renderAnaliseHTML(data){
+  const cont = document.getElementById('pa-conteudo');
+  const b = data.benchmark;
+  const c = data.composicao;
+  const mix = data.mixEquipe || [];
+
+  // Helper de formatar diff %
+  const fmtDiff = (val, isPp) => {
+    if(val === null || val === undefined || isNaN(val)) return '';
+    const sign = val >= 0 ? '+' : '';
+    return isPp ? `${sign}${val.toFixed(1)}pp` : `${sign}${val.toFixed(0)}%`;
+  };
+
+  // Helper pra decidir classe de cor (down=ruim, up=bom)
+  // Pra receita/margem: up = bom. Pra custo/horas: up = ruim.
+  const diffCls = (val, upBom) => {
+    if(val === null || val === undefined || Math.abs(val) < 2) return 'neutral';
+    const bom = upBom ? val > 0 : val < 0;
+    return bom ? 'up' : 'down';
+  };
+
+  // ─── BENCHMARK ───
+  const benchHtml = `
+    <div class="pa-card">
+      <div class="pa-card-title">Benchmark vs. seus outros projetos · base: ${b.receita.n} projetos</div>
+      <div class="pa-bench-grid">
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">💰 Receita</div>
+          <div class="pa-bench-val">${fmtMoney(b.receita.atual)}</div>
+          <div class="pa-bench-diff ${diffCls(b.receita.diffPct, true)}">
+            ${fmtDiff(b.receita.diffPct)} vs média (${fmtMoney(b.receita.media)})
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">📊 Margem</div>
+          <div class="pa-bench-val ${b.margem.atual !== null && b.margem.atual < 0 ? 'neg' : (b.margem.atual !== null && b.margem.atual > 0 ? 'pos' : '')}">
+            ${b.margem.atual === null ? '—' : (b.margem.atual >= 0 ? '+' : '') + b.margem.atual.toFixed(1) + '%'}
+          </div>
+          <div class="pa-bench-diff ${diffCls(b.margem.diffPp, true)}">
+            ${fmtDiff(b.margem.diffPp, true)} vs média (${b.margem.media >= 0 ? '+' : ''}${b.margem.media.toFixed(1)}%)
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">⏱️ Horas</div>
+          <div class="pa-bench-val">${fmtHoras(b.horas.atual)}</div>
+          <div class="pa-bench-diff ${diffCls(b.horas.diffPct, false)}">
+            ${fmtDiff(b.horas.diffPct)} vs média (${fmtHoras(b.horas.media)})
+          </div>
+        </div>
+        <div class="pa-bench-item">
+          <div class="pa-bench-label">💵 $/Hora efetivo</div>
+          <div class="pa-bench-val">${b.ratePorHora.atual === null ? '—' : '$' + b.ratePorHora.atual.toFixed(0)}</div>
+          <div class="pa-bench-diff ${diffCls(b.ratePorHora.diffPct, true)}">
+            ${fmtDiff(b.ratePorHora.diffPct)} vs média ($${b.ratePorHora.media.toFixed(0)}/h)
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // ─── DONUT DE COMPOSIÇÃO ───
+  const total = c.total || 1;
+  const pCogs = (c.cogs / total) * 100;
+  const pExp = (c.expenses / total) * 100;
+  const pMao = (c.maoObra / total) * 100;
+
+  // Calcula stroke-dasharray pra cada slice (circunferência = 2*π*15.9 ≈ 100)
+  const offset1 = 0;
+  const offset2 = -pCogs;
+  const offset3 = -(pCogs + pExp);
+
+  const donutHtml = total > 0 ? `
+    <div class="pa-card">
+      <div class="pa-card-title">Composição do custo</div>
+      <div class="pa-donut-wrap">
+        <div class="pa-donut">
+          <svg viewBox="0 0 42 42" style="width:100%;height:100%">
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--bg3)" stroke-width="6"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--blue)" stroke-width="6"
+              stroke-dasharray="${pCogs.toFixed(2)} 100" stroke-dashoffset="${offset1}" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--amber)" stroke-width="6"
+              stroke-dasharray="${pExp.toFixed(2)} 100" stroke-dashoffset="${offset2}" transform="rotate(-90 21 21)"></circle>
+            <circle cx="21" cy="21" r="15.9" fill="transparent" stroke="var(--purple)" stroke-width="6"
+              stroke-dasharray="${pMao.toFixed(2)} 100" stroke-dashoffset="${offset3}" transform="rotate(-90 21 21)"></circle>
+          </svg>
+          <div class="pa-donut-center">
+            <div class="pa-donut-center-val">${fmtMoney(total)}</div>
+            <div class="pa-donut-center-lbl">Total</div>
+          </div>
+        </div>
+        <div class="pa-donut-legend">
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--blue)"></i>COGS · ${pCogs.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.cogs)}</span>
+          </div>
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--amber)"></i>Expenses · ${pExp.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.expenses)}</span>
+          </div>
+          <div class="pa-donut-legend-row">
+            <span class="swatch"><i style="background:var(--purple)"></i>Mão de obra · ${pMao.toFixed(0)}%</span>
+            <span class="val">${fmtMoney(c.maoObra)}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  ` : `<div class="pa-card"><div class="pa-card-title">Composição do custo</div><div class="pa-empty">Sem custos lançados ainda.</div></div>`;
+
+  // ─── MIX DE EQUIPE ───
+  const mixHtml = mix.length > 0 ? `
+    <div class="pa-card">
+      <div class="pa-card-title">Mix de equipe</div>
+      ${mix.map(e => `
+        <div class="pa-mix-row">
+          <div class="pa-mix-head">
+            <span class="pa-mix-name">${e.name}</span>
+            <span class="pa-mix-sub">${fmtHoras(e.horas)} · ${fmtMoney(e.total)} · $${e.rateMedio.toFixed(0)}/h</span>
+          </div>
+          <div class="pa-mix-bar"><div class="pa-mix-bar-fill" style="width:${e.pctHoras.toFixed(1)}%"></div></div>
+        </div>
+      `).join('')}
+    </div>
+  ` : `<div class="pa-card"><div class="pa-card-title">Mix de equipe</div><div class="pa-empty">Nenhuma hora lançada ainda.</div></div>`;
+
+  cont.innerHTML = benchHtml + `<div class="pa-grid-2">${donutHtml}${mixHtml}</div>` + `
+    <div class="pa-ai-card" id="pa-ai-card">
+      <div class="pa-ai-trigger" id="pa-ai-trigger">
+        <button class="pa-ai-btn" id="pa-ai-btn" onclick="gerarAnaliseIA('${data.atual.id}')">
+          🤖 Gerar análise IA
+        </button>
+        <div class="pa-ai-hint">Claude vai analisar nas perspectivas de CFO, Operações e Smart Home Expert</div>
+      </div>
+    </div>
+  `;
+}
+
+// === IA: Gerar análise inteligente ===
+// Cache em memória pra não rebatir IA sem motivo
+const _aiCache = new Map();
+
+async function gerarAnaliseIA(projId, forcarRefresh){
+  const btn = document.getElementById('pa-ai-btn');
+  const card = document.getElementById('pa-ai-card');
+  if(!card) return;
+
+  // Cache hit?
+  if(!forcarRefresh && _aiCache.has(projId)){
+    renderAnaliseIA(card, projId, _aiCache.get(projId));
+    return;
+  }
+
+  // Loading state
+  card.innerHTML = `
+    <div class="pa-ai-trigger">
+      <button class="pa-ai-btn" disabled>
+        <span class="pa-spin"></span>Analisando dados do projeto...
+      </button>
+      <div class="pa-ai-hint">Isso leva uns 5-10 segundos</div>
+    </div>
+  `;
+
+  try{
+    const r = await fetch('/api/ai/analise-projeto', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ projetoId: projId })
+    });
+    if(!r.ok){
+      let detalheErr = `HTTP ${r.status}`;
+      try {
+        const txt = await r.text();
+        try { 
+          const j = JSON.parse(txt);
+          detalheErr += ` · ${j.error || txt.substring(0,300)}`;
+        } catch(e) {
+          detalheErr += ` · ${txt.substring(0,400)}`;
+        }
+      } catch(e) {}
+      console.error('[IA] Erro:', detalheErr);
+      card.innerHTML = `
+        <div class="pa-ai-trigger">
+          <div style="color:var(--red);font-size:12px;margin-bottom:10px;text-align:left;background:rgba(239,68,68,.08);padding:12px;border-radius:6px;word-break:break-word;font-family:monospace;line-height:1.5">${escapeHtml(detalheErr)}</div>
+          <button class="pa-ai-btn" onclick="gerarAnaliseIA('${projId}', true)">🔄 Tentar de novo</button>
+        </div>
+      `;
+      return;
+    }
+    const data = await r.json();
+    _aiCache.set(projId, data);
+    renderAnaliseIA(card, projId, data);
+  }catch(e){
+    console.error('Erro IA:', e);
+    card.innerHTML = `
+      <div class="pa-ai-trigger">
+        <div style="color:var(--red);font-size:13px;margin-bottom:10px">⚠️ ${e.message}</div>
+        <button class="pa-ai-btn" onclick="gerarAnaliseIA('${projId}', true)">🔄 Tentar de novo</button>
+      </div>
+    `;
+  }
+}
+
+function renderAnaliseIA(card, projId, data){
+  const cfo = Array.isArray(data.cfo) ? data.cfo : [];
+  const ops = Array.isArray(data.operacoes) ? data.operacoes : [];
+  const sh = Array.isArray(data.smartHome) ? data.smartHome : [];
+
+  const renderInsights = (arr) => arr.length === 0
+    ? `<div class="pa-empty">Sem insights nessa categoria.</div>`
+    : arr.map(i => `
+      <div class="pa-insight sev-${i.severidade || 'info'}">
+        <div class="pa-insight-title">${escapeHtml(i.titulo || '')}</div>
+        <div class="pa-insight-diag">${escapeHtml(i.diagnostico || '')}</div>
+        ${i.acao ? `<div class="pa-insight-acao"><strong>Ação:</strong> ${escapeHtml(i.acao)}</div>` : ''}
+      </div>
+    `).join('');
+
+  const meta = data._meta || {};
+  const tokens = (meta.inputTokens || 0) + (meta.outputTokens || 0);
+
+  card.innerHTML = `
+    <div class="pa-tabs">
+      <button class="pa-tab active" data-tab="cfo">💼 CFO <span style="opacity:.6">(${cfo.length})</span></button>
+      <button class="pa-tab" data-tab="ops">🔧 Operações <span style="opacity:.6">(${ops.length})</span></button>
+      <button class="pa-tab" data-tab="sh">🏠 Smart Home <span style="opacity:.6">(${sh.length})</span></button>
+    </div>
+    <div class="pa-tab-content active" data-tab-content="cfo">${renderInsights(cfo)}</div>
+    <div class="pa-tab-content" data-tab-content="ops">${renderInsights(ops)}</div>
+    <div class="pa-tab-content" data-tab-content="sh">${renderInsights(sh)}</div>
+    <div class="pa-ai-footer">
+      <div class="pa-ai-meta">🤖 ${meta.model || 'Claude'} · ${meta.tempoMs ? (meta.tempoMs/1000).toFixed(1)+'s' : '—'} · ${tokens} tokens</div>
+      <button class="pa-ai-regen" onclick="gerarAnaliseIA('${projId}', true)">🔄 Regenerar</button>
+    </div>
+  `;
+
+  // Liga os clicks das abas
+  card.querySelectorAll('.pa-tab').forEach(btn => {
+    btn.onclick = () => {
+      const tab = btn.dataset.tab;
+      card.querySelectorAll('.pa-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+      card.querySelectorAll('.pa-tab-content').forEach(c => c.classList.toggle('active', c.dataset.tabContent === tab));
+    };
+  });
+}
+
+function escapeHtml(s){
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// === PÁGINA CONFIGURAÇÕES (Sprint 2.5) ===
+async function renderConfig(){
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">⚙️ Configurações</div>
+        <div class="page-sub">Cost rate atual dos funcionários · fonte: QuickBooks Payroll</div>
+      </div>
+      <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;gap:14px;align-items:flex-start">
+      <div style="font-size:22px">💡</div>
+      <div style="font-size:13px;color:var(--text2);line-height:1.6">
+        <strong style="color:var(--text)">Os cost rates não são editáveis aqui.</strong> O QuickBooks já guarda o cost rate de cada funcionário em cada hora lançada (no Payroll, por TimeActivity). O Portal lê esse valor direto da API — então o que você vê abaixo é o <strong style="color:var(--text)">rate efetivo médio</strong> calculado a partir das horas que cada um lançou em 2025+. Pra mudar um rate, ajuste no <strong style="color:var(--text)">QBO Payroll</strong> e ele reflete aqui automaticamente.
+      </div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--border)">
+        <div>
+          <div style="font-size:14px;font-weight:600">Funcionários · cost rate efetivo (read-only)</div>
+          <div id="cfg-emp-status" style="font-size:12px;color:var(--text3);margin-top:2px">Carregando...</div>
+        </div>
+        <button onclick="navegar('projetos')" style="background:var(--bg3);border:1px solid var(--border);color:var(--text2);padding:7px 12px;border-radius:7px;cursor:pointer;font-family:inherit;font-size:11px">📁 Ver Projetos</button>
+      </div>
+      <div id="cfg-emp-table-wrap">
+        <div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">⏳ Calculando rates a partir do cache de Projetos...</div>
+      </div>
+    </div>
+  `;
+
+  // Garante que os funcionários estão carregados
+  await carregarEmployeeRates();
+  renderConfigEmpTableReadOnly();
+}
+
+function renderConfigEmpTableReadOnly(){
+  const wrap = document.getElementById('cfg-emp-table-wrap');
+  const statusEl = document.getElementById('cfg-emp-status');
+
+  // Se ainda não rodou Projetos, sugere fazer isso primeiro
+  if(!projetosCache || projetosCache.length === 0){
+    if(statusEl) statusEl.innerHTML = `<span style="color:var(--amber)">⚠️ Carregue Projetos primeiro pra ver os rates efetivos.</span>`;
+    wrap.innerHTML = `
+      <div style="padding:50px 30px;text-align:center">
+        <div style="font-size:36px;margin-bottom:12px">📁</div>
+        <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6;max-width:480px;margin-left:auto;margin-right:auto">
+          Os rates efetivos vêm das horas lançadas no QBO. Carregue a página <strong>Projetos</strong> primeiro pra calcular o rate atual de cada funcionário.
+        </div>
+        <button onclick="navegar('projetos')" style="background:var(--blue);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:13px;font-weight:600">Ir pra Projetos →</button>
+      </div>
+    `;
+    return;
+  }
+
+  // Agrega TimeActivities de TODOS os projetos no cache pra extrair rate efetivo por funcionário
+  const empStats = new Map(); // empId → { name, totalHoras, totalCost, rates: Set, ultimoUso }
+  projetosCache.forEach(proj => {
+    (proj.breakdown || []).forEach(b => {
+      const key = b.empId || '_'+b.name;
+      if(empStats.has(key)){
+        const s = empStats.get(key);
+        s.totalHoras += b.horas;
+        s.totalCost += b.total;
+        s.rates.add(b.rate);
+      }else{
+        empStats.set(key, {
+          empId: b.empId,
+          name: b.name,
+          totalHoras: b.horas,
+          totalCost: b.total,
+          rates: new Set([b.rate]),
+          fromQbo: b.fromQbo
+        });
+      }
+    });
+  });
+
+  // Combina com lista completa do QBO (inclui funcionários sem horas em 2025+)
+  const empsQbo = (employeesCache && employeesCache.employees) || [];
+  empsQbo.forEach(emp => {
+    if(!empStats.has(emp.qbo_employee_id)){
+      empStats.set(emp.qbo_employee_id, {
+        empId: emp.qbo_employee_id,
+        name: emp.display_name,
+        totalHoras: 0,
+        totalCost: 0,
+        rates: new Set(),
+        fromQbo: false
+      });
+    }
+  });
+
+  const linhas = Array.from(empStats.values()).sort((a,b) => b.totalHoras - a.totalHoras);
+  const ativos = linhas.filter(l => l.totalHoras > 0);
+
+  if(statusEl){
+    statusEl.innerHTML = `<strong style="color:var(--text2)">${ativos.length}</strong> funcionário(s) com horas em 2025+ · <strong style="color:var(--text2)">${linhas.length}</strong> totais · dados de ${projetosCache.length} projetos`;
+  }
+
+  if(!linhas.length){
+    wrap.innerHTML = `<div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Nenhum funcionário encontrado.</div>`;
+    return;
+  }
+
+  let rows = '';
+  linhas.forEach(l => {
+    const rateMedio = l.totalHoras > 0 ? (l.totalCost / l.totalHoras) : 0;
+    const ratesArr = Array.from(l.rates).sort((a,b)=>a-b);
+    const variou = ratesArr.length > 1;
+    const ratesStr = variou
+      ? `$${ratesArr[0].toFixed(2)} – $${ratesArr[ratesArr.length-1].toFixed(2)}`
+      : (ratesArr[0] !== undefined ? `$${ratesArr[0].toFixed(2)}` : '—');
+
+    const tag = l.totalHoras === 0
+      ? `<span style="background:var(--bg3);color:var(--text3);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Sem horas em 2025+</span>`
+      : (l.fromQbo
+          ? `<span style="background:rgba(34,197,94,.1);color:var(--green);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">QBO</span>`
+          : `<span style="background:rgba(245,158,11,.1);color:var(--amber);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px">Default $${costRatePerHour}</span>`);
+
+    rows += `
+      <tr style="border-top:1px solid var(--border)">
+        <td style="padding:14px 22px">
+          <div style="font-size:13px;font-weight:500">${l.name}</div>
+          ${l.empId?`<div style="font-size:10px;color:var(--text3);margin-top:2px">ID ${l.empId}</div>`:''}
+        </td>
+        <td style="padding:14px 12px">${tag}</td>
+        <td style="padding:14px 12px;text-align:right;font-family:'DM Mono',monospace;font-size:13px;color:var(--text)">${l.totalHoras === 0 ? '—' : (rateMedio === ratesArr[0] && !variou ? '$'+rateMedio.toFixed(2) : '$'+rateMedio.toFixed(2)+' méd.')}</td>
+        <td style="padding:14px 12px;text-align:right;font-size:12px;color:var(--text3)">${ratesStr}${variou?' <span title="Rate variou ao longo do tempo" style="color:var(--amber);cursor:help">⚡</span>':''}</td>
+        <td style="padding:14px 22px;text-align:right;font-size:13px;font-weight:600;color:${l.totalHoras > 0 ? 'var(--text)' : 'var(--text3)'}">${l.totalHoras > 0 ? fmtHoras(l.totalHoras) : '—'}</td>
+      </tr>
+    `;
+  });
+
+  wrap.innerHTML = `
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead>
+        <tr style="background:var(--bg3)">
+          <th style="padding:11px 22px;text-align:left;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Funcionário</th>
+          <th style="padding:11px 12px;text-align:left;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Fonte</th>
+          <th style="padding:11px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Rate efetivo</th>
+          <th style="padding:11px 12px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Histórico</th>
+          <th style="padding:11px 22px;text-align:right;color:var(--text3);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px">Horas 2025+</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// === Roteamento via hash (back/forward do browser) ===
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.replace('#','');
+  if(!hash) return;
+  if(hash === paginaAtual) return;
+  if(hash.startsWith('projeto/') || PAGINAS[hash]){
+    navegar(hash);
+  }
+});
+
+// === ASSINATURAS (Sprint 3) ===
+let _recorrentesCache = null;
+let _recFiltro = 'todas';
+let _recBusca = '';
+
+async function renderRecorrentes(){
+  const cont = document.getElementById('conteudo');
+  cont.innerHTML = `
+    <div class="page-hd">
+      <div>
+        <div class="page-title">💳 Pagamentos recorrentes</div>
+        <div class="page-sub">Análise de gastos que se repetem (mensais, anuais, etc.)</div>
+      </div>
+      <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
+    </div>
+    <div id="rec-conteudo">
+      <div class="rec-empty">⏳ Detectando pagamentos recorrentes dos últimos 18 meses...</div>
+    </div>
+  `;
+
+  try {
+    if(!_recorrentesCache){
+      const r = await fetch('/api/quickbooks/recorrentes');
+      if(!r.ok) throw new Error('HTTP ' + r.status);
+      _recorrentesCache = await r.json();
+    }
+    renderRecorrentesHTML();
+  } catch(e){
+    console.error('Erro assinaturas:', e);
+    document.getElementById('rec-conteudo').innerHTML = `
+      <div class="rec-empty" style="color:var(--red)">⚠️ Erro: ${escapeHtml(e.message)}</div>
+    `;
+  }
+}
+
+function renderRecorrentesHTML(){
+  const d = _recorrentesCache;
+  const cont = document.getElementById('rec-conteudo');
+  if(!d || !d.assinaturas){
+    cont.innerHTML = `<div class="rec-empty">Sem assinaturas detectadas.</div>`;
+    return;
+  }
+
+  const r = d.resumo;
+  const assinaturas = d.assinaturas;
+  const alertas = d.alertas || [];
+
+  // Crescimento %
+  const cres = d.crescimento || [];
+  const primeiroMes = cres[0]?.total || 0;
+  const ultimoMes = cres[cres.length-1]?.total || 0;
+  const crescPct = primeiroMes > 0 ? ((ultimoMes - primeiroMes) / primeiroMes * 100) : 0;
+
+  // ─── KPIs ───
+  const kpisHtml = `
+    <div class="rec-kpis">
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Total/mês</div>
+        <div class="rec-kpi-val">${fmtMoney(r.totalMes)}</div>
+        ${crescPct !== 0 ? `<div class="rec-kpi-hint ${crescPct > 0 ? 'up' : 'good'}">${crescPct > 0 ? '↑' : '↓'} ${Math.abs(crescPct).toFixed(0)}% vs 12 meses</div>` : ''}
+      </div>
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Total/ano</div>
+        <div class="rec-kpi-val">${fmtMoney(r.totalAno)}</div>
+        <div class="rec-kpi-hint">${r.qtdMensais} mensais + ${r.qtdAnuais} anuais</div>
+      </div>
+      <div class="rec-kpi">
+        <div class="rec-kpi-label">Ativas</div>
+        <div class="rec-kpi-val">${r.qtdAtivas}</div>
+        ${r.qtdAumentaram > 0 ? `<div class="rec-kpi-hint warn">${r.qtdAumentaram} aumentou de preço</div>` : `<div class="rec-kpi-hint">Tudo estável</div>`}
+      </div>
+      ${r.economiaPotencialAno > 0 ? `
+        <div class="rec-kpi highlight">
+          <div class="rec-kpi-label">💰 Economia potencial</div>
+          <div class="rec-kpi-val">${fmtMoney(r.economiaPotencialAno)}/ano</div>
+          <div class="rec-kpi-hint">${fmtMoney(r.economiaPotencialAno/12)}/mês ao consolidar</div>
+        </div>
+      ` : `
+        <div class="rec-kpi">
+          <div class="rec-kpi-label">Status</div>
+          <div class="rec-kpi-val" style="color:var(--green)">✓ Sem redundâncias</div>
+          <div class="rec-kpi-hint good">Stack enxuto</div>
+        </div>
+      `}
+    </div>
+  `;
+
+  // ─── CATEGORIZAÇÃO ───
+  const catTotal = Object.values(r.totalPorCategoria || {}).reduce((s, v) => s + v, 0);
+  const catCores = {
+    'Software & SaaS': '#3b82f6',
+    'Seguros': '#22c55e',
+    'Veículos & Combustível': '#f59e0b',
+    'Bancos & Taxas': '#94a3b8',
+    'Utilities & Telefonia': '#a78bfa',
+    'Aluguel & Imóveis': '#ec4899',
+    'Folha & Contractors': '#0ea5e9',
+    'Materiais & Equipamentos': '#84cc16',
+    'Marketing & Publicidade': '#f97316',
+    'Sócios & Distribuições': '#8b5cf6',
+    'Outros': '#6b7599'
+  };
+  const cats = Object.entries(r.totalPorCategoria || {}).sort((a,b) => b[1]-a[1]);
+  const catBarHtml = cats.length > 0 ? `
+    <div class="rec-section">
+      <div class="rec-section-title">
+        <span>📂 Por categoria · ${fmtMoney(catTotal)}/mês</span>
+      </div>
+      <div class="rec-cat-bar">
+        ${cats.map(([cat, val]) => `<div style="width:${(val/catTotal*100).toFixed(1)}%;background:${catCores[cat] || '#6b7599'}" title="${escapeHtml(cat)}"></div>`).join('')}
+      </div>
+      <div class="rec-cat-legend">
+        ${cats.map(([cat, val]) => `<span><i style="background:${catCores[cat] || '#6b7599'}"></i>${escapeHtml(cat)} <b>${fmtMoney(val)}</b> · ${(val/catTotal*100).toFixed(0)}%</span>`).join('')}
+      </div>
+    </div>
+  ` : '';
+
+  // ─── ALERTAS DE REDUNDÂNCIA ───
+  const alertasHtml = alertas.map(a => `
+    <div class="rec-alert red">
+      <div style="flex:1">
+        <div class="rec-alert-title">🚨 Possível redundância · ${escapeHtml(a.grupo)}</div>
+        <div class="rec-alert-body">Você tem <b>${a.qtd} ferramentas</b> nesta categoria: ${a.ferramentas.map(f => `<b>${escapeHtml(f)}</b>`).join(', ')}</div>
+        <div class="rec-alert-hint">Custo combinado: <b style="color:var(--red)">${fmtMoney(a.totalMes)}/mês</b> · Consolidar pode economizar <b style="color:var(--green)">${fmtMoney(a.economiaMes)}/mês</b></div>
+      </div>
+    </div>
+  `).join('');
+
+  // ─── GRÁFICO DE CRESCIMENTO ───
+  const maxCres = Math.max(...cres.map(c => c.total), 1);
+  const pontos = cres.map((c, i) => {
+    const x = (i / (cres.length-1)) * 600;
+    const y = 100 - (c.total / maxCres) * 80;
+    return `${x},${y}`;
+  }).join(' L');
+  const crescHtml = cres.length > 0 ? `
+    <div class="rec-section">
+      <div class="rec-section-title">
+        <span>📈 Crescimento de gastos · últimos 12 meses</span>
+        <span style="color:${crescPct > 0 ? 'var(--amber)' : 'var(--green)'};font-weight:600">${crescPct > 0 ? '+' : ''}${crescPct.toFixed(0)}% no período</span>
+      </div>
+      <div class="rec-chart-wrap">
+        <svg viewBox="0 0 600 100" style="width:100%;height:80px">
+          <defs><linearGradient id="rec-grad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#3b82f6" stop-opacity=".25"/>
+            <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+          </linearGradient></defs>
+          <path d="M${pontos} L600,100 L0,100 Z" fill="url(#rec-grad)"/>
+          <path d="M${pontos}" fill="none" stroke="#3b82f6" stroke-width="2"/>
+          ${cres.map((c, i) => {
+            const x = (i / (cres.length-1)) * 600;
+            const y = 100 - (c.total / maxCres) * 80;
+            return `<circle cx="${x}" cy="${y}" r="${i === cres.length-1 ? 3 : 1.5}" fill="#3b82f6"/>`;
+          }).join('')}
+        </svg>
+        <div class="rec-chart-axis">
+          <span>${fmtMes(cres[0]?.mes)} · ${fmtMoney(cres[0]?.total)}</span>
+          ${cres.length > 6 ? `<span>${fmtMes(cres[Math.floor(cres.length/2)]?.mes)} · ${fmtMoney(cres[Math.floor(cres.length/2)]?.total)}</span>` : ''}
+          <span>${fmtMes(cres[cres.length-1]?.mes)} · ${fmtMoney(cres[cres.length-1]?.total)}</span>
+        </div>
+      </div>
+    </div>
+  ` : '';
+
+  // ─── FILTROS + TABELA ───
+  const aumentaramQtd = assinaturas.filter(a => a.ativa && a.aumentoPct > 0).length;
+  const redundantesSet = new Set();
+  alertas.forEach(a => a.ferramentas.forEach(f => redundantesSet.add(f.toLowerCase())));
+  const contasQtd = assinaturas.filter(a => a.ativa && a.isConta).length;
+  const vendoresQtd = assinaturas.filter(a => a.ativa && !a.isConta).length;
+
+  const filtrosHtml = `
+    <div class="rec-filtros">
+      <button class="rec-fbtn ${_recFiltro==='todas'?'active':''}" onclick="filtrarRec('todas')">Todas (${assinaturas.filter(a=>a.ativa).length})</button>
+      <button class="rec-fbtn ${_recFiltro==='mensais'?'active':''}" onclick="filtrarRec('mensais')">Mensais (${r.qtdMensais})</button>
+      <button class="rec-fbtn ${_recFiltro==='anuais'?'active':''}" onclick="filtrarRec('anuais')">Anuais (${r.qtdAnuais})</button>
+      ${vendoresQtd > 0 ? `<button class="rec-fbtn ${_recFiltro==='vendores'?'active':''}" onclick="filtrarRec('vendores')">📛 Vendors (${vendoresQtd})</button>` : ''}
+      ${contasQtd > 0 ? `<button class="rec-fbtn ${_recFiltro==='contas'?'active':''}" onclick="filtrarRec('contas')">🏦 Conta/Cartão (${contasQtd})</button>` : ''}
+      ${aumentaramQtd > 0 ? `<button class="rec-fbtn warn ${_recFiltro==='aumentou'?'active':''}" onclick="filtrarRec('aumentou')">⚠ Aumentou (${aumentaramQtd})</button>` : ''}
+      ${redundantesSet.size > 0 ? `<button class="rec-fbtn green ${_recFiltro==='cortar'?'active':''}" onclick="filtrarRec('cortar')">💰 Cortar (${redundantesSet.size})</button>` : ''}
+      <input type="search" class="rec-search" placeholder="Buscar vendor..." value="${escapeHtml(_recBusca)}" oninput="buscaRec(this.value)"/>
+    </div>
+  `;
+
+  // Filtrar
+  let lista = assinaturas.filter(a => a.ativa);
+  if(_recFiltro === 'mensais') lista = lista.filter(a => a.frequencia === 'Mensal');
+  else if(_recFiltro === 'anuais') lista = lista.filter(a => a.frequencia === 'Anual');
+  else if(_recFiltro === 'aumentou') lista = lista.filter(a => a.aumentoPct > 0);
+  else if(_recFiltro === 'cortar') lista = lista.filter(a => redundantesSet.has(a.vendor.toLowerCase()));
+  else if(_recFiltro === 'contas') lista = lista.filter(a => a.isConta);
+  else if(_recFiltro === 'vendores') lista = lista.filter(a => !a.isConta);
+  if(_recBusca) lista = lista.filter(a => a.vendor.toLowerCase().includes(_recBusca.toLowerCase()));
+
+  const linhasHtml = lista.length === 0 ? `
+    <div class="rec-empty">Nenhuma assinatura encontrada com esses filtros.</div>
+  ` : lista.map(a => {
+    const ehRedundante = redundantesSet.has(a.vendor.toLowerCase());
+    const aumentou = a.aumentoPct > 0;
+    const rowCls = ehRedundante ? 'red' : (aumentou ? 'warn' : '');
+    const catKey = (a.categoria || 'Outros').toLowerCase().replace(/[^a-z]/g, '');
+    // Mapeia categoria pra classe CSS via cor (slugfy: minúsculas, sem acento/espaço)
+    const catCls = (a.categoria || 'outros').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+    let sub = `${a.frequencia} · ${a.ocorrencias}x · desde ${fmtMesAbrev(a.primeiraCobranca)}`;
+    if(aumentou && a.valorAnterior) {
+      sub = `${a.frequencia} · ${a.ocorrencias}x · era ${fmtMoney(a.valorAnterior)} → ${fmtMoney(a.valorAtual)}`;
+    }
+
+    let tag = '';
+    if(ehRedundante) tag = `<span class="rec-tag red">🚨 redundante</span>`;
+    else if(aumentou) tag = `<span class="rec-tag warn">⚠ +${a.aumentoPct.toFixed(0)}%</span>`;
+
+    // Indicador de conta/cartão (não é um vendor real)
+    const iconConta = a.isConta ? `<span title="Pagamento via conta/cartão (sem vendor identificado no QBO)" style="margin-right:6px;opacity:.7">🏦</span>` : '';
+
+    // Linha pequena com a conta QBO (Chart of Accounts)
+    const contaQboLine = a.contaQbo && a.contaQbo !== '—'
+      ? `<div style="font-size:11px;color:#6b7599;margin-top:2px">📊 ${escapeHtml(a.contaQbo)}</div>`
+      : '';
+
+    return `
+      <div class="rec-row ${rowCls}">
+        <div>
+          <div class="rec-vendor-name">${iconConta}${escapeHtml(a.vendor)}${tag}</div>
+          <div class="rec-vendor-sub">${escapeHtml(sub)}</div>
+          ${contaQboLine}
+        </div>
+        <div><span class="rec-badge ${catCls}">${escapeHtml(a.categoria)}</span></div>
+        <div class="rec-val">${fmtMoney(a.valorAtual)}</div>
+        <div class="rec-date">${fmtDataBR(a.proximaCobranca)}</div>
+        <div class="rec-val">${fmtMoney(a.totalAnual)}</div>
+        <div style="text-align:right">
+          ${a.qboLink ? `<a href="${a.qboLink}" target="_blank" class="rec-qbo-btn" title="Abrir no QBO">↗</a>` : '—'}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  const tblHtml = `
+    <div class="rec-tbl">
+      <div class="rec-tbl-head">
+        <div>Fornecedor</div><div>Categoria</div><div>Por cobrança</div><div>Próxima</div><div>Ano</div><div></div>
+      </div>
+      ${linhasHtml}
+    </div>
+  `;
+
+  cont.innerHTML = kpisHtml + catBarHtml + alertasHtml + crescHtml + filtrosHtml + tblHtml + `
+    <div class="info-box" style="margin-top:20px">
+      <strong>💡 Como funciona:</strong> Detecta cobranças recorrentes nas suas transações Purchase + Bill do QBO dos últimos 18 meses. Agrupa por fornecedor + valor (±5%) e identifica padrões mensais/trimestrais/anuais. <strong>3+ ocorrências = recorrente.</strong> Categorias vêm direto das contas contábeis do seu QBO (Chart of Accounts).
+    </div>
+  `;
+}
+
+function filtrarRec(filtro){
+  _recFiltro = filtro;
+  renderRecorrentesHTML();
+}
+function buscaRec(termo){
+  _recBusca = termo || '';
+  renderRecorrentesHTML();
+}
+
+function fmtMes(yyyymm){
+  if(!yyyymm) return '';
+  const [y,m] = yyyymm.split('-');
+  const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${nomes[parseInt(m)-1]}/${y.slice(2)}`;
+}
+function fmtMesAbrev(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const nomes = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  return `${nomes[d.getMonth()]}/${String(d.getFullYear()).slice(2)}`;
+}
+function fmtDataBR(iso){
+  if(!iso) return '—';
+  const d = new Date(iso);
+  return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+}
+
+carregar();
+</script>
+
+</body>
+</html>
