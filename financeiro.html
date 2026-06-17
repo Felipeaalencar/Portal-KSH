@@ -725,6 +725,7 @@ function renderVisaoGeral(){
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <button onclick="abrirSyncBank()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#60a5fa;font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;font-weight:500">🔄 Bank</button>
+        <button onclick="ksbAbrir()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);border-radius:8px;color:#60a5fa;font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;font-family:inherit">🔄 Bank</button>
         <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
         <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
       </div>
@@ -2549,6 +2550,147 @@ async function kshSalvarBank() {
     t.textContent='✓ Bank balance salvo!';
     document.body.appendChild(t);
     setTimeout(()=>t.remove(),3000);
+  }
+}
+</script>
+
+<!-- BANK SYNC - adicionado cirurgicamente -->
+<div id="ksb-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;align-items:center;justify-content:center;font-family:inherit">
+  <div style="background:#1a1d27;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:24px;width:420px;max-width:95vw">
+    <div style="font-size:15px;font-weight:600;color:#f0f2f8;margin-bottom:12px">🔄 Bank Balance</div>
+    <div id="ksb-msg" style="font-size:13px;color:#60a5fa;margin-bottom:16px;line-height:1.5">Aguarde...</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:8px">
+      <button onclick="document.getElementById('ksb-ov').style.display='none'" style="background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#b0b8d0;font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit">Fechar</button>
+    </div>
+    <div id="ksb-inputs" style="display:none">
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:#b0b8d0;flex:1">🏦 Checking KSH (6719)</label><input type="number" id="ksb-32" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#f0f2f8;font-size:13px;font-weight:600;padding:6px 10px;width:120px;text-align:right;font-family:inherit"></div>
+        <div style="display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:#b0b8d0;flex:1">💳 CHASE #0526</label><input type="number" id="ksb-148" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#f0f2f8;font-size:13px;font-weight:600;padding:6px 10px;width:120px;text-align:right;font-family:inherit"></div>
+        <div style="display:flex;align-items:center;gap:8px"><label style="font-size:12px;color:#b0b8d0;flex:1">💳 CapitalOne 0567</label><input type="number" id="ksb-54" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#f0f2f8;font-size:13px;font-weight:600;padding:6px 10px;width:120px;text-align:right;font-family:inherit"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:8px">
+        <button onclick="document.getElementById('ksb-ov').style.display='none'" style="background:none;border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#b0b8d0;font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="ksbSalvar()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#60a5fa;font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function ksbAbrir() {
+  const ov = document.getElementById('ksb-ov');
+  const msg = document.getElementById('ksb-msg');
+  const inp = document.getElementById('ksb-inputs');
+  ov.style.display = 'flex';
+  inp.style.display = 'none';
+  msg.innerHTML = '⏳ Abrindo QBO Banking...';
+
+  const win = window.open('https://qbo.intuit.com/app/banking', '_blank', 'width=1000,height=700,left=100,top=50');
+  if(!win) {
+    msg.innerHTML = '⚠️ Pop-up bloqueado. Permita pop-ups para este site e tente novamente.';
+    inp.style.display = 'block';
+    return;
+  }
+
+  let t = 0;
+  const timer = setInterval(() => {
+    t++;
+    if(t > 30) {
+      clearInterval(timer);
+      try{win.close();}catch(e){}
+      msg.textContent = '⚠️ Tempo esgotado. Insira os valores manualmente:';
+      inp.style.display = 'block';
+      return;
+    }
+    try {
+      const body = win.document && win.document.body;
+      if(!body) return;
+      const txt = body.innerText || '';
+      if(!txt || txt.length < 100) return;
+
+      // Não logado
+      if(txt.includes('Sign in') || txt.includes('Log in') || txt.includes('Intuit account')) {
+        clearInterval(timer);
+        try{win.close();}catch(e){}
+        msg.innerHTML = '🔒 Você não está logado no QBO.<br><br><a href="https://qbo.intuit.com" target="_blank" style="color:#22c55e;font-weight:600">👉 Fazer login no QBO</a><br><br>Depois clique em 🔄 Bank novamente.';
+        return;
+      }
+
+      // Página de banking carregou?
+      if(!txt.includes('Bank:') && !txt.includes('Posted:')) return;
+
+      clearInterval(timer);
+      try{win.close();}catch(e){}
+
+      // Lê os valores
+      const CONTAS = [
+        {id:'32',  keys:['Checking KSH','6719']},
+        {id:'148', keys:['CHASE Credit Card','0526']},
+        {id:'54',  keys:['CapitalOne','Capital One','0567']}
+      ];
+      const lines = txt.split('\n').map(l=>l.trim()).filter(Boolean);
+      let found = 0;
+      CONTAS.forEach(ct => {
+        for(let i=0;i<lines.length;i++) {
+          if(ct.keys.some(k=>lines[i].includes(k))) {
+            for(let j=i;j<Math.min(i+8,lines.length);j++) {
+              if(lines[j].match(/^Bank[:\s]/i)) {
+                const m = lines[j].match(/([\d,]+\.?\d*)/);
+                if(m) {
+                  const el = document.getElementById('ksb-'+ct.id);
+                  if(el) { el.value = parseFloat(m[1].replace(/,/g,'')); el.style.borderColor='#22c55e'; found++; }
+                  break;
+                }
+              }
+            }
+            break;
+          }
+        }
+      });
+
+      if(found > 0) {
+        msg.textContent = '✅ ' + found + ' valor(es) lido(s)! Confira e clique Salvar.';
+      } else {
+        msg.textContent = '⚠️ Página carregou mas não encontrei os valores. Insira manualmente:';
+      }
+      inp.style.display = 'block';
+
+    } catch(crossOrigin) {
+      // ainda carregando, aguarda
+    }
+  }, 1000);
+}
+
+async function ksbSalvar() {
+  const SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
+  const SH = {'Content-Type':'application/json','apikey':SK,'Authorization':'Bearer '+SK};
+  const SB = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
+  const NOMES = {'32':'Checking KSH (6719)','148':'CHASE Credit Card #0526','54':'CapitalOne 0567'};
+  const agora = new Date().toISOString();
+  let n = 0;
+  for(const id of ['32','148','54']) {
+    const el = document.getElementById('ksb-'+id);
+    if(!el || el.value === '') continue;
+    const val = parseFloat(el.value);
+    if(isNaN(val)) continue;
+    try {
+      const chk = await fetch(SB+'/rest/v1/bank_saldos?conta_id=eq.'+id, {headers:SH});
+      const ex = await chk.json();
+      if(ex && ex.length > 0) {
+        await fetch(SB+'/rest/v1/bank_saldos?conta_id=eq.'+id, {method:'PATCH',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({bank_balance:val,atualizado_em:agora})});
+      } else {
+        await fetch(SB+'/rest/v1/bank_saldos', {method:'POST',headers:{...SH,'Prefer':'return=minimal'},body:JSON.stringify({conta_id:id,conta_nome:NOMES[id],bank_balance:val,posted_balance:0,atualizado_em:agora})});
+      }
+      n++;
+    } catch(e){}
+  }
+  document.getElementById('ksb-ov').style.display = 'none';
+  if(n > 0) {
+    const t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d27;border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:10px 18px;font-size:13px;color:#22c55e;z-index:9999';
+    t.textContent = '✓ Bank balance salvo!';
+    document.body.appendChild(t);
+    setTimeout(()=>t.remove(), 3000);
   }
 }
 </script>
