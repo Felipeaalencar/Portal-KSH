@@ -1026,16 +1026,44 @@ async function carregarKPIs(){
 
     document.getElementById('kpi-receita').textContent = fmtMoney(receita);
     document.getElementById('kpi-receita').classList.remove('kpi-loading');
-    document.getElementById('kpi-receita-sub').textContent = periodo.label;
 
     document.getElementById('kpi-despesas').textContent = fmtMoney(despesas + cogs);
     document.getElementById('kpi-despesas').classList.remove('kpi-loading');
-    document.getElementById('kpi-despesas-sub').textContent = 'Inclui COGS';
 
     document.getElementById('kpi-lucro').textContent = fmtMoney(lucro);
     document.getElementById('kpi-lucro').classList.remove('kpi-loading');
     const margem = receita > 0 ? ((lucro/receita)*100).toFixed(1) : 0;
-    document.getElementById('kpi-lucro-sub').textContent = `Margem: ${margem}%`;
+
+    // Delta mês anterior
+    try {
+      const hoje = new Date();
+      const mesAnt = hoje.getMonth() === 0 ? 11 : hoje.getMonth() - 1;
+      const anoAnt = hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
+      const mAntStart = new Date(anoAnt, mesAnt, 1).toISOString().slice(0,10);
+      const mAntEnd   = new Date(anoAnt, mesAnt + 1, 0).toISOString().slice(0,10);
+      const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      const rAnt = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&start_date=' + mAntStart + '&end_date=' + mAntEnd + '&minorversion=70');
+      const dAnt = await rAnt.json();
+      const recAnt  = extrairValor(dAnt, 'Total Income') || extrairValor(dAnt, 'Total Revenue') || 0;
+      const despAnt = Math.abs((extrairValor(dAnt, 'Total Expenses') || 0) + (extrairValor(dAnt, 'Cost of Goods Sold') || 0));
+      const lucAnt  = extrairValor(dAnt, 'Net Income') || 0;
+      const ml = MESES[mesAnt];
+      function setDelta(elId, atual, ant) {
+        const el = document.getElementById(elId);
+        if(!el || !ant) return;
+        const pct = ((atual - ant) / Math.abs(ant)) * 100;
+        el.className = 'kpi-delta ' + (pct >= 0 ? 'up' : 'down');
+        el.textContent = (pct >= 0 ? '↑ ' : '↓ ') + Math.abs(pct).toFixed(0) + '% vs ' + ml;
+      }
+      setDelta('kpi-receita-delta', receita, recAnt);
+      setDelta('kpi-despesas-delta', despesas + cogs, despAnt);
+      setDelta('kpi-lucro-delta', lucro, lucAnt);
+      // Meta receita
+      const META = 50000;
+      const pctMeta = Math.min(100, Math.round((receita / META) * 100));
+      const metaEl = document.getElementById('kpi-receita-meta');
+      if(metaEl) metaEl.innerHTML = '<div class="kpi-meta"><div class="kpi-meta-label"><span>Meta: '+fmtMoney(META)+'</span><span>'+pctMeta+'%</span></div><div class="kpi-meta-bar"><div class="kpi-meta-fill" style="width:'+pctMeta+'%"></div></div></div>';
+    } catch(e2) { console.warn('delta:', e2); }
   }catch(e){
     console.error('Erro KPIs:',e);
   }
