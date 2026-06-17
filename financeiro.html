@@ -984,17 +984,7 @@ async function carregarSaldos(){
     }
     const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
 
-    // DEBUG TEMPORÁRIO — mostra campos disponíveis da primeira conta
-    if(accountsRaw.length > 0) {
-      const acc0 = accountsRaw[0];
-      const campos = Object.keys(acc0).join(', ');
-      const bankVal = JSON.stringify(acc0.BankBalance);
-      grid.innerHTML = '<div style="grid-column:1/-1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;color:var(--text2);margin-bottom:10px">'
-        + '<strong style="color:var(--text)">DEBUG · Conta: ' + acc0.Name + '</strong><br>'
-        + '<span style="color:var(--amber)">BankBalance: ' + bankVal + '</span><br>'
-        + '<span>Campos disponíveis: ' + campos + '</span>'
-        + '</div>';
-    }
+
 
     // Filtra contas pessoais e históricas
     const CORTE_DIAS = 180;
@@ -1052,12 +1042,12 @@ async function carregarSaldos(){
           </div>
           <div class="saldo-nome">${acc.Name}</div>
           <div class="saldo-dual">
-            <div class="saldo-dual-item bank-val">
+            ${bankExibido != null ? `<div class="saldo-dual-item bank-val">
               <div class="saldo-dual-label">Bank</div>
-              <div class="saldo-dual-valor">${bankExibido != null ? fmtMoney(bankExibido) : '<span style="color:var(--text3);font-size:12px">Sem feed</span>'}</div>
-            </div>
+              <div class="saldo-dual-valor">${fmtMoney(bankExibido)}</div>
+            </div>` : ''}
             <div class="saldo-dual-item posted-val">
-              <div class="saldo-dual-label">Posted</div>
+              <div class="saldo-dual-label">${bankExibido != null ? 'Posted' : 'Saldo QBO'}</div>
               <div class="saldo-dual-valor">${fmtMoney(postedExibido)}</div>
             </div>
           </div>
