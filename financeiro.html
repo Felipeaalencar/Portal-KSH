@@ -970,6 +970,10 @@ function recarregarTudo(){
 async function carregarSaldos(){
   const grid = document.getElementById('saldos-grid');
   if(!grid) return;
+
+  // Contas pessoais a esconder (por nome parcial)
+  const CONTAS_OCULTAS = ['7013'];
+
   try{
     const qboQuery = "select * from Account where AccountType in ('Bank','Credit Card') and Active = true";
     const r = await fetch('/api/quickbooks/proxy?endpoint=query&query=' + encodeURIComponent(qboQuery) + '&minorversion=70');
@@ -980,18 +984,20 @@ async function carregarSaldos(){
     }
     const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
 
-    // Filtra contas com movimentação nos últimos 180 dias (descarta históricas/inativas)
+    // Filtra contas pessoais e históricas
     const CORTE_DIAS = 180;
     const dataCorte = new Date();
     dataCorte.setDate(dataCorte.getDate() - CORTE_DIAS);
     const accounts = accountsRaw.filter(acc => {
+      // Esconde contas pessoais
+      if(CONTAS_OCULTAS.some(k => (acc.Name||'').includes(k))) return false;
       if(!acc.MetaData || !acc.MetaData.LastUpdatedTime) return false;
       const ult = new Date(acc.MetaData.LastUpdatedTime);
       return ult >= dataCorte;
     });
 
     if(!accounts.length){
-      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhuma conta com movimentação nos últimos '+CORTE_DIAS+' dias. ('+accountsRaw.length+' contas no plano total, todas paradas)</div></div>';
+      grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhuma conta encontrada.</div></div>';
       return;
     }
 
@@ -1001,26 +1007,45 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
+    // Busca BankBalance individualmente para cada conta (endpoint /account/{id})
+    // BankBalance = saldo real do banco (feed bancário)
+    // CurrentBalance = saldo postado/categorizado no QBO
+    const bankBalances = {};
+    await Promise.all(accounts.map(async acc => {
+      try {
+        const rb = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('account/' + acc.Id) + '&minorversion=70');
+        const db = await rb.json();
+        const acct = db.Account || db;
+        if(acct.BankBalance != null) {
+          bankBalances[acc.Id] = parseFloat(acct.BankBalance);
+        }
+      } catch(e) { /* sem feed bancário */ }
+    }));
+
     let html = '';
     accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
       const tipo = isBank ? 'bank' : 'credit';
       const tipoLabel = isBank ? 'Conta Corrente' : 'Cartão de Crédito';
       const icon = isBank ? '🏦' : '💳';
-      const saldo = parseFloat(acc.CurrentBalance) || 0;
-      const saldoExibido = isBank ? saldo : -saldo;
-      const isNegativo = saldoExibido < 0;
+
+      // Posted = CurrentBalance (o que está categorizado no QBO)
+      const posted = parseFloat(acc.CurrentBalance) || 0;
+      const postedExibido = isBank ? posted : -posted;
+
+      // Bank = BankBalance (saldo real do banco via feed)
+      const bankRaw = bankBalances[acc.Id] != null ? bankBalances[acc.Id] : null;
+      const bankExibido = bankRaw != null ? (isBank ? bankRaw : -bankRaw) : null;
+
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
         ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
         : '-';
 
-      const bankBalance = acc.BankBalance != null ? parseFloat(acc.BankBalance) : null;
-      const bankExibido = bankBalance != null ? (isBank ? bankBalance : -bankBalance) : null;
-      const diff = bankExibido != null ? bankExibido - saldoExibido : null;
-      const diffLabel = diff != null
-        ? (Math.abs(diff) < 0.01 ? '✓ Sem diferença' : `Diferença: ${fmtMoney(Math.abs(diff))}`)
-        : null;
+      const diff = bankExibido != null ? bankExibido - postedExibido : null;
       const diffWarn = diff != null && Math.abs(diff) > 1;
+      const diffLabel = diff != null
+        ? (Math.abs(diff) < 0.01 ? '✓ Em dia' : (diffWarn ? '⚠️ Diferença: ' : 'Diferença: ') + fmtMoney(Math.abs(diff)))
+        : null;
 
       html += `
         <div class="saldo-card ${tipo}">
@@ -1030,17 +1055,16 @@ async function carregarSaldos(){
           </div>
           <div class="saldo-nome">${acc.Name}</div>
           <div class="saldo-dual">
-            ${bankExibido != null ? `
             <div class="saldo-dual-item bank-val">
               <div class="saldo-dual-label">Bank</div>
-              <div class="saldo-dual-valor">${fmtMoney(bankExibido)}</div>
-            </div>` : ''}
+              <div class="saldo-dual-valor">${bankExibido != null ? fmtMoney(bankExibido) : '<span style="color:var(--text3);font-size:12px">Sem feed</span>'}</div>
+            </div>
             <div class="saldo-dual-item posted-val">
               <div class="saldo-dual-label">Posted</div>
-              <div class="saldo-dual-valor">${fmtMoney(saldoExibido)}</div>
+              <div class="saldo-dual-valor">${fmtMoney(postedExibido)}</div>
             </div>
           </div>
-          ${diffLabel ? `<div class="saldo-diff ${diffWarn?'warn':''}">${diffWarn?'⚠️ ':''}${diffLabel}</div>` : ''}
+          ${diffLabel ? `<div class="saldo-diff ${diffWarn?'warn':''}">${diffLabel}</div>` : ''}
           <div class="saldo-sub" style="margin-top:6px">Atualizado: ${ultUpdate}</div>
         </div>
       `;
