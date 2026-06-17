@@ -1,5 +1,5 @@
 // /api/quickbooks/bank-saldos.js
-// Retorna Bank (BalanceSheet) + Posted (CurrentBalance) por conta
+// Bank = Posted + transações "For Review" (não categorizadas ainda)
 
 const SUPABASE_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const QBO_BASE = (process.env.QBO_ENVIRONMENT === 'production')
@@ -14,8 +14,7 @@ async function getValidToken() {
   const arr = await r.json();
   if (!arr.length) throw new Error('NOT_CONNECTED');
   const tok = arr[0];
-  const expMs = new Date(tok.expires_at).getTime();
-  if (Date.now() > expMs - 5*60*1000) {
+  if (Date.now() > new Date(tok.expires_at).getTime() - 5*60*1000) {
     const basicAuth = Buffer.from(process.env.QBO_CLIENT_ID + ':' + process.env.QBO_CLIENT_SECRET).toString('base64');
     const ref = await fetch('https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer', {
       method: 'POST',
@@ -34,70 +33,67 @@ async function getValidToken() {
   return { accessToken: tok.access_token, realmId: tok.realm_id };
 }
 
-function extractBalanceSheet(report) {
-  // Percorre o BalanceSheet e extrai valor por nome de conta
-  const result = {};
-  function walk(rows) {
-    if (!rows) return;
-    for (const row of rows) {
-      if (row.type === 'Data' && row.Rows) walk(row.Rows.Row);
-      if (row.ColData && row.ColData.length >= 2) {
-        const name = (row.ColData[0].value || '').trim();
-        const val  = parseFloat(row.ColData[1] && row.ColData[1].value) || 0;
-        if (name) result[name] = val;
-      }
-      if (row.Rows && row.Rows.Row) walk(row.Rows.Row);
-    }
-  }
-  if (report && report.Rows && report.Rows.Row) walk(report.Rows.Row);
-  return result;
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   try {
     const { accessToken, realmId } = await getValidToken();
     const H = { 'Authorization': 'Bearer ' + accessToken, 'Accept': 'application/json' };
     const base = QBO_BASE + '/v3/company/' + realmId;
+    const OCULTAS = ['7013'];
 
-    // 1. Contas (Posted = CurrentBalance)
+    // 1. Contas (Posted)
     const qr = await fetch(base + "/query?query=" + encodeURIComponent("select * from Account where AccountType in ('Bank','Credit Card') and Active = true") + "&minorversion=70", { headers: H });
     const qd = await qr.json();
-    const accounts = (qd.QueryResponse && qd.QueryResponse.Account) || [];
-
-    // 2. BalanceSheet hoje (Bank = saldo real)
-    const today = new Date().toISOString().slice(0,10);
-    const br = await fetch(base + `/reports/BalanceSheet?date_macro=Today&minorversion=70`, { headers: H });
-    const bd = await br.json();
-    const bsMap = extractBalanceSheet(bd.Report || bd);
-
-    // Monta resposta combinando os dois
-    const OCULTAS = ['7013'];
-    const result = accounts
+    const accounts = ((qd.QueryResponse && qd.QueryResponse.Account) || [])
       .filter(a => !OCULTAS.some(k => (a.Name||'').includes(k)))
-      .filter(a => {
-        if (!a.MetaData || !a.MetaData.LastUpdatedTime) return false;
-        const d = new Date(a.MetaData.LastUpdatedTime);
-        return (Date.now() - d) < 180*24*60*60*1000;
-      })
-      .map(a => {
-        const posted = parseFloat(a.CurrentBalance) || 0;
-        const isBank = a.AccountType === 'Bank';
-        // Tenta encontrar no BalanceSheet pelo nome exato
-        const bsVal = bsMap[a.Name] || bsMap[a.FullyQualifiedName] || null;
-        return {
-          Id: a.Id,
-          Name: a.Name,
-          AccountType: a.AccountType,
-          AccountSubType: a.AccountSubType,
-          posted: isBank ? posted : -posted,
-          bank: bsVal !== null ? (isBank ? bsVal : -bsVal) : null,
-          updatedAt: a.MetaData.LastUpdatedTime
-        };
-      });
+      .filter(a => a.MetaData && a.MetaData.LastUpdatedTime && (Date.now() - new Date(a.MetaData.LastUpdatedTime)) < 180*24*60*60*1000);
 
-    res.json({ accounts: result, bsMap_debug: bsMap });
+    // 2. Para cada conta, busca BankTransaction (transações importadas ainda não revisadas)
+    // Essas transações existem como BankTransaction no QBO
+    const bankTxMap = {};
+    await Promise.all(accounts.map(async acc => {
+      try {
+        // Busca transações bancárias não revisadas desta conta
+        const q = `select * from BankTransaction where AccountRef = '${acc.Id}'`;
+        const tr = await fetch(base + "/query?query=" + encodeURIComponent(q) + "&minorversion=70", { headers: H });
+        const td = await tr.json();
+        const txns = (td.QueryResponse && (td.QueryResponse.BankTransaction || td.QueryResponse.Purchase || [])) || [];
+        // Soma os valores pendentes
+        const pending = txns.reduce((sum, t) => sum + (parseFloat(t.Amount) || 0), 0);
+        bankTxMap[acc.Id] = { count: txns.length, pending, raw: td.QueryResponse };
+      } catch(e) {
+        bankTxMap[acc.Id] = { error: e.message };
+      }
+    }));
+
+    // 3. Tenta também o endpoint de BankFeedTransaction
+    const bankFeedMap = {};
+    await Promise.all(accounts.map(async acc => {
+      try {
+        const fr = await fetch(base + `/bankfeedtransaction?accountId=${acc.Id}&minorversion=70`, { headers: H });
+        const fd = await fr.json();
+        bankFeedMap[acc.Id] = fd;
+      } catch(e) {
+        bankFeedMap[acc.Id] = { error: e.message };
+      }
+    }));
+
+    const result = accounts.map(a => {
+      const isBank = a.AccountType === 'Bank';
+      const posted = parseFloat(a.CurrentBalance) || 0;
+      return {
+        Id: a.Id,
+        Name: a.Name,
+        AccountType: a.AccountType,
+        posted: isBank ? posted : -posted,
+        bankTx: bankTxMap[a.Id],
+        bankFeed: bankFeedMap[a.Id],
+        updatedAt: a.MetaData.LastUpdatedTime
+      };
+    });
+
+    res.json({ accounts: result });
   } catch(e) {
-    res.status(500).json({ error: e.message, stack: e.stack });
+    res.status(500).json({ error: e.message });
   }
 };
