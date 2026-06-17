@@ -109,6 +109,25 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .kpi-meta-bar{height:4px;background:var(--bg3);border-radius:99px;overflow:hidden}
 .kpi-meta-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#2ca01c,#22c55e);transition:width .5s}
 
+/* === BOTÃO SYNC BANK === */
+.btn-sync-bank{background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:12px;padding:7px 14px;cursor:pointer;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-sync-bank:hover{background:rgba(59,130,246,.2)}
+.btn-sync-bank.syncing{opacity:.7;pointer-events:none}
+.sync-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;align-items:center;justify-content:center}
+.sync-modal-bg.on{display:flex}
+.sync-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:28px;width:500px;max-width:95vw}
+.sync-modal h3{font-size:16px;font-weight:600;margin-bottom:8px}
+.sync-modal p{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:16px}
+.sync-inputs{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.sync-input-row{display:flex;align-items:center;gap:10px}
+.sync-input-row label{font-size:12px;color:var(--text2);width:200px;flex-shrink:0}
+.sync-input-row input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;padding:8px 12px;font-family:inherit;width:140px}
+.sync-input-row input:focus{outline:none;border-color:var(--blue)}
+.sync-footer{display:flex;justify-content:flex-end;gap:8px}
+.btn-sync-save{background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:8px 18px;cursor:pointer;font-family:inherit;font-weight:500}
+.btn-sync-cancel{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:8px 14px;cursor:pointer;font-family:inherit}
+.sync-last{font-size:11px;color:var(--text3);margin-top:8px;text-align:center}
+
 /* === BOTÃO PDF === */
 .btn-export-pl{background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:7px 14px;cursor:pointer;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px;transition:all .15s}
 .btn-export-pl:hover{background:rgba(34,197,94,.2)}
@@ -424,6 +443,100 @@ function conectarQBO(){ window.location.href = '/api/quickbooks/connect'; }
 
 function desconectarQBO(){
   alert('Por enquanto, pra desconectar tem que deletar a linha em qbo_tokens no Supabase. Faremos botão dedicado em breve.');
+}
+
+// ── SYNC BANK BALANCE ────────────────────────────────────────────
+const SB_URL_FIN = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
+const SB_KEY_FIN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
+const SBH_FIN = {'Content-Type':'application/json','apikey':SB_KEY_FIN,'Authorization':'Bearer '+SB_KEY_FIN};
+
+async function carregarBankSaldos() {
+  try {
+    const r = await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?select=*', { headers: SBH_FIN });
+    const data = await r.json();
+    return data || [];
+  } catch(e) { return []; }
+}
+
+function abrirSyncModal() {
+  // Pré-preenche com valores atuais se existirem
+  carregarBankSaldos().then(saldos => {
+    saldos.forEach(s => {
+      const el = document.getElementById('bank-' + s.conta_id);
+      if(el) el.value = s.bank_balance;
+    });
+    // Mostra última atualização
+    if(saldos.length > 0) {
+      const ultimo = saldos.sort((a,b) => new Date(b.atualizado_em) - new Date(a.atualizado_em))[0];
+      const lastEl = document.getElementById('sync-last');
+      if(lastEl) lastEl.textContent = 'Última sync: ' + new Date(ultimo.atualizado_em).toLocaleString('pt-BR');
+    }
+  });
+  document.getElementById('sync-modal-bg').classList.add('on');
+}
+
+function fecharSyncModal() {
+  document.getElementById('sync-modal-bg').classList.remove('on');
+}
+
+async function salvarBankSaldos() {
+  const contas = [
+    { conta_id: '32',  conta_nome: 'Checking KSH (6719)' },
+    { conta_id: '148', conta_nome: 'CHASE Credit Card #0526' },
+    { conta_id: '54',  conta_nome: 'CapitalOne 0567' }
+  ];
+
+  const agora = new Date().toISOString();
+  const user = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.name || currentUser.company_name || 'KSH') : 'KSH';
+
+  let salvou = 0;
+  for(const conta of contas) {
+    const el = document.getElementById('bank-' + conta.conta_id);
+    if(!el || el.value === '') continue;
+    const val = parseFloat(el.value);
+    if(isNaN(val)) continue;
+
+    // Upsert no Supabase
+    try {
+      const r = await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta.conta_id, { headers: SBH_FIN });
+      const existente = await r.json();
+
+      if(existente && existente.length > 0) {
+        await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta.conta_id, {
+          method: 'PATCH',
+          headers: { ...SBH_FIN, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ bank_balance: val, atualizado_em: agora, atualizado_por: user })
+        });
+      } else {
+        await fetch(SB_URL_FIN + '/rest/v1/bank_saldos', {
+          method: 'POST',
+          headers: { ...SBH_FIN, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ conta_id: conta.conta_id, conta_nome: conta.conta_nome, bank_balance: val, posted_balance: 0, atualizado_em: agora, atualizado_por: user })
+        });
+      }
+      salvou++;
+    } catch(e) { console.error('Erro ao salvar', conta.conta_nome, e); }
+  }
+
+  fecharSyncModal();
+  if(salvou > 0) {
+    // Recarrega os cards de saldo
+    carregarSaldos();
+    showToastFin('Bank balance atualizado! ✓');
+  }
+}
+
+function showToastFin(msg) {
+  let t = document.getElementById('toast-fin');
+  if(!t) {
+    t = document.createElement('div');
+    t.id = 'toast-fin';
+    t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:10px 18px;font-size:13px;color:var(--green);z-index:999;transition:opacity .25s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  setTimeout(() => t.style.opacity = '0', 3000);
 }
 
 function exportarPL(){
@@ -818,6 +931,7 @@ function renderVisaoGeral(){
         <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-sync-bank" id="btn-sync-bank" onclick="abrirSyncModal()">🔄 Sincronizar Bank</button>
         <button class="btn-export-pl" onclick="exportarPL()">📄 Exportar P&L</button>
         <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
         <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
@@ -1022,6 +1136,16 @@ async function carregarSaldos(){
       }));
     } catch(e) {}
 
+    // Carrega bank balances salvos no Supabase
+    let bankSaldosDB = {};
+    try {
+      const sbr = await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/bank_saldos?select=*', {
+        headers: {'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY'}
+      });
+      const sbData = await sbr.json();
+      (sbData||[]).forEach(s => { bankSaldosDB[s.conta_id] = s; });
+    } catch(e) {}
+
     let html = '';
     accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
@@ -1033,11 +1157,9 @@ async function carregarSaldos(){
       const posted = parseFloat(acc.CurrentBalance) || 0;
       const postedExibido = isBank ? posted : -posted;
 
-      // Bank = BankBalance
-      // A API QBO retorna BankBalance apenas em consultas individuais com minorversion=65
-      // Já buscamos via bankBalanceMap antes de entrar neste loop
-      const bankRaw = (bankBalanceMap[acc.Id] != null) ? bankBalanceMap[acc.Id] : null;
-      const bankExibido = bankRaw != null ? (isBank ? bankRaw : -bankRaw) : null;
+      // Bank = valor salvo manualmente no Supabase via botão Sincronizar
+      const bankDB = bankSaldosDB[acc.Id];
+      const bankExibido = bankDB ? parseFloat(bankDB.bank_balance) : null;
 
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
         ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
@@ -2565,6 +2687,38 @@ function fmtDataBR(iso){
 
 carregar();
 </script>
+
+
+<!-- MODAL SYNC BANK -->
+<div class="sync-modal-bg" id="sync-modal-bg">
+  <div class="sync-modal">
+    <h3>🔄 Sincronizar Bank Balance</h3>
+    <p>Abra o QBO Banking em outra aba, veja os valores reais do banco e insira abaixo. Os saldos serão salvos automaticamente e aparecerão no portal.</p>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+      <a href="https://qbo.intuit.com/app/banking" target="_blank" style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:7px 14px;text-decoration:none;font-weight:500">🏦 Abrir QBO Banking →</a>
+      <span style="font-size:11px;color:var(--text3)">Veja os valores Bank lá e insira aqui</span>
+    </div>
+    <div class="sync-inputs" id="sync-inputs">
+      <div class="sync-input-row">
+        <label>🏦 Checking KSH (6719)</label>
+        <input type="number" id="bank-32" step="0.01" placeholder="0.00">
+      </div>
+      <div class="sync-input-row">
+        <label>💳 CHASE Credit Card #0526</label>
+        <input type="number" id="bank-148" step="0.01" placeholder="0.00">
+      </div>
+      <div class="sync-input-row">
+        <label>💳 CapitalOne 0567</label>
+        <input type="number" id="bank-54" step="0.01" placeholder="0.00">
+      </div>
+    </div>
+    <div class="sync-footer">
+      <button class="btn-sync-cancel" onclick="fecharSyncModal()">Cancelar</button>
+      <button class="btn-sync-save" onclick="salvarBankSaldos()">💾 Salvar saldos</button>
+    </div>
+    <div class="sync-last" id="sync-last"></div>
+  </div>
+</div>
 
 </body>
 </html>
