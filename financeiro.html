@@ -984,12 +984,6 @@ async function carregarSaldos(){
     }
     const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
 
-    // DEBUG — JSON bruto da primeira conta para ver todos os campos
-    if(accountsRaw.length > 0) {
-      const raw = JSON.stringify(accountsRaw[0], null, 2);
-      grid.innerHTML = '<div style="grid-column:1/-1;background:#0d1117;border:1px solid #22c55e;border-radius:8px;padding:12px;font-size:10px;color:#22c55e;white-space:pre;overflow:auto;max-height:320px;margin-bottom:12px">'+raw+'</div>';
-    }
-
     // Filtra contas pessoais e históricas
     const CORTE_DIAS = 180;
     const dataCorte = new Date();
@@ -1013,6 +1007,21 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
+    // Busca BankBalance via minorversion=65 (retorna campo que não vem na query geral)
+    const bankBalanceMap = {};
+    try {
+      await Promise.all(accounts.map(async acc => {
+        try {
+          const rb = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('account/' + acc.Id) + '&minorversion=65');
+          const db = await rb.json();
+          const a = db.Account || db;
+          // Tenta vários nomes de campo que o QBO pode retornar
+          const bv = a.BankBalance ?? a.bank_balance ?? a.CurrentBalanceWithSubAccounts ?? null;
+          if(bv != null) bankBalanceMap[acc.Id] = parseFloat(bv);
+        } catch(e) {}
+      }));
+    } catch(e) {}
+
     let html = '';
     accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
@@ -1024,8 +1033,10 @@ async function carregarSaldos(){
       const posted = parseFloat(acc.CurrentBalance) || 0;
       const postedExibido = isBank ? posted : -posted;
 
-      // Bank = BankBalance (saldo real do banco — vem da query select * from Account)
-      const bankRaw = (acc.BankBalance != null && acc.BankBalance !== '') ? parseFloat(acc.BankBalance) : null;
+      // Bank = BankBalance
+      // A API QBO retorna BankBalance apenas em consultas individuais com minorversion=65
+      // Já buscamos via bankBalanceMap antes de entrar neste loop
+      const bankRaw = (bankBalanceMap[acc.Id] != null) ? bankBalanceMap[acc.Id] : null;
       const bankExibido = bankRaw != null ? (isBank ? bankRaw : -bankRaw) : null;
 
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
