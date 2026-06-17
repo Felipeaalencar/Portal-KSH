@@ -2449,29 +2449,9 @@ function fmtDataBR(iso){
 }
 
 carregar();
-</script>
 
 
-<!-- SYNC BANK MODAL -->
-<div class="sync-overlay" id="sync-overlay">
-  <div class="sync-box">
-    <h3>🔄 Atualizar Bank Balance</h3>
-    <div id="sync-status-msg" style="font-size:12px;color:var(--blue);margin-bottom:10px;min-height:18px"></div>
-    <p style="margin-bottom:10px;font-size:12px;color:var(--text3)">Se a leitura automática não funcionar, insira manualmente:</p>
-    <a href="https://qbo.intuit.com/app/banking" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:6px 12px;text-decoration:none;margin-bottom:14px">🏦 Abrir QBO Banking →</a>
-    <div class="sync-row"><label>🏦 Checking KSH (6719)</label><input type="number" id="s-32" step="0.01" placeholder="6,444.26"></div>
-    <div class="sync-row"><label>💳 CHASE Credit Card #0526</label><input type="number" id="s-148" step="0.01" placeholder="7,558.83"></div>
-    <div class="sync-row"><label>💳 CapitalOne 0567</label><input type="number" id="s-54" step="0.01" placeholder="306.21"></div>
-    <div class="sync-footer">
-      <button style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit" onclick="document.getElementById('sync-overlay').classList.remove('on')">Cancelar</button>
-      <button style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500" onclick="salvarBank()">💾 Salvar</button>
-    </div>
-    <div class="sync-last" id="sync-last"></div>
-  </div>
-</div>
 
-<script>
-const _SB = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const _SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
 const _SH = {'Content-Type':'application/json','apikey':_SK,'Authorization':'Bearer '+_SK};
 
@@ -2612,7 +2592,27 @@ async function salvarBank() {
   document.body.appendChild(t);
   setTimeout(()=>t.remove(),3000);
 }
+
 </script>
+
+
+<!-- SYNC BANK MODAL -->
+<div class="sync-overlay" id="sync-overlay">
+  <div class="sync-box">
+    <h3>🔄 Atualizar Bank Balance</h3>
+    <div id="sync-status-msg" style="font-size:12px;color:var(--blue);margin-bottom:10px;min-height:18px"></div>
+    <p style="margin-bottom:10px;font-size:12px;color:var(--text3)">Se a leitura automática não funcionar, insira manualmente:</p>
+    <a href="https://qbo.intuit.com/app/banking" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:6px 12px;text-decoration:none;margin-bottom:14px">🏦 Abrir QBO Banking →</a>
+    <div class="sync-row"><label>🏦 Checking KSH (6719)</label><input type="number" id="s-32" step="0.01" placeholder="6,444.26"></div>
+    <div class="sync-row"><label>💳 CHASE Credit Card #0526</label><input type="number" id="s-148" step="0.01" placeholder="7,558.83"></div>
+    <div class="sync-row"><label>💳 CapitalOne 0567</label><input type="number" id="s-54" step="0.01" placeholder="306.21"></div>
+    <div class="sync-footer">
+      <button style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit" onclick="document.getElementById('sync-overlay').classList.remove('on')">Cancelar</button>
+      <button style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500" onclick="salvarBank()">💾 Salvar</button>
+    </div>
+    <div class="sync-last" id="sync-last"></div>
+  </div>
+</div>
 
 </body>
 </html>
