@@ -958,7 +958,7 @@ async function carregarSaldos(){
     });
     grid.innerHTML = html;
   }catch(e){
-    grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--red);font-size:13px">Erro: '+e.message+'</div></div>';
+    grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1;padding:20px"><div style="color:var(--red);font-size:13px;font-weight:600">⚠️ Erro nos saldos:</div><div style="color:var(--text2);font-size:12px;margin-top:6px">'+e.message+'</div><div style="color:var(--text3);font-size:11px;margin-top:4px">'+e.stack+'</div></div>';
   }
 }
 
