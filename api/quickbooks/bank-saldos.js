@@ -36,45 +36,24 @@ module.exports = async function handler(req, res) {
     const { accessToken, realmId } = await getValidToken();
     const H = { 'Authorization': 'Bearer ' + accessToken, 'Accept': 'application/json' };
     const base = QBO_BASE + '/v3/company/' + realmId;
-    const OCULTAS = ['7013'];
 
-    // 1. Contas
-    const qr = await fetch(base + "/query?query=" + encodeURIComponent("select * from Account where AccountType in ('Bank','Credit Card') and Active = true") + "&minorversion=70", { headers: H });
-    const qd = await qr.json();
-    const accounts = ((qd.QueryResponse && qd.QueryResponse.Account) || [])
-      .filter(a => !OCULTAS.some(k => (a.Name||'').includes(k)))
-      .filter(a => a.MetaData && (Date.now() - new Date(a.MetaData.LastUpdatedTime)) < 180*24*60*60*1000);
+    // Busca conta individual ID 32 (Checking KSH 6719) com TODOS os campos
+    // Retorna o objeto Account completo para inspecionar
+    const r32 = await fetch(base + '/account/32', { headers: H });
+    const d32 = await r32.json();
 
-    // 2. Busca cada conta individualmente com minorversion=69
-    // A partir da minorversion 69 o QBO retorna BankBalance para contas com feed conectado
-    const bankMap = {};
-    await Promise.all(accounts.map(async acc => {
-      try {
-        // Tenta minorversions diferentes
-        for (const mv of ['69', '65', '63', '60', '45', '4']) {
-          const r = await fetch(base + `/account/${acc.Id}?minorversion=${mv}`, { headers: H });
-          const d = await r.json();
-          const a = d.Account || d;
-          if (a.BankBalance != null && a.BankBalance !== '' && parseFloat(a.BankBalance) !== parseFloat(acc.CurrentBalance)) {
-            bankMap[acc.Id] = { value: parseFloat(a.BankBalance), minorversion: mv, allFields: Object.keys(a) };
-            break;
-          }
-          // Salva o que veio mesmo que igual, para debug
-          if (!bankMap[acc.Id]) {
-            bankMap[acc.Id] = { value: a.BankBalance, minorversion: mv, allFields: Object.keys(a) };
-          }
-        }
-      } catch(e) {
-        bankMap[acc.Id] = { error: e.message };
-      }
-    }));
+    // Busca conta individual ID 148 (CHASE Credit Card)
+    const r148 = await fetch(base + '/account/148', { headers: H });
+    const d148 = await r148.json();
+
+    // Busca conta individual ID 54 (CapitalOne)
+    const r54 = await fetch(base + '/account/54', { headers: H });
+    const d54 = await r54.json();
 
     res.json({
-      accounts: accounts.map(a => ({
-        Id: a.Id, Name: a.Name, AccountType: a.AccountType,
-        CurrentBalance: a.CurrentBalance,
-        bankMap: bankMap[a.Id]
-      }))
+      checking_6719: d32,
+      chase_0526: d148,
+      capitalOne_0567: d54
     });
   } catch(e) {
     res.status(500).json({ error: e.message });
