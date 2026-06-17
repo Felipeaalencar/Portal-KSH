@@ -459,13 +459,8 @@ async function carregarBankSaldos() {
 }
 
 function abrirSyncModal() {
-  // Pré-preenche com valores atuais se existirem
+  // Mostra última sync
   carregarBankSaldos().then(saldos => {
-    saldos.forEach(s => {
-      const el = document.getElementById('bank-' + s.conta_id);
-      if(el) el.value = s.bank_balance;
-    });
-    // Mostra última atualização
     if(saldos.length > 0) {
       const ultimo = saldos.sort((a,b) => new Date(b.atualizado_em) - new Date(a.atualizado_em))[0];
       const lastEl = document.getElementById('sync-last');
@@ -479,30 +474,200 @@ function fecharSyncModal() {
   document.getElementById('sync-modal-bg').classList.remove('on');
 }
 
-async function salvarBankSaldos() {
+async function sincronizarAutomatico() {
+  const btn = document.getElementById('btn-sync-agora');
+  const status = document.getElementById('sync-status');
+  btn.textContent = '⏳ Lendo QBO...';
+  btn.disabled = true;
+  status.innerHTML = '⏳ Abrindo QBO Banking e lendo saldos...';
+
+  try {
+    // Abre o QBO Banking numa janela pequena
+    const win = window.open('https://qbo.intuit.com/app/banking', 'qbo-banking', 'width=1200,height=800,left=100,top=100');
+
+    if(!win) {
+      status.innerHTML = '⚠️ Pop-up bloqueado. Permita pop-ups para portal-ksh.vercel.app e tente novamente.';
+      btn.textContent = '🔄 Sincronizar Agora';
+      btn.disabled = false;
+      return;
+    }
+
+    // Aguarda a página carregar e injeta script para ler os saldos
+    status.innerHTML = '⏳ Aguardando QBO Banking carregar...';
+
+    let tentativas = 0;
+    const maxTentativas = 30; // 30 segundos
+
+    const intervalo = setInterval(async () => {
+      tentativas++;
+      if(tentativas > maxTentativas) {
+        clearInterval(intervalo);
+        win.close();
+        status.innerHTML = '⚠️ Timeout. Tente novamente.';
+        btn.textContent = '🔄 Sincronizar Agora';
+        btn.disabled = false;
+        return;
+      }
+
+      try {
+        // Verifica se a página carregou e tenta ler os saldos
+        // Os saldos aparecem como texto "Bank: $X,XXX.XX" na página
+        const pageTitle = win.document.title;
+        const body = win.document.body;
+
+        if(!body) return; // ainda carregando
+
+        const html = body.innerHTML;
+
+        // Procura pelos padrões de saldo na página do QBO Banking
+        // Formato: "Bank: $6,444.26" ou "Bank:$6,444.26"
+        const bankPattern = /Bank[:\s]+\$?([\d,]+\.?\d*)/gi;
+        const matches = [...html.matchAll(bankPattern)];
+
+        // Procura também por "Bank" seguido de valor em elementos da página
+        const allText = body.innerText || '';
+        const lines = allText.split('
+').filter(l => l.trim());
+
+        // Extrai valores Bank de cada conta
+        const saldosEncontrados = {};
+        let idx = 0;
+        for(const line of lines) {
+          if(line.includes('Bank:') || (line.includes('Bank') && lines[idx+1] && lines[idx+1].match(/^\$[\d,]+/))) {
+            const nextLines = lines.slice(idx, idx+5).join(' ');
+            const valMatch = nextLines.match(/\$([\d,]+\.?\d*)/);
+            if(valMatch) {
+              const val = parseFloat(valMatch[1].replace(/,/g, ''));
+              if(val > 0) saldosEncontrados['bank_' + Object.keys(saldosEncontrados).length] = val;
+            }
+          }
+          idx++;
+        }
+
+        if(Object.keys(saldosEncontrados).length > 0 || html.includes('Checking') || html.includes('Credit Card')) {
+          clearInterval(intervalo);
+
+          // Lê os valores específicos de cada conta
+          const contasMap = {
+            '32':  { nome: 'Checking KSH (6719)', busca: ['Checking KSH', '6719'] },
+            '148': { nome: 'CHASE Credit Card #0526', busca: ['CHASE Credit Card', '0526', 'CHASE'] },
+            '54':  { nome: 'CapitalOne 0567', busca: ['CapitalOne', 'Capital One', '0567', '6476'] }
+          };
+
+          const valoresLidos = {};
+          for(const [id, conta] of Object.entries(contasMap)) {
+            // Encontra a linha com o nome da conta e lê o Bank na sequência
+            for(let i = 0; i < lines.length; i++) {
+              const lineTxt = lines[i];
+              const encontrou = conta.busca.some(s => lineTxt.includes(s));
+              if(encontrou) {
+                // Procura Bank nos próximos 5 itens
+                for(let j = i; j < Math.min(i+8, lines.length); j++) {
+                  if(lines[j].includes('Bank')) {
+                    // Pega o valor na linha seguinte ou na mesma
+                    const bloco = lines.slice(j, j+3).join(' ');
+                    const m = bloco.match(/\$([\d,]+\.?\d*)/);
+                    if(m) {
+                      valoresLidos[id] = parseFloat(m[1].replace(/,/g,''));
+                      break;
+                    }
+                  }
+                }
+                if(valoresLidos[id]) break;
+              }
+            }
+          }
+
+          win.close();
+
+          if(Object.keys(valoresLidos).length === 0) {
+            status.innerHTML = '⚠️ Não consegui ler os saldos automaticamente. Por favor insira manualmente.';
+            mostrarInputsManuais();
+            btn.textContent = '💾 Salvar';
+            btn.disabled = false;
+            btn.onclick = salvarBankManual;
+            return;
+          }
+
+          // Salva no Supabase
+          await salvarValoresBank(valoresLidos);
+
+          // Mostra o que foi lido
+          const lista = document.getElementById('sync-valores-lista');
+          const nomes = { '32': 'Checking KSH (6719)', '148': 'CHASE Credit Card #0526', '54': 'CapitalOne 0567' };
+          lista.innerHTML = Object.entries(valoresLidos).map(([id, val]) =>
+            `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">
+              <span style="color:var(--text2)">${nomes[id]||id}</span>
+              <span style="color:var(--green);font-weight:600">$${val.toLocaleString('en-US',{minimumFractionDigits:2})}</span>
+            </div>`
+          ).join('');
+          document.getElementById('sync-valores').style.display = 'block';
+          status.innerHTML = '✅ Saldos lidos e salvos com sucesso!';
+          btn.textContent = '✅ Concluído';
+          document.getElementById('sync-last').textContent = 'Última sync: ' + new Date().toLocaleString('pt-BR');
+          carregarSaldos();
+          showToastFin('Bank balance sincronizado! ✓');
+          setTimeout(() => fecharSyncModal(), 2000);
+        }
+      } catch(e) {
+        // Página ainda carregando ou cross-origin — aguarda
+      }
+    }, 1000);
+
+  } catch(e) {
+    status.innerHTML = '⚠️ Erro: ' + e.message;
+    btn.textContent = '🔄 Sincronizar Agora';
+    btn.disabled = false;
+  }
+}
+
+function mostrarInputsManuais() {
+  const status = document.getElementById('sync-status');
+  status.innerHTML = `
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="font-size:12px;color:var(--text2);width:200px">🏦 Checking KSH (6719)</label>
+        <input type="number" id="bank-32" step="0.01" placeholder="0.00" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;padding:8px 12px;font-family:inherit;width:140px">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="font-size:12px;color:var(--text2);width:200px">💳 CHASE Credit Card #0526</label>
+        <input type="number" id="bank-148" step="0.01" placeholder="0.00" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;padding:8px 12px;font-family:inherit;width:140px">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <label style="font-size:12px;color:var(--text2);width:200px">💳 CapitalOne 0567</label>
+        <input type="number" id="bank-54" step="0.01" placeholder="0.00" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;padding:8px 12px;font-family:inherit;width:140px">
+      </div>
+    </div>`;
+}
+
+async function salvarBankManual() {
   const contas = [
     { conta_id: '32',  conta_nome: 'Checking KSH (6719)' },
     { conta_id: '148', conta_nome: 'CHASE Credit Card #0526' },
     { conta_id: '54',  conta_nome: 'CapitalOne 0567' }
   ];
-
-  const agora = new Date().toISOString();
-  const user = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.name || currentUser.company_name || 'KSH') : 'KSH';
-
-  let salvou = 0;
+  const valoresLidos = {};
   for(const conta of contas) {
     const el = document.getElementById('bank-' + conta.conta_id);
-    if(!el || el.value === '') continue;
-    const val = parseFloat(el.value);
-    if(isNaN(val)) continue;
+    if(el && el.value !== '') valoresLidos[conta.conta_id] = parseFloat(el.value);
+  }
+  await salvarValoresBank(valoresLidos);
+  fecharSyncModal();
+  carregarSaldos();
+  showToastFin('Bank balance atualizado! ✓');
+}
 
-    // Upsert no Supabase
+async function salvarValoresBank(valoresLidos) {
+  const agora = new Date().toISOString();
+  const user = (typeof qboStatus !== 'undefined' && qboStatus) ? (qboStatus.company_name || 'KSH') : 'KSH';
+  const nomesMap = { '32': 'Checking KSH (6719)', '148': 'CHASE Credit Card #0526', '54': 'CapitalOne 0567' };
+
+  for(const [conta_id, val] of Object.entries(valoresLidos)) {
     try {
-      const r = await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta.conta_id, { headers: SBH_FIN });
+      const r = await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta_id, { headers: SBH_FIN });
       const existente = await r.json();
-
       if(existente && existente.length > 0) {
-        await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta.conta_id, {
+        await fetch(SB_URL_FIN + '/rest/v1/bank_saldos?conta_id=eq.' + conta_id, {
           method: 'PATCH',
           headers: { ...SBH_FIN, 'Prefer': 'return=minimal' },
           body: JSON.stringify({ bank_balance: val, atualizado_em: agora, atualizado_por: user })
@@ -511,18 +676,10 @@ async function salvarBankSaldos() {
         await fetch(SB_URL_FIN + '/rest/v1/bank_saldos', {
           method: 'POST',
           headers: { ...SBH_FIN, 'Prefer': 'return=minimal' },
-          body: JSON.stringify({ conta_id: conta.conta_id, conta_nome: conta.conta_nome, bank_balance: val, posted_balance: 0, atualizado_em: agora, atualizado_por: user })
+          body: JSON.stringify({ conta_id, conta_nome: nomesMap[conta_id]||conta_id, bank_balance: val, posted_balance: 0, atualizado_em: agora, atualizado_por: user })
         });
       }
-      salvou++;
-    } catch(e) { console.error('Erro ao salvar', conta.conta_nome, e); }
-  }
-
-  fecharSyncModal();
-  if(salvou > 0) {
-    // Recarrega os cards de saldo
-    carregarSaldos();
-    showToastFin('Bank balance atualizado! ✓');
+    } catch(e) { console.error('Erro ao salvar', conta_id, e); }
   }
 }
 
@@ -2693,28 +2850,16 @@ carregar();
 <div class="sync-modal-bg" id="sync-modal-bg">
   <div class="sync-modal">
     <h3>🔄 Sincronizar Bank Balance</h3>
-    <p>Abra o QBO Banking em outra aba, veja os valores reais do banco e insira abaixo. Os saldos serão salvos automaticamente e aparecerão no portal.</p>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
-      <a href="https://qbo.intuit.com/app/banking" target="_blank" style="background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:7px 14px;text-decoration:none;font-weight:500">🏦 Abrir QBO Banking →</a>
-      <span style="font-size:11px;color:var(--text3)">Veja os valores Bank lá e insira aqui</span>
+    <div id="sync-status" style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      Clique em <strong style="color:var(--green)">Sincronizar Agora</strong> — o portal vai abrir o QBO Banking, ler os saldos automaticamente e salvar aqui.
     </div>
-    <div class="sync-inputs" id="sync-inputs">
-      <div class="sync-input-row">
-        <label>🏦 Checking KSH (6719)</label>
-        <input type="number" id="bank-32" step="0.01" placeholder="0.00">
-      </div>
-      <div class="sync-input-row">
-        <label>💳 CHASE Credit Card #0526</label>
-        <input type="number" id="bank-148" step="0.01" placeholder="0.00">
-      </div>
-      <div class="sync-input-row">
-        <label>💳 CapitalOne 0567</label>
-        <input type="number" id="bank-54" step="0.01" placeholder="0.00">
-      </div>
+    <div id="sync-valores" style="display:none;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Valores lidos automaticamente:</div>
+      <div id="sync-valores-lista"></div>
     </div>
     <div class="sync-footer">
       <button class="btn-sync-cancel" onclick="fecharSyncModal()">Cancelar</button>
-      <button class="btn-sync-save" onclick="salvarBankSaldos()">💾 Salvar saldos</button>
+      <button class="btn-sync-save" id="btn-sync-agora" onclick="sincronizarAutomatico()">🔄 Sincronizar Agora</button>
     </div>
     <div class="sync-last" id="sync-last"></div>
   </div>
