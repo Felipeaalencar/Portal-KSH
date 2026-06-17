@@ -984,6 +984,18 @@ async function carregarSaldos(){
     }
     const accountsRaw = (data.QueryResponse && data.QueryResponse.Account) || [];
 
+    // DEBUG TEMPORÁRIO — mostra campos disponíveis da primeira conta
+    if(accountsRaw.length > 0) {
+      const acc0 = accountsRaw[0];
+      const campos = Object.keys(acc0).join(', ');
+      const bankVal = JSON.stringify(acc0.BankBalance);
+      grid.innerHTML = '<div style="grid-column:1/-1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:14px;font-size:11px;color:var(--text2);margin-bottom:10px">'
+        + '<strong style="color:var(--text)">DEBUG · Conta: ' + acc0.Name + '</strong><br>'
+        + '<span style="color:var(--amber)">BankBalance: ' + bankVal + '</span><br>'
+        + '<span>Campos disponíveis: ' + campos + '</span>'
+        + '</div>';
+    }
+
     // Filtra contas pessoais e históricas
     const CORTE_DIAS = 180;
     const dataCorte = new Date();
