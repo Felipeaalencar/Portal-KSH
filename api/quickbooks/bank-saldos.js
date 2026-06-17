@@ -36,24 +36,55 @@ module.exports = async function handler(req, res) {
     const { accessToken, realmId } = await getValidToken();
     const H = { 'Authorization': 'Bearer ' + accessToken, 'Accept': 'application/json' };
     const base = QBO_BASE + '/v3/company/' + realmId;
+    const OCULTAS = ['7013'];
 
-    // Busca conta individual ID 32 (Checking KSH 6719) com TODOS os campos
-    // Retorna o objeto Account completo para inspecionar
-    const r32 = await fetch(base + '/account/32', { headers: H });
-    const d32 = await r32.json();
+    // 1. Contas
+    const qr = await fetch(base + "/query?query=" + encodeURIComponent("select * from Account where AccountType in ('Bank','Credit Card') and Active = true") + "&minorversion=70", { headers: H });
+    const qd = await qr.json();
+    const accounts = ((qd.QueryResponse && qd.QueryResponse.Account) || [])
+      .filter(a => !OCULTAS.some(k => (a.Name||'').includes(k)))
+      .filter(a => a.MetaData && (Date.now() - new Date(a.MetaData.LastUpdatedTime)) < 180*24*60*60*1000);
 
-    // Busca conta individual ID 148 (CHASE Credit Card)
-    const r148 = await fetch(base + '/account/148', { headers: H });
-    const d148 = await r148.json();
+    // 2. Para cada conta busca transações não categorizadas (For Review)
+    // Essas são Purchases e Deposits que chegaram do feed mas ainda não foram revisadas
+    // No QBO aparecem como transações com AccountRef mas sem Category
+    const pendingMap = {};
+    await Promise.all(accounts.map(async acc => {
+      try {
+        // Busca Purchase não categorizadas desta conta
+        const q1 = `select * from Purchase where AccountRef = '${acc.Id}' and DocNumber = 'AUTO'`;
+        const r1 = await fetch(base + "/query?query=" + encodeURIComponent(q1) + "&minorversion=70", { headers: H });
+        const d1 = await r1.json();
 
-    // Busca conta individual ID 54 (CapitalOne)
-    const r54 = await fetch(base + '/account/54', { headers: H });
-    const d54 = await r54.json();
+        // Busca Deposit não categorizados
+        const q2 = `select * from Deposit where DepositToAccountRef = '${acc.Id}'`;
+        const r2 = await fetch(base + "/query?query=" + encodeURIComponent(q2) + "&minorversion=70", { headers: H });
+        const d2 = await r2.json();
+
+        // Busca JournalEntry desta conta
+        const q3 = `select * from JournalEntry where DocNumber = 'AUTO'`;
+        const r3 = await fetch(base + "/query?query=" + encodeURIComponent(q3) + "&minorversion=70", { headers: H });
+        const d3 = await r3.json();
+
+        pendingMap[acc.Id] = {
+          purchases: (d1.QueryResponse && d1.QueryResponse.Purchase) || [],
+          deposits: (d2.QueryResponse && d2.QueryResponse.Deposit) || [],
+          journals: (d3.QueryResponse && d3.QueryResponse.JournalEntry) || [],
+          purchaseTotal: ((d1.QueryResponse && d1.QueryResponse.Purchase) || []).reduce((s,t) => s + (parseFloat(t.TotalAmt)||0), 0),
+          depositTotal: ((d2.QueryResponse && d2.QueryResponse.Deposit) || []).reduce((s,t) => s + (parseFloat(t.TotalAmt)||0), 0),
+        };
+      } catch(e) {
+        pendingMap[acc.Id] = { error: e.message };
+      }
+    }));
 
     res.json({
-      checking_6719: d32,
-      chase_0526: d148,
-      capitalOne_0567: d54
+      accounts: accounts.map(a => ({
+        Id: a.Id,
+        Name: a.Name,
+        CurrentBalance: a.CurrentBalance,
+        pending: pendingMap[a.Id]
+      }))
     });
   } catch(e) {
     res.status(500).json({ error: e.message });
