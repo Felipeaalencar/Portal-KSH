@@ -1007,21 +1007,6 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
-    // Busca BankBalance individualmente para cada conta (endpoint /account/{id})
-    // BankBalance = saldo real do banco (feed bancário)
-    // CurrentBalance = saldo postado/categorizado no QBO
-    const bankBalances = {};
-    await Promise.all(accounts.map(async acc => {
-      try {
-        const rb = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('account/' + acc.Id) + '&minorversion=70');
-        const db = await rb.json();
-        const acct = db.Account || db;
-        if(acct.BankBalance != null) {
-          bankBalances[acc.Id] = parseFloat(acct.BankBalance);
-        }
-      } catch(e) { /* sem feed bancário */ }
-    }));
-
     let html = '';
     accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
@@ -1029,12 +1014,12 @@ async function carregarSaldos(){
       const tipoLabel = isBank ? 'Conta Corrente' : 'Cartão de Crédito';
       const icon = isBank ? '🏦' : '💳';
 
-      // Posted = CurrentBalance (o que está categorizado no QBO)
+      // Posted = CurrentBalance (categorizado no QBO)
       const posted = parseFloat(acc.CurrentBalance) || 0;
       const postedExibido = isBank ? posted : -posted;
 
-      // Bank = BankBalance (saldo real do banco via feed)
-      const bankRaw = bankBalances[acc.Id] != null ? bankBalances[acc.Id] : null;
+      // Bank = BankBalance (saldo real do banco — vem da query select * from Account)
+      const bankRaw = (acc.BankBalance != null && acc.BankBalance !== '') ? parseFloat(acc.BankBalance) : null;
       const bankExibido = bankRaw != null ? (isBank ? bankRaw : -bankRaw) : null;
 
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
