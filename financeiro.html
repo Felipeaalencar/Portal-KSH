@@ -724,8 +724,6 @@ function renderVisaoGeral(){
         <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button onclick="abrirSyncBank()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#60a5fa;font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;font-weight:500">🔄 Bank</button>
-<button onclick="ksbAbrir()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.35);border-radius:8px;color:#60a5fa;font-size:12px;font-weight:600;padding:6px 13px;cursor:pointer;font-family:inherit">🔄 Bank</button>
         <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
         <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
       </div>
@@ -895,27 +893,15 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
-    // Filtra conta pessoal 7013
-    const accs = accounts.filter(a => !(a.Name||'').includes('7013'));
-
-    // Busca Bank balances salvos no Supabase
-    let bankMap = {};
-    try {
-      const _r = await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/bank_saldos?select=*',
-        {headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY'}});
-      (await _r.json()||[]).forEach(s => { bankMap[s.conta_id] = parseFloat(s.bank_balance); });
-    } catch(e) {}
-
     let html = '';
-    accs.forEach(acc=>{
+    accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
       const tipo = isBank ? 'bank' : 'credit';
       const tipoLabel = isBank ? 'Conta Corrente' : 'Cartão de Crédito';
       const icon = isBank ? '🏦' : '💳';
-      const posted = parseFloat(acc.CurrentBalance) || 0;
-      const postedEx = isBank ? posted : -posted;
-      const bankVal = bankMap[acc.Id] != null ? bankMap[acc.Id] : null;
-      const diff = bankVal != null ? Math.abs(bankVal - postedEx) : null;
+      const saldo = parseFloat(acc.CurrentBalance) || 0;
+      const saldoExibido = isBank ? saldo : -saldo;
+      const isNegativo = saldoExibido < 0;
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
         ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
         : '-';
@@ -927,20 +913,9 @@ async function carregarSaldos(){
             <div class="saldo-tipo">${tipoLabel}</div>
           </div>
           <div class="saldo-nome">${acc.Name}</div>
-          <div style="display:flex;gap:10px;margin-top:10px">
-            <div style="flex:1;background:var(--bg);border-radius:8px;padding:8px 10px">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;color:var(--green);margin-bottom:3px">BANK</div>
-              <div style="font-size:16px;font-weight:700;color:${bankVal!=null?'var(--green)':'var(--text3)'}">
-                ${bankVal!=null ? fmtMoney(bankVal) : '<span style="font-size:11px">clique 🔄 Bank</span>'}
-              </div>
-            </div>
-            <div style="flex:1;background:var(--bg);border-radius:8px;padding:8px 10px">
-              <div style="font-size:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;color:var(--text3);margin-bottom:3px">POSTED</div>
-              <div style="font-size:16px;font-weight:700;color:var(--text2)">${fmtMoney(postedEx)}</div>
-            </div>
-          </div>
-          ${diff!=null && diff>1 ? `<div style="font-size:10px;color:var(--amber);margin-top:6px">⚠️ Diferença: ${fmtMoney(diff)}</div>` : (diff!=null ? '<div style="font-size:10px;color:var(--green);margin-top:6px">✓ Em dia</div>' : '')}
-          <div class="saldo-sub" style="margin-top:6px">QBO: ${ultUpdate}</div>
+          <div class="saldo-valor ${isNegativo?'negativo':''}">${fmtMoney(saldoExibido)}</div>
+          <div class="saldo-sub warn">⚠️ Só categorizado · não reflete saldo real do banco</div>
+          <div class="saldo-sub">Atualizado: ${ultUpdate}</div>
         </div>
       `;
     });
@@ -2404,154 +2379,6 @@ function fmtDataBR(iso){
 }
 
 carregar();
-</script>
-
-
-<!-- SYNC BANK -->
-<div id="ksh-sync-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;align-items:center;justify-content:center">
-  <div style="background:#1a1d27;border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:24px;width:440px;max-width:95vw">
-    <div style="font-size:15px;font-weight:600;color:#f0f2f8;margin-bottom:8px">🔄 Atualizar Bank Balance</div>
-    <div id="ksh-sync-msg" style="font-size:12px;color:#60a5fa;min-height:20px;margin-bottom:12px"></div>
-    <div style="font-size:12px;color:#6b7599;margin-bottom:12px">Se não carregar automaticamente, insira os valores do <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:#22c55e">QBO Banking →</a></div>
-    <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:10px">
-        <label style="font-size:12px;color:#b0b8d0;flex:1">🏦 Checking KSH (6719)</label>
-        <input type="number" id="ksh-b-32" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#f0f2f8;font-size:14px;font-weight:600;padding:7px 10px;width:130px;text-align:right;font-family:inherit">
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <label style="font-size:12px;color:#b0b8d0;flex:1">💳 CHASE Credit Card #0526</label>
-        <input type="number" id="ksh-b-148" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#f0f2f8;font-size:14px;font-weight:600;padding:7px 10px;width:130px;text-align:right;font-family:inherit">
-      </div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <label style="font-size:12px;color:#b0b8d0;flex:1">💳 CapitalOne 0567</label>
-        <input type="number" id="ksh-b-54" step="0.01" style="background:#22263a;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#f0f2f8;font-size:14px;font-weight:600;padding:7px 10px;width:130px;text-align:right;font-family:inherit">
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;gap:8px">
-      <button onclick="document.getElementById('ksh-sync-overlay').style.display='none'" style="background:none;border:1px solid rgba(255,255,255,.08);border-radius:8px;color:#b0b8d0;font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit">Cancelar</button>
-      <button onclick="kshSalvarBank()" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#60a5fa;font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500">💾 Salvar</button>
-    </div>
-    <div id="ksh-sync-last" style="font-size:10px;color:#6b7599;margin-top:10px;text-align:center"></div>
-  </div>
-</div>
-
-<script>
-const KSH_SB = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
-const KSH_SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
-const KSH_SH = {'Content-Type':'application/json','apikey':KSH_SK,'Authorization':'Bearer '+KSH_SK};
-
-async function abrirSyncBank() {
-  const ov = document.getElementById('ksh-sync-overlay');
-  const msg = document.getElementById('ksh-sync-msg');
-  ov.style.display = 'flex';
-  msg.textContent = '⏳ Carregando valores salvos...';
-
-  // Carrega valores do Supabase
-  try {
-    const r = await fetch(KSH_SB+'/rest/v1/bank_saldos?select=*', {headers:KSH_SH});
-    const d = await r.json();
-    (d||[]).forEach(s => {
-      const el = document.getElementById('ksh-b-'+s.conta_id);
-      if(el) el.value = s.bank_balance;
-    });
-    if(d && d.length > 0) {
-      const ult = d.sort((a,b)=>new Date(b.atualizado_em)-new Date(a.atualizado_em))[0];
-      document.getElementById('ksh-sync-last').textContent = 'Última sync: '+new Date(ult.atualizado_em).toLocaleString('pt-BR');
-    }
-  } catch(e) {}
-
-  // Tenta ler QBO Banking automaticamente
-  msg.textContent = '⏳ Tentando ler QBO Banking automaticamente...';
-  try {
-    const win = window.open('https://qbo.intuit.com/app/banking', '_blank', 'width=900,height=700');
-    if(!win) { msg.textContent = '⚠️ Pop-up bloqueado. Insira manualmente ou permita pop-ups.'; return; }
-
-    let t = 0;
-    const timer = setInterval(() => {
-      t++;
-      if(t > 25) {
-        clearInterval(timer);
-        try{win.close();}catch(e){}
-        msg.textContent = '⚠️ Não carregou a tempo. Insira os valores manualmente.';
-        return;
-      }
-      try {
-        const txt = win.document.body && win.document.body.innerText;
-        if(!txt) return;
-        // Detecta login
-        if(txt.includes('Sign in') || txt.includes('Entrar') || txt.includes('password')) {
-          clearInterval(timer);
-          try{win.close();}catch(e){}
-          msg.innerHTML = '🔒 Não está logado no QBO. <a href="https://qbo.intuit.com" target="_blank" style="color:#22c55e">Fazer login →</a> e clicar em 🔄 Bank novamente.';
-          return;
-        }
-        // Detecta página de banking com saldos
-        if(!txt.includes('Bank:') && !txt.includes('Posted:')) return;
-        clearInterval(timer);
-        try{win.close();}catch(e){}
-
-        const CONTAS = [
-          {id:'32',  keys:['Checking KSH','6719']},
-          {id:'148', keys:['CHASE Credit Card','0526']},
-          {id:'54',  keys:['CapitalOne','Capital One','0567']}
-        ];
-        const lines = txt.split('\n').map(l=>l.trim()).filter(Boolean);
-        let found = 0;
-        CONTAS.forEach(ct => {
-          for(let i=0;i<lines.length;i++) {
-            if(ct.keys.some(k=>lines[i].includes(k))) {
-              for(let j=i;j<Math.min(i+8,lines.length);j++) {
-                if(lines[j].startsWith('Bank:') || lines[j].startsWith('Bank :')) {
-                  const m = lines[j].match(/([\d,]+\.?\d*)/);
-                  if(m) {
-                    const el = document.getElementById('ksh-b-'+ct.id);
-                    if(el){el.value=parseFloat(m[1].replace(/,/g,''));el.style.borderColor='#22c55e';found++;}
-                    break;
-                  }
-                }
-              }
-              break;
-            }
-          }
-        });
-        msg.textContent = found > 0 ? '✅ '+found+' valor(es) lido(s)! Confira e clique Salvar.' : '⚠️ Não encontrei os valores. Insira manualmente.';
-      } catch(e) { /* aguarda */ }
-    }, 1000);
-  } catch(e) {
-    msg.textContent = '⚠️ Erro: '+e.message+'. Insira manualmente.';
-  }
-}
-
-async function kshSalvarBank() {
-  const contas = [{id:'32',nome:'Checking KSH (6719)'},{id:'148',nome:'CHASE Credit Card #0526'},{id:'54',nome:'CapitalOne 0567'}];
-  const agora = new Date().toISOString();
-  let salvou = 0;
-  for(const ct of contas) {
-    const el = document.getElementById('ksh-b-'+ct.id);
-    if(!el || el.value==='') continue;
-    const val = parseFloat(el.value);
-    if(isNaN(val)) continue;
-    try {
-      const chk = await fetch(KSH_SB+'/rest/v1/bank_saldos?conta_id=eq.'+ct.id,{headers:KSH_SH});
-      const ex = await chk.json();
-      if(ex&&ex.length>0) {
-        await fetch(KSH_SB+'/rest/v1/bank_saldos?conta_id=eq.'+ct.id,{method:'PATCH',headers:{...KSH_SH,'Prefer':'return=minimal'},body:JSON.stringify({bank_balance:val,atualizado_em:agora})});
-      } else {
-        await fetch(KSH_SB+'/rest/v1/bank_saldos',{method:'POST',headers:{...KSH_SH,'Prefer':'return=minimal'},body:JSON.stringify({conta_id:ct.id,conta_nome:ct.nome,bank_balance:val,posted_balance:0,atualizado_em:agora})});
-      }
-      salvou++;
-    } catch(e){}
-  }
-  document.getElementById('ksh-sync-overlay').style.display='none';
-  if(salvou>0) {
-    carregarSaldos();
-    const t=document.createElement('div');
-    t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d27;border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:10px 18px;font-size:13px;color:#22c55e;z-index:9999';
-    t.textContent='✓ Bank balance salvo!';
-    document.body.appendChild(t);
-    setTimeout(()=>t.remove(),3000);
-  }
-}
 </script>
 
 </body>
