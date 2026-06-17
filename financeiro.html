@@ -87,6 +87,32 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .kpi.blue .kpi-value{color:var(--blue)}
 .kpi.amber .kpi-value{color:var(--amber)}
 
+/* === SALDO DUAL (Bank + Posted) === */
+.saldo-dual{display:flex;gap:12px;margin-top:10px}
+.saldo-dual-item{flex:1;background:var(--bg);border-radius:8px;padding:8px 10px}
+.saldo-dual-label{font-size:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:4px}
+.saldo-dual-item.bank-val .saldo-dual-label{color:var(--green)}
+.saldo-dual-item.posted-val .saldo-dual-label{color:var(--text3)}
+.saldo-dual-valor{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.saldo-dual-item.bank-val .saldo-dual-valor{color:var(--green)}
+.saldo-dual-item.posted-val .saldo-dual-valor{color:var(--text2)}
+.saldo-diff{font-size:10px;margin-top:6px;color:var(--text3)}
+.saldo-diff.warn{color:var(--amber)}
+
+/* === KPI DELTA === */
+.kpi-delta{font-size:11px;margin-top:4px;display:flex;align-items:center;gap:3px}
+.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neu{color:var(--text3)}
+
+/* === META === */
+.kpi-meta{margin-top:8px}
+.kpi-meta-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px}
+.kpi-meta-bar{height:4px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.kpi-meta-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#2ca01c,#22c55e);transition:width .5s}
+
+/* === BOTÃO PDF === */
+.btn-export-pl{background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:7px 14px;cursor:pointer;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px;transition:all .15s}
+.btn-export-pl:hover{background:rgba(34,197,94,.2)}
+
 /* === SECTION / CHART === */
 .section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
 .section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
@@ -400,6 +426,77 @@ function desconectarQBO(){
   alert('Por enquanto, pra desconectar tem que deletar a linha em qbo_tokens no Supabase. Faremos botão dedicado em breve.');
 }
 
+function exportarPL(){
+  const titulo = document.getElementById('kpi-receita') ? document.getElementById('kpi-receita').textContent : '-';
+  const despesas = document.getElementById('kpi-despesas') ? document.getElementById('kpi-despesas').textContent : '-';
+  const lucro = document.getElementById('kpi-lucro') ? document.getElementById('kpi-lucro').textContent : '-';
+  const ar = document.getElementById('kpi-ar') ? document.getElementById('kpi-ar').textContent : '-';
+  const periodo = document.getElementById('periodo-atual-label') ? document.getElementById('periodo-atual-label').textContent : '';
+
+  // Captura P&L detalhado se existir
+  const plHtml = document.getElementById('pl-container') ? document.getElementById('pl-container').innerHTML : '';
+
+  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>KSH · P&L · ${new Date().toLocaleDateString('pt-BR')}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f4f4f4;padding:32px}
+.page{background:#fff;max-width:720px;margin:0 auto;border-radius:8px;overflow:hidden}
+.ph{background:#0d1117;padding:22px 28px;display:flex;align-items:center;justify-content:space-between}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-k{width:36px;height:36px;border-radius:8px;background:#e74c3c;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff}
+.logo-txt{color:#dde3ee;font-size:14px;font-weight:600}
+.logo-sub{color:#7a8799;font-size:11px;margin-top:2px}
+.badge{background:#1c2333;border:1px solid rgba(59,130,246,.3);border-radius:99px;padding:4px 12px;color:#3b82f6;font-size:11px}
+.body{padding:26px 28px}
+.report-title{font-size:22px;font-weight:700;color:#111;margin-bottom:4px}
+.report-sub{font-size:12px;color:#888;margin-bottom:22px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px}
+.kpi{background:#f9f9f9;border:1px solid #eee;border-radius:8px;padding:10px 12px}
+.kpi-lbl{font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.kpi-val{font-size:16px;font-weight:700;color:#111}
+.kpi-val.green{color:#22943a}.kpi-val.red{color:#c0392b}.kpi-val.blue{color:#1d4ed8}.kpi-val.amber{color:#b45309}
+.sec{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:#999;border-bottom:2px solid #e74c3c;padding-bottom:5px;margin:20px 0 12px}
+.footer{background:#f5f5f5;border-top:1px solid #eee;padding:10px 28px;display:flex;justify-content:space-between}
+.ft{font-size:10px;color:#aaa}
+@media print{body{background:#fff;padding:0}.page{border-radius:0}}
+</style></head><body>
+<div class="page">
+  <div class="ph">
+    <div class="logo">
+      <div class="logo-k">K</div>
+      <div><div class="logo-txt">Kilian Smart Homes</div><div class="logo-sub">South Florida, USA</div></div>
+    </div>
+    <div class="badge">📋 P&L Report</div>
+  </div>
+  <div class="body">
+    <div class="report-title">Profit & Loss</div>
+    <div class="report-sub">${periodo} · gerado em ${new Date().toLocaleString('pt-BR')}</div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-lbl">Receita</div><div class="kpi-val green">${titulo}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Despesas</div><div class="kpi-val red">${despesas}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Lucro Líquido</div><div class="kpi-val blue">${lucro}</div></div>
+      <div class="kpi"><div class="kpi-lbl">A Receber</div><div class="kpi-val amber">${ar}</div></div>
+    </div>
+    <div class="sec">P&L Detalhado</div>
+    <div style="font-size:12px;color:#333">${plHtml}</div>
+  </div>
+  <div class="footer">
+    <span class="ft">Kilian Smart Homes · portal-ksh.vercel.app · gerado automaticamente</span>
+    <span class="ft">1 / 1</span>
+  </div>
+</div>
+<script>window.onload=function(){window.print();}<\/script>
+</body></html>`;
+
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'KSH_PL_' + new Date().toLocaleDateString('pt-BR').replace(/\//g,'-') + '.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
 function fmtMoney(v){
   if(v==null||isNaN(v)) return '-';
   return '$'+Number(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -645,12 +742,9 @@ function montarSidebar(){
   document.getElementById('sidebar').innerHTML = `
     <div class="sidebar-section">Visão</div>
     <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
-    <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
-    <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
-    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Pagamentos recorrentes</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Recorrentes</span></button>
     <div class="sidebar-section">Análises</div>
     <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
-    <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
     <div class="sidebar-spacer"></div>
     <div class="sidebar-divider"></div>
     <button class="sidebar-item" data-pagina="config" onclick="navegar('config')"><span class="ic">⚙️</span><span>Configurações</span></button>
@@ -724,6 +818,7 @@ function renderVisaoGeral(){
         <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
+        <button class="btn-export-pl" onclick="exportarPL()">📄 Exportar P&L</button>
         <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
         <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
       </div>
@@ -751,13 +846,9 @@ function renderVisaoGeral(){
       </div>
     </div>
 
-    <div class="aviso-pendings">
-      <div class="aviso-pendings-icon">⚠️</div>
-      <div class="aviso-pendings-text">
-        <span class="titulo">Atenção · saldos podem não refletir a realidade</span>
-        Os valores abaixo são apenas o que está <span class="destaque">categorizado</span> no QuickBooks. Transações importadas do banco que ainda estão em <span class="destaque">"For Review"</span> não aparecem aqui. O <span class="destaque">saldo real do banco</span> pode ser bem diferente — <span id="aviso-pending-count"></span>verifique no QBO Banking.
-      </div>
-      <a href="https://qbo.intuit.com/app/banking" target="_blank" class="aviso-pendings-link">Ver Banking no QBO →</a>
+    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-bottom:16px;width:fit-content">
+      ℹ️ Exibindo apenas transações categorizadas no QBO. <span id="aviso-pending-count"></span>
+      <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue);text-decoration:none;font-size:11px;margin-left:4px">Ver Banking →</a>
     </div>
 
     <div class="section-title" style="margin-top:8px">💳 Saldos · Conta Corrente e Cartões <button class="section-action" onclick="carregarSaldos()">Atualizar</button></div>
@@ -768,10 +859,27 @@ function renderVisaoGeral(){
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi green"><div class="kpi-label">Receita</div><div class="kpi-value kpi-loading" id="kpi-receita">⏳</div><div class="kpi-sub" id="kpi-receita-sub"></div></div>
-      <div class="kpi red"><div class="kpi-label">Despesas</div><div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div><div class="kpi-sub" id="kpi-despesas-sub"></div></div>
-      <div class="kpi blue"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div><div class="kpi-sub" id="kpi-lucro-sub"></div></div>
-      <div class="kpi amber"><div class="kpi-label">A Receber</div><div class="kpi-value kpi-loading" id="kpi-ar">⏳</div><div class="kpi-sub" id="kpi-ar-sub"></div></div>
+      <div class="kpi green">
+        <div class="kpi-label">Receita</div>
+        <div class="kpi-value kpi-loading" id="kpi-receita">⏳</div>
+        <div class="kpi-delta neu" id="kpi-receita-delta"></div>
+        <div id="kpi-receita-meta"></div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-label">Despesas</div>
+        <div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div>
+        <div class="kpi-delta neu" id="kpi-despesas-delta"></div>
+      </div>
+      <div class="kpi blue">
+        <div class="kpi-label">Lucro Líquido</div>
+        <div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div>
+        <div class="kpi-delta neu" id="kpi-lucro-delta"></div>
+      </div>
+      <div class="kpi amber">
+        <div class="kpi-label">A Receber</div>
+        <div class="kpi-value kpi-loading" id="kpi-ar">⏳</div>
+        <div class="kpi-sub" id="kpi-ar-sub"></div>
+      </div>
     </div>
 
     <div class="section">
@@ -906,6 +1014,14 @@ async function carregarSaldos(){
         ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
         : '-';
 
+      const bankBalance = acc.BankBalance != null ? parseFloat(acc.BankBalance) : null;
+      const bankExibido = bankBalance != null ? (isBank ? bankBalance : -bankBalance) : null;
+      const diff = bankExibido != null ? bankExibido - saldoExibido : null;
+      const diffLabel = diff != null
+        ? (Math.abs(diff) < 0.01 ? '✓ Sem diferença' : `Diferença: ${fmtMoney(Math.abs(diff))}`)
+        : null;
+      const diffWarn = diff != null && Math.abs(diff) > 1;
+
       html += `
         <div class="saldo-card ${tipo}">
           <div class="saldo-head">
@@ -913,9 +1029,19 @@ async function carregarSaldos(){
             <div class="saldo-tipo">${tipoLabel}</div>
           </div>
           <div class="saldo-nome">${acc.Name}</div>
-          <div class="saldo-valor ${isNegativo?'negativo':''}">${fmtMoney(saldoExibido)}</div>
-          <div class="saldo-sub warn">⚠️ Só categorizado · não reflete saldo real do banco</div>
-          <div class="saldo-sub">Atualizado: ${ultUpdate}</div>
+          <div class="saldo-dual">
+            ${bankExibido != null ? `
+            <div class="saldo-dual-item bank-val">
+              <div class="saldo-dual-label">Bank</div>
+              <div class="saldo-dual-valor">${fmtMoney(bankExibido)}</div>
+            </div>` : ''}
+            <div class="saldo-dual-item posted-val">
+              <div class="saldo-dual-label">Posted</div>
+              <div class="saldo-dual-valor">${fmtMoney(saldoExibido)}</div>
+            </div>
+          </div>
+          ${diffLabel ? `<div class="saldo-diff ${diffWarn?'warn':''}">${diffWarn?'⚠️ ':''}${diffLabel}</div>` : ''}
+          <div class="saldo-sub" style="margin-top:6px">Atualizado: ${ultUpdate}</div>
         </div>
       `;
     });
@@ -989,16 +1115,49 @@ async function carregarKPIs(){
 
     document.getElementById('kpi-receita').textContent = fmtMoney(receita);
     document.getElementById('kpi-receita').classList.remove('kpi-loading');
-    document.getElementById('kpi-receita-sub').textContent = periodo.label;
 
     document.getElementById('kpi-despesas').textContent = fmtMoney(despesas + cogs);
     document.getElementById('kpi-despesas').classList.remove('kpi-loading');
-    document.getElementById('kpi-despesas-sub').textContent = 'Inclui COGS';
 
     document.getElementById('kpi-lucro').textContent = fmtMoney(lucro);
     document.getElementById('kpi-lucro').classList.remove('kpi-loading');
     const margem = receita > 0 ? ((lucro/receita)*100).toFixed(1) : 0;
-    document.getElementById('kpi-lucro-sub').textContent = `Margem: ${margem}%`;
+
+    // Delta mês anterior
+    try {
+      const hoje = new Date();
+      const mesAnt = hoje.getMonth() === 0 ? 11 : hoje.getMonth() - 1;
+      const anoAnt = hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
+      const mAntStart = new Date(anoAnt, mesAnt, 1).toISOString().slice(0,10);
+      const mAntEnd   = new Date(anoAnt, mesAnt + 1, 0).toISOString().slice(0,10);
+      const MESES_CURTOS = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+      const rAnt = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&start_date=' + mAntStart + '&end_date=' + mAntEnd + '&minorversion=70');
+      const dAnt = await rAnt.json();
+      const recAnt  = extrairValor(dAnt, 'Total Income') || extrairValor(dAnt, 'Total Revenue') || 0;
+      const despAnt = Math.abs((extrairValor(dAnt, 'Total Expenses') || 0) + (extrairValor(dAnt, 'Cost of Goods Sold') || 0));
+      const lucAnt  = extrairValor(dAnt, 'Net Income') || 0;
+      const mesLabel = MESES_CURTOS[mesAnt];
+      function renderDelta(elId, atual, anterior) {
+        const el = document.getElementById(elId);
+        if (!el || !anterior) return;
+        const pct = ((atual - anterior) / Math.abs(anterior)) * 100;
+        const sobe = pct >= 0;
+        el.className = 'kpi-delta ' + (sobe ? 'up' : 'down');
+        el.textContent = (sobe ? '↑ ' : '↓ ') + Math.abs(pct).toFixed(0) + '% vs ' + mesLabel;
+      }
+      renderDelta('kpi-receita-delta', receita, recAnt);
+      renderDelta('kpi-despesas-delta', despesas + cogs, despAnt);
+      renderDelta('kpi-lucro-delta', lucro, lucAnt);
+
+      // Meta mensal ($50k padrão)
+      const META = 50000;
+      const pctMeta = Math.min(100, Math.round((receita / META) * 100));
+      const metaEl = document.getElementById('kpi-receita-meta');
+      if (metaEl) {
+        metaEl.innerHTML = '<div class="kpi-meta"><div class="kpi-meta-label"><span>Meta: ' + fmtMoney(META) + '</span><span>' + pctMeta + '%</span></div><div class="kpi-meta-bar"><div class="kpi-meta-fill" style="width:' + pctMeta + '%"></div></div></div>';
+      }
+    } catch(e2) { console.warn('Delta KPI:', e2); }
+
   }catch(e){
     console.error('Erro KPIs:',e);
   }
