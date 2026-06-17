@@ -63,6 +63,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .saldo-valor{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
 .saldo-card.bank .saldo-valor{color:var(--green)}
 .saldo-card.credit .saldo-valor.negativo{color:var(--amber)}
+.saldo-nome{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
 .saldo-sub{font-size:10px;color:var(--text3);margin-top:6px}
 
 /* === AVISO DE PENDINGS === */
@@ -87,12 +88,12 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .kpi.blue .kpi-value{color:var(--blue)}
 .kpi.amber .kpi-value{color:var(--amber)}
 
-.saldo-dual{display:flex;gap:10px;margin-top:10px}
+.saldo-dual{display:flex;gap:10px;margin-top:10px;min-height:60px}
 .saldo-dual-item{flex:1;background:var(--bg);border-radius:8px;padding:8px 10px}
 .saldo-dual-label{font-size:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:4px}
 .saldo-dual-item.bank-val .saldo-dual-label{color:var(--green)}
 .saldo-dual-item.posted-val .saldo-dual-label{color:var(--text3)}
-.saldo-dual-valor{font-size:16px;font-weight:700;letter-spacing:-.3px}
+.saldo-dual-valor{font-size:16px;font-weight:700;letter-spacing:-.3px;min-height:24px}
 .saldo-dual-item.bank-val .saldo-dual-valor{color:var(--green)}
 .saldo-dual-item.posted-val .saldo-dual-valor{color:var(--text2)}
 .saldo-diff{font-size:10px;margin-top:6px;color:var(--text3)}
@@ -780,6 +781,10 @@ function renderVisaoGeral(){
     </div>
 
     <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-bottom:16px;width:fit-content">ℹ️ Exibindo apenas transações categorizadas no QBO. <span id="aviso-pending-count"></span><a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue);text-decoration:none;font-size:11px;margin-left:4px">Ver Banking →</a></div>
+
+    <div class="section-title" style="margin-top:8px">💳 Saldos · Conta Corrente e Cartões <button class="section-action" onclick="carregarSaldos()">Atualizar</button></div>
+    <div class="saldos-grid" id="saldos-grid">
+      <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
       <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
       <div class="saldo-card"><div class="skel" style="height:80px"></div></div>
     </div>
