@@ -63,7 +63,6 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .saldo-valor{font-size:24px;font-weight:700;letter-spacing:-0.5px;color:var(--text)}
 .saldo-card.bank .saldo-valor{color:var(--green)}
 .saldo-card.credit .saldo-valor.negativo{color:var(--amber)}
-.saldo-nome{font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px}
 .saldo-sub{font-size:10px;color:var(--text3);margin-top:6px}
 
 /* === AVISO DE PENDINGS === */
@@ -88,35 +87,6 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .kpi.blue .kpi-value{color:var(--blue)}
 .kpi.amber .kpi-value{color:var(--amber)}
 
-.saldo-dual{display:flex;gap:10px;margin-top:10px;min-height:60px}
-.saldo-dual-item{flex:1;background:var(--bg);border-radius:8px;padding:8px 10px}
-.saldo-dual-label{font-size:9px;text-transform:uppercase;letter-spacing:.7px;font-weight:700;margin-bottom:4px}
-.saldo-dual-item.bank-val .saldo-dual-label{color:var(--green)}
-.saldo-dual-item.posted-val .saldo-dual-label{color:var(--text3)}
-.saldo-dual-valor{font-size:16px;font-weight:700;letter-spacing:-.3px;min-height:24px}
-.saldo-dual-item.bank-val .saldo-dual-valor{color:var(--green)}
-.saldo-dual-item.posted-val .saldo-dual-valor{color:var(--text2)}
-.saldo-diff{font-size:10px;margin-top:6px;color:var(--text3)}
-.saldo-diff.warn{color:var(--amber)}
-.kpi-delta{font-size:11px;margin-top:4px}
-.kpi-delta.up{color:var(--green)}.kpi-delta.down{color:var(--red)}.kpi-delta.neu{color:var(--text3)}
-.kpi-meta{margin-top:8px}
-.kpi-meta-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:4px}
-.kpi-meta-bar{height:4px;background:var(--bg3);border-radius:99px;overflow:hidden}
-.kpi-meta-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#2ca01c,#22c55e)}
-.btn-export-pl{background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:7px 14px;cursor:pointer;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px}
-.btn-sync-bank{background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:12px;padding:7px 14px;cursor:pointer;font-family:inherit;font-weight:500;display:flex;align-items:center;gap:6px}
-.sync-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
-.sync-overlay.on{display:flex}
-.sync-box{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:24px;width:460px;max-width:95vw}
-.sync-box h3{font-size:15px;font-weight:600;margin-bottom:6px}
-.sync-box p{font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.5}
-.sync-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
-.sync-row label{font-size:12px;color:var(--text2);flex:1}
-.sync-row input{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;padding:7px 10px;font-family:inherit;width:130px;text-align:right}
-.sync-row input:focus{outline:none;border-color:var(--blue)}
-.sync-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;padding-top:12px;border-top:1px solid var(--border)}
-.sync-last{font-size:10px;color:var(--text3);margin-top:8px;text-align:center}
 /* === SECTION / CHART === */
 .section{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
 .section-title{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
@@ -675,9 +645,12 @@ function montarSidebar(){
   document.getElementById('sidebar').innerHTML = `
     <div class="sidebar-section">Visão</div>
     <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
-    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Recorrentes</span></button>
+    <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
+    <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Pagamentos recorrentes</span></button>
     <div class="sidebar-section">Análises</div>
     <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
+    <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
     <div class="sidebar-spacer"></div>
     <div class="sidebar-divider"></div>
     <button class="sidebar-item" data-pagina="config" onclick="navegar('config')"><span class="ic">⚙️</span><span>Configurações</span></button>
@@ -751,8 +724,6 @@ function renderVisaoGeral(){
         <div class="page-sub">Dados do QuickBooks · ${status.company_name||'Conta conectada'}</div>
       </div>
       <div style="display:flex;gap:8px;align-items:center">
-        <button class="btn-sync-bank" onclick="abrirSync()">🔄 Bank</button>
-        <button class="btn-export-pl" onclick="exportarPL()">📄 P&L</button>
         <div class="qbo-status connected"><div class="dot"></div>QuickBooks conectado</div>
         <button class="btn-disconnect" onclick="desconectarQBO()">Desconectar</button>
       </div>
@@ -780,7 +751,14 @@ function renderVisaoGeral(){
       </div>
     </div>
 
-    <div style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:6px 12px;margin-bottom:16px;width:fit-content">ℹ️ Exibindo apenas transações categorizadas no QBO. <span id="aviso-pending-count"></span><a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue);text-decoration:none;font-size:11px;margin-left:4px">Ver Banking →</a></div>
+    <div class="aviso-pendings">
+      <div class="aviso-pendings-icon">⚠️</div>
+      <div class="aviso-pendings-text">
+        <span class="titulo">Atenção · saldos podem não refletir a realidade</span>
+        Os valores abaixo são apenas o que está <span class="destaque">categorizado</span> no QuickBooks. Transações importadas do banco que ainda estão em <span class="destaque">"For Review"</span> não aparecem aqui. O <span class="destaque">saldo real do banco</span> pode ser bem diferente — <span id="aviso-pending-count"></span>verifique no QBO Banking.
+      </div>
+      <a href="https://qbo.intuit.com/app/banking" target="_blank" class="aviso-pendings-link">Ver Banking no QBO →</a>
+    </div>
 
     <div class="section-title" style="margin-top:8px">💳 Saldos · Conta Corrente e Cartões <button class="section-action" onclick="carregarSaldos()">Atualizar</button></div>
     <div class="saldos-grid" id="saldos-grid">
@@ -790,9 +768,9 @@ function renderVisaoGeral(){
     </div>
 
     <div class="kpi-grid">
-      <div class="kpi green"><div class="kpi-label">Receita</div><div class="kpi-value kpi-loading" id="kpi-receita">⏳</div><div class="kpi-delta neu" id="kpi-receita-delta"></div><div id="kpi-receita-meta"></div></div>
-      <div class="kpi red"><div class="kpi-label">Despesas</div><div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div><div class="kpi-delta neu" id="kpi-despesas-delta"></div></div>
-      <div class="kpi blue"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div><div class="kpi-delta neu" id="kpi-lucro-delta"></div></div>
+      <div class="kpi green"><div class="kpi-label">Receita</div><div class="kpi-value kpi-loading" id="kpi-receita">⏳</div><div class="kpi-sub" id="kpi-receita-sub"></div></div>
+      <div class="kpi red"><div class="kpi-label">Despesas</div><div class="kpi-value kpi-loading" id="kpi-despesas">⏳</div><div class="kpi-sub" id="kpi-despesas-sub"></div></div>
+      <div class="kpi blue"><div class="kpi-label">Lucro Líquido</div><div class="kpi-value kpi-loading" id="kpi-lucro">⏳</div><div class="kpi-sub" id="kpi-lucro-sub"></div></div>
       <div class="kpi amber"><div class="kpi-label">A Receber</div><div class="kpi-value kpi-loading" id="kpi-ar">⏳</div><div class="kpi-sub" id="kpi-ar-sub"></div></div>
     </div>
 
@@ -915,55 +893,35 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
-    // Bank balances do Supabase
-    let bankMap = {};
-    try {
-      const _br = await fetch('https://ayhijjbvvsioxpdsrouq.supabase.co/rest/v1/bank_saldos?select=*',{headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY'}});
-      (await _br.json()||[]).forEach(s=>{ bankMap[s.conta_id]=s; });
-    } catch(e) {}
-
-    const OCULTAS = ['7013'];
-    const accs = accounts.filter(a=>!OCULTAS.some(k=>(a.Name||'').includes(k)));
-
     let html = '';
-    accs.forEach(acc=>{
+    accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
       const tipo = isBank ? 'bank' : 'credit';
       const tipoLabel = isBank ? 'Conta Corrente' : 'Cartão de Crédito';
       const icon = isBank ? '🏦' : '💳';
-      const posted = parseFloat(acc.CurrentBalance) || 0;
-      const postedEx = isBank ? posted : -posted;
+      const saldo = parseFloat(acc.CurrentBalance) || 0;
+      const saldoExibido = isBank ? saldo : -saldo;
+      const isNegativo = saldoExibido < 0;
       const ultUpdate = acc.MetaData && acc.MetaData.LastUpdatedTime
         ? new Date(acc.MetaData.LastUpdatedTime).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
         : '-';
-      const bk = bankMap[acc.Id];
-      const bankVal = bk ? parseFloat(bk.bank_balance) : null;
-      const diff = bankVal !== null ? bankVal - postedEx : null;
-      const diffWarn = diff !== null && Math.abs(diff) > 1;
 
       html += `
         <div class="saldo-card ${tipo}">
-          <div class="saldo-head"><div class="saldo-icon">${icon}</div><div class="saldo-tipo">${tipoLabel}</div></div>
-          <div class="saldo-nome">${acc.Name}</div>
-          <div class="saldo-dual">
-            <div class="saldo-dual-item bank-val">
-              <div class="saldo-dual-label">BANK</div>
-              <div class="saldo-dual-valor">${bankVal !== null ? fmtMoney(bankVal) : '<span style="color:var(--text3);font-size:11px">clique 🔄 Bank</span>'}</div>
-            </div>
-            <div class="saldo-dual-item posted-val">
-              <div class="saldo-dual-label">POSTED</div>
-              <div class="saldo-dual-valor">${fmtMoney(postedEx)}</div>
-            </div>
+          <div class="saldo-head">
+            <div class="saldo-icon">${icon}</div>
+            <div class="saldo-tipo">${tipoLabel}</div>
           </div>
-          ${diff !== null ? `<div class="saldo-diff ${diffWarn?'warn':''}">${diffWarn?'⚠️ Diferença: '+fmtMoney(Math.abs(diff)):'✓ Em dia'}</div>` : ''}
-          ${bk ? `<div class="saldo-sub">Bank: ${new Date(bk.atualizado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</div>` : ''}
-          <div class="saldo-sub">QBO: ${ultUpdate}</div>
+          <div class="saldo-nome">${acc.Name}</div>
+          <div class="saldo-valor ${isNegativo?'negativo':''}">${fmtMoney(saldoExibido)}</div>
+          <div class="saldo-sub warn">⚠️ Só categorizado · não reflete saldo real do banco</div>
+          <div class="saldo-sub">Atualizado: ${ultUpdate}</div>
         </div>
       `;
     });
     grid.innerHTML = html;
   }catch(e){
-    grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1;padding:20px"><div style="color:var(--red);font-size:13px;font-weight:600">⚠️ Erro nos saldos:</div><div style="color:var(--text2);font-size:12px;margin-top:6px">'+e.message+'</div><div style="color:var(--text3);font-size:11px;margin-top:4px">'+e.stack+'</div></div>';
+    grid.innerHTML = '<div class="saldo-card" style="grid-column:1/-1"><div style="color:var(--red);font-size:13px">Erro: '+e.message+'</div></div>';
   }
 }
 
@@ -1031,44 +989,16 @@ async function carregarKPIs(){
 
     document.getElementById('kpi-receita').textContent = fmtMoney(receita);
     document.getElementById('kpi-receita').classList.remove('kpi-loading');
+    document.getElementById('kpi-receita-sub').textContent = periodo.label;
 
     document.getElementById('kpi-despesas').textContent = fmtMoney(despesas + cogs);
     document.getElementById('kpi-despesas').classList.remove('kpi-loading');
+    document.getElementById('kpi-despesas-sub').textContent = 'Inclui COGS';
 
     document.getElementById('kpi-lucro').textContent = fmtMoney(lucro);
     document.getElementById('kpi-lucro').classList.remove('kpi-loading');
     const margem = receita > 0 ? ((lucro/receita)*100).toFixed(1) : 0;
-
-    // Delta mês anterior
-    try {
-      const hoje = new Date();
-      const mesAnt = hoje.getMonth() === 0 ? 11 : hoje.getMonth() - 1;
-      const anoAnt = hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
-      const mAntStart = new Date(anoAnt, mesAnt, 1).toISOString().slice(0,10);
-      const mAntEnd   = new Date(anoAnt, mesAnt + 1, 0).toISOString().slice(0,10);
-      const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
-      const rAnt = await fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&start_date=' + mAntStart + '&end_date=' + mAntEnd + '&minorversion=70');
-      const dAnt = await rAnt.json();
-      const recAnt  = extrairValor(dAnt, 'Total Income') || extrairValor(dAnt, 'Total Revenue') || 0;
-      const despAnt = Math.abs((extrairValor(dAnt, 'Total Expenses') || 0) + (extrairValor(dAnt, 'Cost of Goods Sold') || 0));
-      const lucAnt  = extrairValor(dAnt, 'Net Income') || 0;
-      const ml = MESES[mesAnt];
-      function setDelta(elId, atual, ant) {
-        const el = document.getElementById(elId);
-        if(!el || !ant) return;
-        const pct = ((atual - ant) / Math.abs(ant)) * 100;
-        el.className = 'kpi-delta ' + (pct >= 0 ? 'up' : 'down');
-        el.textContent = (pct >= 0 ? '↑ ' : '↓ ') + Math.abs(pct).toFixed(0) + '% vs ' + ml;
-      }
-      setDelta('kpi-receita-delta', receita, recAnt);
-      setDelta('kpi-despesas-delta', despesas + cogs, despAnt);
-      setDelta('kpi-lucro-delta', lucro, lucAnt);
-      // Meta receita
-      const META = 50000;
-      const pctMeta = Math.min(100, Math.round((receita / META) * 100));
-      const metaEl = document.getElementById('kpi-receita-meta');
-      if(metaEl) metaEl.innerHTML = '<div class="kpi-meta"><div class="kpi-meta-label"><span>Meta: '+fmtMoney(META)+'</span><span>'+pctMeta+'%</span></div><div class="kpi-meta-bar"><div class="kpi-meta-fill" style="width:'+pctMeta+'%"></div></div></div>';
-    } catch(e2) { console.warn('delta:', e2); }
+    document.getElementById('kpi-lucro-sub').textContent = `Margem: ${margem}%`;
   }catch(e){
     console.error('Erro KPIs:',e);
   }
@@ -2449,170 +2379,7 @@ function fmtDataBR(iso){
 }
 
 carregar();
-
-
-
-const _SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
-const _SH = {'Content-Type':'application/json','apikey':_SK,'Authorization':'Bearer '+_SK};
-
-async function abrirSync() {
-  const status = document.getElementById('sync-status-msg');
-  status.textContent = '⏳ Abrindo QBO Banking...';
-  document.getElementById('sync-overlay').classList.add('on');
-
-  // Pré-carrega valores salvos
-  try {
-    const r = await fetch(_SB+'/rest/v1/bank_saldos?select=*',{headers:_SH});
-    const d = await r.json();
-    (d||[]).forEach(s => {
-      const el = document.getElementById('s-'+s.conta_id);
-      if(el) el.value = s.bank_balance;
-    });
-    if(d && d.length > 0) {
-      const ult = d.sort((a,b)=>new Date(b.atualizado_em)-new Date(a.atualizado_em))[0];
-      document.getElementById('sync-last').textContent = 'Última sync: '+new Date(ult.atualizado_em).toLocaleString('pt-BR');
-    }
-  } catch(e) {}
-
-  // Abre QBO Banking em janela minimizada e tenta ler saldos
-  const win = window.open('https://qbo.intuit.com/app/banking', 'qbo_bank', 'width=800,height=600,left=200,top=100');
-
-  if(!win) {
-    status.innerHTML = '⚠️ Pop-up bloqueado. <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">Abrir QBO Banking →</a> e inserir manualmente.';
-    return;
-  }
-
-  status.textContent = '⏳ Aguardando QBO carregar...';
-
-  let tentativas = 0;
-  const timer = setInterval(() => {
-    tentativas++;
-
-    // Timeout após 30s
-    if(tentativas > 30) {
-      clearInterval(timer);
-      try { win.close(); } catch(e) {}
-      status.innerHTML = '⚠️ Não foi possível ler automaticamente. Insira os valores manualmente ou <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">faça login no QBO primeiro →</a>';
-      return;
-    }
-
-    try {
-      const doc = win.document;
-      if(!doc || !doc.body || !doc.body.innerText) return;
-
-      const txt = doc.body.innerText;
-
-      // Detecta se está na tela de login
-      if(txt.includes('Sign in') || txt.includes('password') || txt.includes('Email or phone')) {
-        clearInterval(timer);
-        try { win.close(); } catch(e) {}
-        status.innerHTML = '🔒 Você não está logado no QBO. <a href="https://qbo.intuit.com" target="_blank" style="color:var(--blue)">Fazer login →</a> e depois clicar em 🔄 Bank novamente.';
-        return;
-      }
-
-      // Detecta se a página do Banking carregou
-      if(!txt.includes('Bank:') && !txt.includes('Posted:')) return;
-
-      clearInterval(timer);
-      try { win.close(); } catch(e) {}
-
-      // Extrai valores Bank por conta
-      const CONTAS = [
-        { id:'32',  patterns:['Checking KSH','6719'] },
-        { id:'148', patterns:['CHASE Credit Card','0526'] },
-        { id:'54',  patterns:['CapitalOne','Capital One','0567','6476'] }
-      ];
-
-      const lines = txt.split('
-').map(l=>l.trim()).filter(Boolean);
-      let encontrados = 0;
-
-      CONTAS.forEach(ct => {
-        for(let i=0;i<lines.length;i++) {
-          if(ct.patterns.some(p=>lines[i].includes(p))) {
-            for(let j=i;j<Math.min(i+8,lines.length);j++) {
-              // Procura linha "Bank: $X,XXX.XX"
-              if(lines[j].toLowerCase().startsWith('bank')) {
-                const m = lines[j].match(/\$([\d,]+\.?\d*)/);
-                if(m) {
-                  const val = parseFloat(m[1].replace(/,/g,''));
-                  const el = document.getElementById('s-'+ct.id);
-                  if(el) {
-                    el.value = val;
-                    el.style.borderColor = 'var(--green)';
-                    encontrados++;
-                  }
-                  break;
-                }
-              }
-            }
-            break;
-          }
-        }
-      });
-
-      if(encontrados > 0) {
-        status.textContent = '✅ ' + encontrados + ' saldo(s) lido(s) automaticamente! Confira e clique Salvar.';
-      } else {
-        status.innerHTML = '⚠️ Página carregou mas não encontrei os valores. Insira manualmente ou <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">abra o QBO Banking →</a>';
-      }
-
-    } catch(crossOriginErr) {
-      // Página ainda carregando ou bloqueio cross-origin — aguarda
-    }
-  }, 1000);
-}
-
-async function salvarBank() {
-  const contas = [
-    {id:'32', nome:'Checking KSH (6719)'},
-    {id:'148', nome:'CHASE Credit Card #0526'},
-    {id:'54', nome:'CapitalOne 0567'}
-  ];
-  const agora = new Date().toISOString();
-  for(const ct of contas) {
-    const el = document.getElementById('s-'+ct.id);
-    if(!el||el.value==='') continue;
-    const val = parseFloat(el.value);
-    if(isNaN(val)) continue;
-    const chk = await fetch(_SB+'/rest/v1/bank_saldos?conta_id=eq.'+ct.id,{headers:_SH});
-    const ex = await chk.json();
-    if(ex&&ex.length>0) {
-      await fetch(_SB+'/rest/v1/bank_saldos?conta_id=eq.'+ct.id,{method:'PATCH',headers:{..._SH,'Prefer':'return=minimal'},body:JSON.stringify({bank_balance:val,atualizado_em:agora})});
-    } else {
-      await fetch(_SB+'/rest/v1/bank_saldos',{method:'POST',headers:{..._SH,'Prefer':'return=minimal'},body:JSON.stringify({conta_id:ct.id,conta_nome:ct.nome,bank_balance:val,posted_balance:0,atualizado_em:agora})});
-    }
-  }
-  document.getElementById('sync-overlay').classList.remove('on');
-  carregarSaldos();
-  // Toast
-  const t=document.createElement('div');
-  t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1d27;border:1px solid rgba(34,197,94,.4);border-radius:8px;padding:10px 18px;font-size:13px;color:#22c55e;z-index:999';
-  t.textContent='✓ Bank balance atualizado!';
-  document.body.appendChild(t);
-  setTimeout(()=>t.remove(),3000);
-}
-
 </script>
-
-
-<!-- SYNC BANK MODAL -->
-<div class="sync-overlay" id="sync-overlay">
-  <div class="sync-box">
-    <h3>🔄 Atualizar Bank Balance</h3>
-    <div id="sync-status-msg" style="font-size:12px;color:var(--blue);margin-bottom:10px;min-height:18px"></div>
-    <p style="margin-bottom:10px;font-size:12px;color:var(--text3)">Se a leitura automática não funcionar, insira manualmente:</p>
-    <a href="https://qbo.intuit.com/app/banking" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:var(--green-bg);border:1px solid rgba(34,197,94,.3);border-radius:8px;color:var(--green);font-size:12px;padding:6px 12px;text-decoration:none;margin-bottom:14px">🏦 Abrir QBO Banking →</a>
-    <div class="sync-row"><label>🏦 Checking KSH (6719)</label><input type="number" id="s-32" step="0.01" placeholder="6,444.26"></div>
-    <div class="sync-row"><label>💳 CHASE Credit Card #0526</label><input type="number" id="s-148" step="0.01" placeholder="7,558.83"></div>
-    <div class="sync-row"><label>💳 CapitalOne 0567</label><input type="number" id="s-54" step="0.01" placeholder="306.21"></div>
-    <div class="sync-footer">
-      <button style="background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit" onclick="document.getElementById('sync-overlay').classList.remove('on')">Cancelar</button>
-      <button style="background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500" onclick="salvarBank()">💾 Salvar</button>
-    </div>
-    <div class="sync-last" id="sync-last"></div>
-  </div>
-</div>
 
 </body>
 </html>
