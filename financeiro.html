@@ -2476,8 +2476,9 @@ const _SK = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZi
 const _SH = {'Content-Type':'application/json','apikey':_SK,'Authorization':'Bearer '+_SK};
 
 async function abrirSync() {
-  const overlay = document.getElementById('sync-overlay');
   const status = document.getElementById('sync-status-msg');
+  status.textContent = '⏳ Abrindo QBO Banking...';
+  document.getElementById('sync-overlay').classList.add('on');
 
   // Pré-carrega valores salvos
   try {
@@ -2489,69 +2490,97 @@ async function abrirSync() {
     });
     if(d && d.length > 0) {
       const ult = d.sort((a,b)=>new Date(b.atualizado_em)-new Date(a.atualizado_em))[0];
-      document.getElementById('sync-last').textContent = 'Última atualização: '+new Date(ult.atualizado_em).toLocaleString('pt-BR');
+      document.getElementById('sync-last').textContent = 'Última sync: '+new Date(ult.atualizado_em).toLocaleString('pt-BR');
     }
   } catch(e) {}
 
-  overlay.classList.add('on');
+  // Abre QBO Banking em janela minimizada e tenta ler saldos
+  const win = window.open('https://qbo.intuit.com/app/banking', 'qbo_bank', 'width=800,height=600,left=200,top=100');
 
-  // Tenta ler automaticamente via iframe oculto
-  if(status) status.textContent = '⏳ Tentando ler automaticamente...';
+  if(!win) {
+    status.innerHTML = '⚠️ Pop-up bloqueado. <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">Abrir QBO Banking →</a> e inserir manualmente.';
+    return;
+  }
 
-  try {
-    const win = window.open('https://qbo.intuit.com/app/banking', '_blank', 'width=1,height=1,left=-1000,top=-1000');
-    if(!win) throw new Error('popup blocked');
+  status.textContent = '⏳ Aguardando QBO carregar...';
 
-    let tentativas = 0;
-    const timer = setInterval(() => {
-      tentativas++;
-      if(tentativas > 20) {
+  let tentativas = 0;
+  const timer = setInterval(() => {
+    tentativas++;
+
+    // Timeout após 30s
+    if(tentativas > 30) {
+      clearInterval(timer);
+      try { win.close(); } catch(e) {}
+      status.innerHTML = '⚠️ Não foi possível ler automaticamente. Insira os valores manualmente ou <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">faça login no QBO primeiro →</a>';
+      return;
+    }
+
+    try {
+      const doc = win.document;
+      if(!doc || !doc.body || !doc.body.innerText) return;
+
+      const txt = doc.body.innerText;
+
+      // Detecta se está na tela de login
+      if(txt.includes('Sign in') || txt.includes('password') || txt.includes('Email or phone')) {
         clearInterval(timer);
         try { win.close(); } catch(e) {}
-        if(status) status.textContent = '⚠️ Insira manualmente abaixo.';
+        status.innerHTML = '🔒 Você não está logado no QBO. <a href="https://qbo.intuit.com" target="_blank" style="color:var(--blue)">Fazer login →</a> e depois clicar em 🔄 Bank novamente.';
         return;
       }
-      try {
-        const body = win.document && win.document.body;
-        if(!body || !body.innerText) return;
-        const txt = body.innerText;
-        if(!txt.includes('Bank:') && !txt.includes('Bank :')) return;
-        clearInterval(timer);
-        try { win.close(); } catch(e) {}
 
-        // Extrai valores Bank do texto
-        // Formato esperado: "Bank: $6,444.26" em cada card de conta
-        const CONTAS = [
-          { id:'32',  patterns:['Checking KSH','6719'] },
-          { id:'148', patterns:['CHASE Credit Card','0526','CHASE'] },
-          { id:'54',  patterns:['CapitalOne','Capital One','0567','6476'] }
-        ];
-        const lines = txt.split('
+      // Detecta se a página do Banking carregou
+      if(!txt.includes('Bank:') && !txt.includes('Posted:')) return;
+
+      clearInterval(timer);
+      try { win.close(); } catch(e) {}
+
+      // Extrai valores Bank por conta
+      const CONTAS = [
+        { id:'32',  patterns:['Checking KSH','6719'] },
+        { id:'148', patterns:['CHASE Credit Card','0526'] },
+        { id:'54',  patterns:['CapitalOne','Capital One','0567','6476'] }
+      ];
+
+      const lines = txt.split('
 ').map(l=>l.trim()).filter(Boolean);
-        CONTAS.forEach(ct => {
-          for(let i=0;i<lines.length;i++) {
-            if(ct.patterns.some(p=>lines[i].includes(p))) {
-              for(let j=i;j<Math.min(i+6,lines.length);j++) {
-                const m = lines[j].match(/Bank[:\s]+\$?([\d,]+\.?\d*)/i);
+      let encontrados = 0;
+
+      CONTAS.forEach(ct => {
+        for(let i=0;i<lines.length;i++) {
+          if(ct.patterns.some(p=>lines[i].includes(p))) {
+            for(let j=i;j<Math.min(i+8,lines.length);j++) {
+              // Procura linha "Bank: $X,XXX.XX"
+              if(lines[j].toLowerCase().startsWith('bank')) {
+                const m = lines[j].match(/\$([\d,]+\.?\d*)/);
                 if(m) {
                   const val = parseFloat(m[1].replace(/,/g,''));
                   const el = document.getElementById('s-'+ct.id);
-                  if(el) { el.value = val; el.style.borderColor='var(--green)'; }
+                  if(el) {
+                    el.value = val;
+                    el.style.borderColor = 'var(--green)';
+                    encontrados++;
+                  }
                   break;
                 }
               }
-              break;
             }
+            break;
           }
-        });
-        if(status) status.textContent = '✅ Valores lidos! Confira e clique Salvar.';
-      } catch(e) {
-        // cross-origin ainda carregando
+        }
+      });
+
+      if(encontrados > 0) {
+        status.textContent = '✅ ' + encontrados + ' saldo(s) lido(s) automaticamente! Confira e clique Salvar.';
+      } else {
+        status.innerHTML = '⚠️ Página carregou mas não encontrei os valores. Insira manualmente ou <a href="https://qbo.intuit.com/app/banking" target="_blank" style="color:var(--blue)">abra o QBO Banking →</a>';
       }
-    }, 1000);
-  } catch(e) {
-    if(status) status.textContent = '⚠️ Insira manualmente abaixo.';
-  }
+
+    } catch(crossOriginErr) {
+      // Página ainda carregando ou bloqueio cross-origin — aguarda
+    }
+  }, 1000);
 }
 
 async function salvarBank() {
