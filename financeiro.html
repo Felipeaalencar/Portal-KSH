@@ -568,13 +568,11 @@ async function carregarEmployeeRates(forceReload = false){
 }
 
 const PAGINAS = {
-  visao:    { titulo:'Visão Geral', sub:'Filtros, saldos, KPIs e P&L', sprint:'Sprint 1 ✅' },
-  bancos:   { titulo:'Saldos & Bancos', sub:'Saldos REAIS dos bancos via Plaid', sprint:'Sprint 1.5 ⏳ aguardando você criar conta Plaid' },
-  categ:    { titulo:'Categorização', sub:'IA caça transações sem categoria no QBO', sprint:'Sprint 3 ⏳' },
-  assin:    { titulo:'Pagamentos recorrentes', sub:'Análise de gastos recorrentes', sprint:'' },
-  projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto em aberto', sprint:'Sprint 2.7 ✅ números 100% iguais QBO' },
-  cfo:      { titulo:'CFO Insights', sub:'Alertas críticos + dica do expert smart home', sprint:'Sprint 4 ⏳' },
-  config:   { titulo:'Configurações', sub:'Cost rate atual dos funcionários (read-only)', sprint:'Sprint 2.6 ✅' }
+  visao:    { titulo:'Visão Geral', sub:'Filtros, saldos, KPIs e P&L', sprint:'' },
+  fluxo:    { titulo:'Fluxo de Caixa', sub:'Projeção 30 · 60 · 90 dias', sprint:'' },
+  assin:    { titulo:'Recorrentes', sub:'Análise de gastos recorrentes', sprint:'' },
+  projetos: { titulo:'Projetos', sub:'Renda × custo × margem por projeto', sprint:'' },
+  config:   { titulo:'Configurações', sub:'Configurações da empresa', sprint:'' }
 };
 
 async function carregar(){
@@ -645,12 +643,10 @@ function montarSidebar(){
   document.getElementById('sidebar').innerHTML = `
     <div class="sidebar-section">Visão</div>
     <button class="sidebar-item" data-pagina="visao" onclick="navegar('visao')"><span class="ic">📈</span><span>Visão Geral</span></button>
-    <button class="sidebar-item" data-pagina="bancos" onclick="navegar('bancos')"><span class="ic">🏦</span><span>Saldos & Bancos</span><span class="bg">Plaid</span></button>
-    <button class="sidebar-item" data-pagina="categ" onclick="navegar('categ')"><span class="ic">🔍</span><span>Categorização</span></button>
-    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Pagamentos recorrentes</span></button>
+    <button class="sidebar-item" data-pagina="fluxo" onclick="navegar('fluxo')"><span class="ic">🔮</span><span>Fluxo de Caixa</span></button>
+    <button class="sidebar-item" data-pagina="assin" onclick="navegar('assin')"><span class="ic">💳</span><span>Recorrentes</span></button>
     <div class="sidebar-section">Análises</div>
     <button class="sidebar-item" data-pagina="projetos" onclick="navegar('projetos')"><span class="ic">📁</span><span>Projetos</span></button>
-    <button class="sidebar-item" data-pagina="cfo" onclick="navegar('cfo')"><span class="ic">💼</span><span>CFO Insights</span></button>
     <div class="sidebar-spacer"></div>
     <div class="sidebar-divider"></div>
     <button class="sidebar-item" data-pagina="config" onclick="navegar('config')"><span class="ic">⚙️</span><span>Configurações</span></button>
@@ -681,6 +677,7 @@ function navegar(pagina){
   if(chartLP){ try{ chartLP.destroy(); }catch(e){} chartLP = null; }
   window.scrollTo(0,0);
   if(pagina === 'visao') renderVisaoGeral();
+  else if(pagina === 'fluxo') renderFluxo();
   else if(pagina === 'projetos') renderProjetos();
   else if(pagina === 'config') renderConfig();
   else if(pagina === 'assin') renderRecorrentes();
@@ -1174,6 +1171,171 @@ async function carregarGraficoLP(){
 }
 
 // === PÁGINA PROJETOS ===
+function renderFluxo(){
+  const cont = document.getElementById('page-content');
+  if(!cont) return;
+  cont.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);font-size:13px">⏳ Carregando projeção...</div>';
+
+  // Busca dados do QBO: P&L atual + recorrentes + AR
+  Promise.all([
+    fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&date_macro=THIS_MONTH&minorversion=70').then(r=>r.json()),
+    fetch('/api/quickbooks/proxy?endpoint=' + encodeURIComponent('reports/ProfitAndLoss') + '&date_macro=LAST_MONTH&minorversion=70').then(r=>r.json()),
+    fetch('/api/quickbooks/proxy?endpoint=query&query=' + encodeURIComponent("select * from Invoice where Balance > '0'") + '&minorversion=70').then(r=>r.json()),
+  ]).then(([plAtual, plAnt, arData]) => {
+
+    // Extrai valores
+    const recAtual  = extrairValor(plAtual, 'Total Income') || extrairValor(plAtual, 'Total Revenue') || 0;
+    const despAtual = Math.abs((extrairValor(plAtual, 'Total Expenses')||0) + (extrairValor(plAtual, 'Cost of Goods Sold')||0));
+    const recAnt    = extrairValor(plAnt, 'Total Income') || extrairValor(plAnt, 'Total Revenue') || 0;
+    const despAnt   = Math.abs((extrairValor(plAnt, 'Total Expenses')||0) + (extrairValor(plAnt, 'Cost of Goods Sold')||0));
+
+    // Média últimos 2 meses
+    const recMedia  = (recAtual + recAnt) / 2;
+    const despMedia = (despAtual + despAnt) / 2;
+    const lucroMedia = recMedia - despMedia;
+
+    // AR — a receber
+    const faturas = (arData.QueryResponse && arData.QueryResponse.Invoice) || [];
+    const totalAR = faturas.reduce((s,f) => s + (parseFloat(f.Balance)||0), 0);
+
+    // Projeção
+    const hoje = new Date();
+    const diasNoMes = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0).getDate();
+    const diasPassados = hoje.getDate();
+    const diasRestantes = diasNoMes - diasPassados;
+    const fracMes = diasPassados / diasNoMes;
+
+    // Estimativa mês atual (extrapolando o que já aconteceu)
+    const recProj30   = recAtual / fracMes;
+    const despProj30  = despAtual / fracMes;
+    const lucroProj30 = recProj30 - despProj30;
+
+    // 60 e 90 dias baseado na média
+    const recProj60   = recProj30 + recMedia;
+    const despProj60  = despProj30 + despMedia;
+    const lucroProj60 = recProj60 - despProj60;
+
+    const recProj90   = recProj30 + recMedia * 2;
+    const despProj90  = despProj30 + despMedia * 2;
+    const lucroProj90 = recProj90 - despProj90;
+
+    // Caixa atual estimado = AR + lucro acumulado este mês
+    const caixaAtual = totalAR + (recAtual - despAtual);
+
+    const caixa30 = caixaAtual + lucroProj30 - (recAtual - despAtual);
+    const caixa60 = caixaAtual + lucroProj30 + lucroMedia - (recAtual - despAtual);
+    const caixa90 = caixaAtual + lucroProj30 + lucroMedia * 2 - (recAtual - despAtual);
+
+    function semaforo(v) {
+      if(v > 5000) return 'var(--green)';
+      if(v > 0)    return 'var(--amber)';
+      return 'var(--red)';
+    }
+
+    function sinal(v) {
+      return v >= 0 ? '+' : '';
+    }
+
+    // Meses
+    const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const m0 = MESES[hoje.getMonth()];
+    const m1 = MESES[(hoje.getMonth()+1)%12];
+    const m2 = MESES[(hoje.getMonth()+2)%12];
+
+    cont.innerHTML = `
+      <div class="page-hd">
+        <div>
+          <div class="page-title">Fluxo de Caixa</div>
+          <div class="page-sub">Projeção baseada nos dados reais do QBO · atualizada agora</div>
+        </div>
+      </div>
+
+      <!-- CAIXA ATUAL -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:24px 28px;margin-bottom:20px;display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+        <div>
+          <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:8px">Posição atual estimada</div>
+          <div style="font-family:'DM Sans',sans-serif;font-size:40px;font-weight:700;color:${semaforo(caixaAtual)}">${fmtMoney(caixaAtual)}</div>
+          <div style="font-size:12px;color:var(--text3);margin-top:4px">A receber: ${fmtMoney(totalAR)} · Lucro acumulado mês: ${fmtMoney(recAtual-despAtual)}</div>
+        </div>
+        <div style="flex:1;min-width:200px">
+          <div style="font-size:12px;color:var(--text3);margin-bottom:8px">Progresso do mês — ${diasPassados} de ${diasNoMes} dias (${Math.round(fracMes*100)}%)</div>
+          <div style="background:var(--bg3);border-radius:99px;height:6px;overflow:hidden">
+            <div style="background:linear-gradient(90deg,var(--blue),#60a5fa);height:100%;width:${Math.round(fracMes*100)}%;border-radius:99px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PROJEÇÕES 30/60/90 -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+        ${[
+          {label:'30 dias', mes: m0, rec:recProj30, desp:despProj30, lucro:lucroProj30, caixa:caixa30, nota:'Projeção do mês atual'},
+          {label:'60 dias', mes: m1, rec:recProj60, desp:despProj60, lucro:lucroProj60, caixa:caixa60, nota:'Acumulado em 2 meses'},
+          {label:'90 dias', mes: m2, rec:recProj90, desp:despProj90, lucro:lucroProj90, caixa:caixa90, nota:'Acumulado em 3 meses'},
+        ].map(p => `
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;position:relative;overflow:hidden">
+            <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,${semaforo(p.lucro)},transparent)"></div>
+            <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);margin-bottom:4px">${p.label} · ${p.mes}</div>
+            <div style="font-size:11px;color:var(--text3);margin-bottom:16px">${p.nota}</div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:12px;color:var(--text2)">Receita proj.</span>
+                <span style="font-size:14px;font-weight:600;color:var(--green)">${fmtMoney(p.rec)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:12px;color:var(--text2)">Despesas proj.</span>
+                <span style="font-size:14px;font-weight:600;color:var(--red)">${fmtMoney(p.desp)}</span>
+              </div>
+              <div style="height:1px;background:var(--border)"></div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span style="font-size:12px;color:var(--text2)">Lucro proj.</span>
+                <span style="font-size:15px;font-weight:700;color:${semaforo(p.lucro)}">${sinal(p.lucro)}${fmtMoney(p.lucro)}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px;margin-top:4px">
+                <span style="font-size:11px;color:var(--text3)">Caixa estimado</span>
+                <span style="font-size:14px;font-weight:700;color:${semaforo(p.caixa)}">${fmtMoney(p.caixa)}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+
+      <!-- A RECEBER DETALHADO -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:22px;margin-bottom:20px">
+        <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:16px">📋 Faturas em aberto — ${fmtMoney(totalAR)} a receber</div>
+        ${faturas.length === 0 
+          ? '<div style="font-size:13px;color:var(--text3);text-align:center;padding:20px">Nenhuma fatura em aberto</div>'
+          : `<div style="display:flex;flex-direction:column;gap:6px">
+            ${faturas.slice(0,8).map(f => {
+              const dias = f.DueDate ? Math.ceil((new Date(f.DueDate)-new Date())/(1000*60*60*24)) : null;
+              const cor = dias === null ? 'var(--text2)' : dias < 0 ? 'var(--red)' : dias <= 7 ? 'var(--amber)' : 'var(--text2)';
+              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">
+                <div>
+                  <div style="font-size:13px;color:var(--text)">${f.CustomerRef && f.CustomerRef.name ? f.CustomerRef.name : 'Cliente'}</div>
+                  <div style="font-size:11px;color:var(--text3)">${f.DueDate ? 'Vence ' + new Date(f.DueDate+'T12:00:00').toLocaleDateString('pt-BR') : 'Sem vencimento'} ${dias !== null ? (dias < 0 ? '· <span style="color:var(--red)">'+Math.abs(dias)+'d atrasada</span>' : '· '+dias+'d') : ''}</div>
+                </div>
+                <div style="font-size:14px;font-weight:600;color:${cor}">${fmtMoney(parseFloat(f.Balance)||0)}</div>
+              </div>`;
+            }).join('')}
+          </div>`
+        }
+      </div>
+
+      <!-- ALERTA -->
+      ${lucroProj30 < 2000 ? `
+      <div style="background:rgba(231,76,60,.08);border:1px solid rgba(231,76,60,.25);border-radius:12px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start">
+        <div style="font-size:20px;flex-shrink:0">⚠️</div>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--red);margin-bottom:4px">Atenção: margem apertada este mês</div>
+          <div style="font-size:12px;color:var(--text2)">A projeção do mês atual indica lucro de ${fmtMoney(lucroProj30)}. Considere acelerar cobranças ou adiar despesas não essenciais.</div>
+        </div>
+      </div>` : ''}
+    `;
+
+  }).catch(e => {
+    cont.innerHTML = `<div style="color:var(--red);padding:40px;text-align:center;font-size:13px">Erro ao carregar projeção: ${e.message}</div>`;
+  });
+}
+
 function renderProjetos(){
   const status = qboStatus || {};
 
