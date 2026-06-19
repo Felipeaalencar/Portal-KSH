@@ -890,6 +890,9 @@ async function carregarSaldos(){
       return (a.Name||'').localeCompare(b.Name||'');
     });
 
+    // Filtra conta pessoal 7013
+    accounts = accounts.filter(a => !(a.Name||'').includes('7013'));
+
     let html = '';
     accounts.forEach(acc=>{
       const isBank = acc.AccountType === 'Bank';
@@ -1172,7 +1175,7 @@ async function carregarGraficoLP(){
 
 // === PÁGINA PROJETOS ===
 function renderFluxo(){
-  const cont = document.getElementById('page-content');
+  const cont = document.getElementById('conteudo');
   if(!cont) return;
   cont.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;padding:60px;color:var(--text3);font-size:13px">⏳ Carregando projeção...</div>';
 
