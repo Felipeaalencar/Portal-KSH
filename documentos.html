@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KSH · Documentos</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117;--bg2:#161c26;--bg3:#1c2333;--bg4:#232d40;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#dde3ee;--text2:#7a8799;--text3:#4a5568;
+  --red:#e74c3c;--red-bg:rgba(231,76,60,0.1);
+  --green:#22c55e;--green-bg:rgba(34,197,94,0.1);
+  --amber:#f59e0b;--amber-bg:rgba(245,158,11,0.1);
+  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.1);
+  --purple:#a855f7;--purple-bg:rgba(168,85,247,0.1);
+  --r:10px;--rl:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+.header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:12px}
+.back-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:6px 12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.back-btn:hover{background:var(--bg3);color:var(--text)}
+.page-title{font-size:16px;font-weight:600}
+.page-sub{font-size:12px;color:var(--text3);margin-top:1px}
+.btn-upload{display:flex;align-items:center;gap:6px;background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:8px 14px;cursor:pointer;font-family:inherit;font-weight:500;transition:all .15s}
+.btn-upload:hover{background:rgba(59,130,246,.2)}
+
+.layout{display:grid;grid-template-columns:180px 1fr;min-height:calc(100vh - 65px)}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:12px 8px}
+.sb-sec{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.8px;font-weight:600;padding:10px 9px 5px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 9px;border-radius:8px;font-size:13px;color:var(--text2);cursor:pointer;margin-bottom:2px;border:1px solid transparent;transition:all .15s}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--blue-bg);border-color:rgba(59,130,246,.25);color:var(--blue);font-weight:500}
+.sb-count{margin-left:auto;font-size:10px;background:var(--bg3);border-radius:99px;padding:1px 7px;color:var(--text3)}
+.sb-divider{height:1px;background:var(--border);margin:8px 4px}
+
+.main{padding:20px}
+.search-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.search-input{flex:1;background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 12px;font-family:inherit;transition:border .15s}
+.search-input:focus{outline:none;border-color:var(--border2)}
+.search-input::placeholder{color:var(--text3)}
+.sort-btn{font-size:12px;padding:6px 10px;border-radius:99px;border:1px solid var(--border);background:none;color:var(--text2);cursor:pointer;font-family:inherit;transition:all .15s}
+.sort-btn.active{background:var(--blue-bg);border-color:rgba(59,130,246,.3);color:var(--blue)}
+
+.drop-zone{border:1.5px dashed var(--border2);border-radius:var(--rl);padding:28px;text-align:center;margin-bottom:20px;background:var(--bg2);transition:all .2s;cursor:pointer}
+.drop-zone:hover,.drop-zone.drag{border-color:var(--blue);background:var(--blue-bg)}
+.drop-icon{font-size:32px;margin-bottom:10px;color:var(--text3)}
+.drop-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+.drop-sub{font-size:12px;color:var(--text3)}
+.drop-btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:6px 14px;border-radius:8px;border:1px solid rgba(59,130,246,.3);background:var(--blue-bg);color:var(--blue);margin-top:12px;cursor:pointer;font-family:inherit}
+input[type=file]{display:none}
+
+.upload-progress{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:12px;display:none}
+.upload-progress.on{display:block}
+.prog-name{font-size:12px;color:var(--text);margin-bottom:6px}
+.prog-bar{height:4px;background:var(--bg3);border-radius:99px;overflow:hidden}
+.prog-fill{height:100%;background:var(--blue);border-radius:99px;transition:width .3s;width:0%}
+
+.sec-label{font-size:11px;font-weight:500;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px}
+.doc-list{display:flex;flex-direction:column;gap:6px}
+.doc-item{display:flex;align-items:center;gap:12px;padding:11px 14px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);transition:border .15s}
+.doc-item:hover{border-color:var(--border2)}
+.doc-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.icon-pdf{background:var(--red-bg)}
+.icon-img{background:var(--green-bg)}
+.icon-doc{background:var(--blue-bg)}
+.icon-other{background:var(--bg3)}
+.doc-body{flex:1;min-width:0}
+.doc-name{font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.doc-meta{font-size:11px;color:var(--text3)}
+.doc-tag{font-size:10px;padding:2px 8px;border-radius:99px;border:1px solid;white-space:nowrap;flex-shrink:0}
+.tag-empresa{background:var(--purple-bg);color:var(--purple);border-color:rgba(168,85,247,.3)}
+.tag-equip{background:var(--amber-bg);color:var(--amber);border-color:rgba(245,158,11,.3)}
+.doc-actions{display:flex;gap:4px;flex-shrink:0}
+.doc-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:5px;border-radius:6px;transition:all .15s;font-family:inherit}
+.doc-btn:hover{background:var(--bg3);color:var(--text)}
+.doc-btn.danger:hover{background:var(--red-bg);color:var(--red)}
+
+.empty{text-align:center;padding:60px 20px;color:var(--text3)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty-title{font-size:14px;color:var(--text2);margin-bottom:6px}
+
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--rl);padding:22px;width:420px;max-width:95vw}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:16px}
+.modal label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+.modal select,.modal input[type=text]{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;padding:8px 10px;font-family:inherit;margin-bottom:14px}
+.modal select:focus,.modal input:focus{outline:none;border-color:var(--border2)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.btn-cancel{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:7px 14px;cursor:pointer;font-family:inherit}
+.btn-save{background:var(--blue-bg);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:var(--blue);font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit;font-weight:500}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:10px 18px;font-size:13px;color:var(--text);z-index:999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+.toast.ok{border-color:rgba(34,197,94,.4);color:var(--green)}
+.toast.err{border-color:rgba(231,76,60,.4);color:var(--red)}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <button class="back-btn" onclick="voltarSeletor()">← Início</button>
+    <div>
+      <div class="page-title">📁 Documentos</div>
+      <div class="page-sub">Gestores apenas</div>
+    </div>
+  </div>
+  <button class="btn-upload" onclick="document.getElementById('file-input').click()">
+    ⬆️ Enviar arquivo
+  </button>
+  <input type="file" id="file-input" multiple accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" onchange="handleFiles(this.files)">
+</div>
+
+<div class="layout">
+  <div class="sidebar">
+    <div class="sb-sec">Categorias</div>
+    <div class="sb-item active" onclick="filtrarCategoria('todos',this)">📂 Todos <span class="sb-count" id="count-todos">0</span></div>
+    <div class="sb-item" onclick="filtrarCategoria('empresa',this)">🏢 Empresa <span class="sb-count" id="count-empresa">0</span></div>
+    <div class="sb-item" onclick="filtrarCategoria('equipamentos',this)">🔧 Equipamentos <span class="sb-count" id="count-equipamentos">0</span></div>
+    <div class="sb-divider"></div>
+    <div class="sb-sec">Tipo</div>
+    <div class="sb-item" onclick="filtrarTipo('pdf',this)">📄 PDF</div>
+    <div class="sb-item" onclick="filtrarTipo('imagem',this)">🖼️ Imagens</div>
+    <div class="sb-item" onclick="filtrarTipo('outros',this)">📎 Outros</div>
+  </div>
+
+  <div class="main">
+    <div class="search-row">
+      <input class="search-input" id="search-input" placeholder="Buscar documento..." oninput="renderDocs()">
+      <button class="sort-btn active" id="sort-recente" onclick="setSort('recente',this)">Recentes</button>
+      <button class="sort-btn" id="sort-az" onclick="setSort('az',this)">A-Z</button>
+    </div>
+
+    <div class="drop-zone" id="drop-zone"
+      ondrop="onDrop(event)" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)"
+      onclick="document.getElementById('file-input').click()">
+      <div class="drop-icon">☁️</div>
+      <div class="drop-title">Arraste arquivos aqui</div>
+      <div class="drop-sub">PDF, imagens, Word, Excel — até 20MB por arquivo</div>
+      <span class="drop-btn">📎 Escolher arquivo</span>
+    </div>
+
+    <div class="upload-progress" id="upload-progress">
+      <div class="prog-name" id="prog-name">Enviando...</div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill"></div></div>
+    </div>
+
+    <div class="sec-label" id="sec-label">Documentos</div>
+    <div class="doc-list" id="doc-list">
+      <div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Carregando...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CATEGORIA -->
+<div class="modal-bg" id="modal-cat">
+  <div class="modal">
+    <h3>📁 Classificar documento</h3>
+    <label>Nome do arquivo</label>
+    <input type="text" id="modal-nome" placeholder="Nome do documento">
+    <label>Categoria</label>
+    <select id="modal-cat-sel">
+      <option value="empresa">🏢 Empresa (licenças, seguros, alvarás)</option>
+      <option value="equipamentos">🔧 Equipamentos (manuais, garantias)</option>
+    </select>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="cancelarUpload()">Cancelar</button>
+      <button class="btn-save" onclick="confirmarUpload()">⬆️ Enviar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
+const SBH = {'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':'application/json'};
+const BUCKET = 'documentos-ksh';
+
+let docs = [];
+let filtroCategoria = 'todos';
+let filtroTipo = null;
+let sortMode = 'recente';
+let pendingFile = null;
+let currentUser = null;
+
+// ── SESSION ──────────────────────────────────
+window.addEventListener('load', function(){
+  const raw = sessionStorage.getItem('ksh_user');
+  if(!raw){ window.location.href='index.html'; return; }
+  try {
+    currentUser = JSON.parse(raw);
+    // Só gestores
+    if(currentUser.funcao && currentUser.funcao.toLowerCase() === 'tecnico'){
+      document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:var(--text2);font-size:14px">Acesso restrito a gestores.</div>';
+      return;
+    }
+    carregarDocs();
+  } catch(e){ window.location.href='index.html'; }
+});
+
+function voltarSeletor(){
+  sessionStorage.setItem('ksh_show_selector','1');
+  window.location.href='index.html';
+}
+
+// ── SUPABASE ─────────────────────────────────
+async function carregarDocs(){
+  try {
+    const r = await fetch(SB_URL+'/rest/v1/documentos_ksh?select=*&order=criado_em.desc', {headers:SBH});
+    docs = await r.json() || [];
+    atualizarContadores();
+    renderDocs();
+  } catch(e){
+    docs = [];
+    renderDocs();
+    showToast('Erro ao carregar documentos',2);
+  }
+}
+
+function atualizarContadores(){
+  document.getElementById('count-todos').textContent = docs.length;
+  document.getElementById('count-empresa').textContent = docs.filter(d=>d.categoria==='empresa').length;
+  document.getElementById('count-equipamentos').textContent = docs.filter(d=>d.categoria==='equipamentos').length;
+}
+
+// ── RENDER ────────────────────────────────────
+function renderDocs(){
+  const busca = document.getElementById('search-input').value.toLowerCase();
+  let lista = docs.filter(d => {
+    if(filtroCategoria !== 'todos' && d.categoria !== filtroCategoria) return false;
+    if(filtroTipo){
+      const ext = (d.nome||'').split('.').pop().toLowerCase();
+      if(filtroTipo === 'pdf' && ext !== 'pdf') return false;
+      if(filtroTipo === 'imagem' && !['jpg','jpeg','png','gif','webp'].includes(ext)) return false;
+      if(filtroTipo === 'outros' && ['pdf','jpg','jpeg','png','gif','webp'].includes(ext)) return false;
+    }
+    if(busca && !(d.nome||'').toLowerCase().includes(busca)) return false;
+    return true;
+  });
+
+  if(sortMode === 'az') lista.sort((a,b)=>(a.nome||'').localeCompare(b.nome||''));
+
+  const el = document.getElementById('doc-list');
+  const label = document.getElementById('sec-label');
+  label.textContent = lista.length + ' documento' + (lista.length !== 1 ? 's' : '');
+
+  if(lista.length === 0){
+    el.innerHTML = '<div class="empty"><div class="empty-icon">📭</div><div class="empty-title">Nenhum documento encontrado</div></div>';
+    return;
+  }
+
+  el.innerHTML = lista.map(d => {
+    const ext = (d.nome||'').split('.').pop().toLowerCase();
+    const isPdf = ext === 'pdf';
+    const isImg = ['jpg','jpeg','png','gif','webp'].includes(ext);
+    const icon = isPdf ? '📄' : isImg ? '🖼️' : '📎';
+    const iconClass = isPdf ? 'icon-pdf' : isImg ? 'icon-img' : 'icon-other';
+    const tagClass = d.categoria === 'empresa' ? 'tag-empresa' : 'tag-equip';
+    const tagLabel = d.categoria === 'empresa' ? 'Empresa' : 'Equipamentos';
+    const tamanho = d.tamanho ? formatBytes(d.tamanho) : '';
+    const data = d.criado_em ? new Date(d.criado_em).toLocaleDateString('pt-BR') : '';
+    const quem = d.enviado_por || '';
+    return `<div class="doc-item">
+      <div class="doc-icon ${iconClass}">${icon}</div>
+      <div class="doc-body">
+        <div class="doc-name" title="${escHtml(d.nome)}">${escHtml(d.nome)}</div>
+        <div class="doc-meta">${[quem,data,tamanho].filter(Boolean).join(' · ')}</div>
+      </div>
+      <span class="doc-tag ${tagClass}">${tagLabel}</span>
+      <div class="doc-actions">
+        <button class="doc-btn" onclick="baixarDoc('${d.id}','${escHtml(d.path)}','${escHtml(d.nome)}')" title="Baixar">⬇️</button>
+        <button class="doc-btn danger" onclick="excluirDoc('${d.id}','${escHtml(d.path)}')" title="Excluir">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── FILTROS ──────────────────────────────────
+function filtrarCategoria(cat, btn){
+  filtroCategoria = cat;
+  filtroTipo = null;
+  document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDocs();
+}
+
+function filtrarTipo(tipo, btn){
+  if(filtroTipo === tipo){ filtroTipo=null; btn.classList.remove('active'); }
+  else {
+    filtroTipo = tipo;
+    document.querySelectorAll('.sb-item').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    filtroCategoria = 'todos';
+  }
+  renderDocs();
+}
+
+function setSort(mode, btn){
+  sortMode = mode;
+  document.querySelectorAll('.sort-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderDocs();
+}
+
+// ── UPLOAD ───────────────────────────────────
+function onDragOver(e){ e.preventDefault(); document.getElementById('drop-zone').classList.add('drag'); }
+function onDragLeave(){ document.getElementById('drop-zone').classList.remove('drag'); }
+function onDrop(e){ e.preventDefault(); onDragLeave(); handleFiles(e.dataTransfer.files); }
+
+function handleFiles(files){
+  if(!files || !files.length) return;
+  const file = files[0];
+  if(file.size > 20*1024*1024){ showToast('Arquivo muito grande — máximo 20MB',2); return; }
+  pendingFile = file;
+  document.getElementById('modal-nome').value = file.name.replace(/\.[^.]+$/,'');
+  document.getElementById('modal-cat').classList.add('on');
+}
+
+function cancelarUpload(){
+  pendingFile = null;
+  document.getElementById('modal-cat').classList.remove('on');
+}
+
+async function confirmarUpload(){
+  if(!pendingFile) return;
+  const nome = document.getElementById('modal-nome').value.trim() || pendingFile.name;
+  const cat = document.getElementById('modal-cat-sel').value;
+  const ext = pendingFile.name.split('.').pop();
+  const nomeCompleto = nome.endsWith('.'+ext) ? nome : nome+'.'+ext;
+  document.getElementById('modal-cat').classList.remove('on');
+
+  // Mostra progresso
+  const prog = document.getElementById('upload-progress');
+  const fill = document.getElementById('prog-fill');
+  const progName = document.getElementById('prog-name');
+  prog.classList.add('on');
+  progName.textContent = 'Enviando ' + nomeCompleto + '...';
+
+  // Simula progresso visual
+  let pct = 0;
+  const interval = setInterval(()=>{ pct=Math.min(pct+8,85); fill.style.width=pct+'%'; },200);
+
+  try {
+    const path = cat+'/'+Date.now()+'_'+nomeCompleto.replace(/[^a-zA-Z0-9._-]/g,'_');
+
+    // Upload para Supabase Storage
+    const uploadRes = await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+path, {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':pendingFile.type||'application/octet-stream','x-upsert':'true'},
+      body: pendingFile
+    });
+
+    if(!uploadRes.ok){
+      const err = await uploadRes.text();
+      throw new Error(err);
+    }
+
+    // Salva metadados no Supabase DB
+    await fetch(SB_URL+'/rest/v1/documentos_ksh', {
+      method:'POST',
+      headers:{...SBH,'Prefer':'return=minimal'},
+      body: JSON.stringify({
+        nome: nomeCompleto,
+        path: path,
+        categoria: cat,
+        tamanho: pendingFile.size,
+        tipo: pendingFile.type||ext,
+        enviado_por: currentUser ? (currentUser.nome||currentUser.name||'') : '',
+        criado_em: new Date().toISOString()
+      })
+    });
+
+    clearInterval(interval);
+    fill.style.width='100%';
+    setTimeout(()=>{ prog.classList.remove('on'); fill.style.width='0%'; },800);
+    showToast('Documento enviado com sucesso ✓',1);
+    pendingFile = null;
+    carregarDocs();
+  } catch(e){
+    clearInterval(interval);
+    prog.classList.remove('on');
+    fill.style.width='0%';
+    showToast('Erro ao enviar: '+e.message,2);
+  }
+}
+
+// ── DOWNLOAD ─────────────────────────────────
+async function baixarDoc(id, path, nome){
+  try {
+    const r = await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+path, {
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    if(!r.ok) throw new Error('Erro ao baixar');
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nome;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch(e){ showToast('Erro ao baixar: '+e.message,2); }
+}
+
+// ── EXCLUIR ───────────────────────────────────
+async function excluirDoc(id, path){
+  if(!confirm('Excluir este documento? Esta ação não pode ser desfeita.')) return;
+  try {
+    await fetch(SB_URL+'/storage/v1/object/'+BUCKET+'/'+path, {
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    });
+    await fetch(SB_URL+'/rest/v1/documentos_ksh?id=eq.'+id, {
+      method:'DELETE',
+      headers:{...SBH,'Prefer':'return=minimal'}
+    });
+    docs = docs.filter(d=>d.id!==id);
+    atualizarContadores();
+    renderDocs();
+    showToast('Documento excluído',1);
+  } catch(e){ showToast('Erro ao excluir: '+e.message,2); }
+}
+
+// ── HELPERS ───────────────────────────────────
+function formatBytes(b){
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(0)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+function escHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function showToast(msg,tipo){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.className='toast on'+(tipo===2?' err':tipo===1?' ok':'');
+  setTimeout(()=>t.className='toast',3500);
+}
+</script>
+</body>
+</html>
