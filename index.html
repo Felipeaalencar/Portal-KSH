@@ -341,6 +341,11 @@ textarea{resize:vertical;min-height:80px}
       <div style="font-size:17px;font-weight:700;margin-bottom:6px">Tarefas</div>
       <div style="font-size:12px;color:var(--text3)">Kanban, Anotações<br>e Relatórios</div>
     </div>
+    <div id="card-documentos" onclick="entrarDocumentos()" style="background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px 40px;cursor:pointer;text-align:center;min-width:200px;transition:all .2s" onmouseover="this.style.borderColor='#22c55e';this.style.background='var(--bg3)'" onmouseout="this.style.borderColor='var(--border)';this.style.background='var(--bg2)'">
+      <div style="font-size:40px;margin-bottom:12px">📁</div>
+      <div style="font-size:17px;font-weight:700;margin-bottom:6px">Documentos</div>
+      <div style="font-size:12px;color:var(--text3)">Licenças, Seguros<br>e Manuais</div>
+    </div>
   </div>
   <button onclick="logoutSelector()" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;font-family:inherit;margin-top:8px">← Trocar usuário</button>
 </div>
@@ -4480,6 +4485,18 @@ function entrarFinanceiro() {
   window.location.href = 'financeiro.html';
 }
 
+function entrarDocumentos() {
+  sessionStorage.setItem('ksh_user', JSON.stringify({
+    id: currentUser.id,
+    nome: currentUser.nome || currentUser.name,
+    ini: currentUser.ini,
+    funcao: currentUser.funcao,
+    av_style: currentUser.av_style,
+    pin: currentUser.pin
+  }));
+  window.location.href = 'documentos.html';
+}
+
 function entrarTarefas() {
   document.getElementById('selector-wrap').style.display='none';
   sessionStorage.setItem('ksh_user', JSON.stringify({
@@ -4508,6 +4525,11 @@ function voltarSeletor() {
   document.getElementById('app-wrap').classList.remove('on');
   if(document.getElementById('crm-wrap')) document.getElementById('crm-wrap').style.display='none';
   document.getElementById('selector-wrap').style.display='flex';
+    // Esconde Documentos para técnicos
+    const cardDoc = document.getElementById('card-documentos');
+    if(cardDoc && currentUser && currentUser.funcao && currentUser.funcao.toLowerCase()==='tecnico'){
+      cardDoc.style.display='none';
+    }
 }
 
 // Restaurar sessao ao voltar de outra pagina (ferramentas.html / crm.html)
