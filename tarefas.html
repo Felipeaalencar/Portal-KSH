@@ -198,6 +198,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   <div class="loading">Carregando tarefas...</div>
 </div>
 
+<div id="done-wrap" style="display:none;padding:0 20px 20px"></div>
+
 <!-- MODAL CRIAR / EDITAR -->
 <div class="overlay" id="ov-tarefa">
   <div class="modal">
@@ -291,18 +293,26 @@ async function sbDelete(path){
 // ── ESTADO ──────────────────────────────────────────
 let currentUser=null;
 let tarefas=[];
+let usuarios=[];
 let filtroStatus='todos';
 let filtroResp=null;
 let editId=null;
 let respSel=null,statusSel=null,prioSel=null,recurSel='unica';
 
-const AV_STYLES={
-  'Assuncao':'background:rgba(83,74,183,.2);color:#a895f7',
-  'Kilian':'background:rgba(34,197,94,.15);color:#22c55e',
-  'Patricia':'background:rgba(245,158,11,.15);color:#f59e0b'
-};
-const AV_INI={'Assuncao':'AS','Kilian':'KI','Patricia':'PA'};
-const RESP_PILL_CLS={'Assuncao':'sel-as','Kilian':'sel-ki','Patricia':'sel-pa'};
+// Cores para avatares — atribuídas dinamicamente por índice
+const AV_COLORS=[
+  'background:rgba(83,74,183,.2);color:#a895f7',
+  'background:rgba(34,197,94,.15);color:#22c55e',
+  'background:rgba(245,158,11,.15);color:#f59e0b',
+  'background:rgba(231,76,60,.15);color:#e74c3c',
+  'background:rgba(59,130,246,.15);color:#60a5fa',
+  'background:rgba(168,85,247,.2);color:#a855f7',
+  'background:rgba(20,184,166,.15);color:#2dd4bf',
+];
+let AV_STYLES={};
+let AV_INI={};
+let RESP_PILL_CLS={};
+
 const STATUS_LABEL={'todo':'A fazer','doing':'Em andamento','done':'Concluída'};
 const STATUS_CLS={'todo':'b-todo','doing':'b-doing','done':'b-done'};
 const PRIO_LABEL={'high':'Alta','med':'Média','low':'Baixa'};
@@ -334,18 +344,72 @@ function voltarInicio(){
 
 // ── SUPABASE ─────────────────────────────────────────
 async function carregarTarefas(){
+  // Busca usuários ativos do Supabase primeiro
+  try{
+    const us=await sbGet('usuarios?ativo=eq.true&order=funcao');
+    if(us&&us.length>0){
+      usuarios=us;
+    } else {
+      // fallback: usuários padrão
+      usuarios=[
+        {id:'u1',nome:'Felippe K',funcao:'Gestor'},
+        {id:'u2',nome:'Patricia',funcao:'Gestor'},
+        {id:'u3',nome:'Felipe A',funcao:'Gestor'},
+        {id:'u4',nome:'Jesse',funcao:'Tecnico'},
+        {id:'u5',nome:'Yuri',funcao:'Tecnico'},
+      ];
+    }
+  }catch(e){
+    usuarios=[
+      {id:'u1',nome:'Felippe K',funcao:'Gestor'},
+      {id:'u2',nome:'Patricia',funcao:'Gestor'},
+      {id:'u3',nome:'Felipe A',funcao:'Gestor'},
+    ];
+  }
+
+  // Monta mapas de estilo por usuário
+  usuarios.forEach((u,i)=>{
+    const key=u.nome;
+    AV_STYLES[key]=AV_COLORS[i%AV_COLORS.length];
+    AV_INI[key]=(u.ini||(u.nome||'').substring(0,2).toUpperCase()).toUpperCase();
+    RESP_PILL_CLS[key]='sel-resp-'+i;
+  });
+
+  // Atualiza filtros de responsável dinamicamente
+  renderFiltrosResp();
+  // Atualiza pills do modal
+  renderPillsResp();
+
   try{
     const data=await sbGet('tarefas?order=criado_em.desc');
     tarefas=data||[];
     renderBoard();
   }catch(e){
-    // tabela pode não existir ainda — usa modo local
     tarefas=JSON.parse(localStorage.getItem('ksh_tarefas')||'[]');
     renderBoard();
     if(e.message.includes('does not exist')||e.message.includes('42P01')){
       showToast('Tabela tarefas não encontrada — usando modo local',2);
     }
   }
+}
+
+function renderFiltrosResp(){
+  // Remove filtros antigos fixos e gera dinamicamente
+  const filters=document.getElementById('filters-resp');
+  if(!filters)return;
+  filters.innerHTML=usuarios.map(u=>
+    `<button class="filter-btn" onclick="setFiltroResp('${escHtml(u.nome)}',this)">${escHtml(u.nome)}</button>`
+  ).join('');
+}
+
+function renderPillsResp(){
+  const pills=document.getElementById('pills-resp');
+  if(!pills)return;
+  pills.innerHTML=usuarios.map((u,i)=>
+    `<button class="pill" data-resp="${escHtml(u.nome)}" onclick="selecionarResp(this)">
+      <div class="av" style="width:18px;height:18px;font-size:8px;${AV_STYLES[u.nome]||AV_COLORS[0]}">${AV_INI[u.nome]||'??'}</div>${escHtml(u.nome)}
+    </button>`
+  ).join('');
 }
 
 function salvarLocal(){
@@ -363,7 +427,7 @@ function setFiltroResp(r,btn){
   if(filtroResp===r){filtroResp=null;btn.classList.remove('active');}
   else{
     filtroResp=r;
-    document.querySelectorAll('#f-as,#f-ki,#f-pa').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('#filters-resp .filter-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
   }
   renderBoard();
@@ -371,32 +435,70 @@ function setFiltroResp(r,btn){
 
 // ── RENDER BOARD ─────────────────────────────────────
 function renderBoard(){
-  const cols=[
-    {resp:'Assuncao',label:'Assunção'},
-    {resp:'Kilian',label:'Kilian'},
-    {resp:'Patricia',label:'Patricia'}
-  ];
   const today=new Date(); today.setHours(0,0,0,0);
   const wrap=document.getElementById('kanban-wrap');
+  const doneWrap=document.getElementById('done-wrap');
   renderBanner();
-  wrap.innerHTML=cols.map(col=>{
-    let cards=tarefas.filter(t=>t.responsavel===col.resp);
-    if(filtroStatus!=='todos') cards=cards.filter(t=>t.status===filtroStatus);
-    if(filtroResp&&filtroResp!==col.resp) cards=[];
-    const avStyle=AV_STYLES[col.resp]||'';
-    const ini=AV_INI[col.resp]||'??';
+
+  // Ativas no board (excluindo concluídas)
+  const ativas=tarefas.filter(t=>t.status!=='done');
+  const concluidas=tarefas.filter(t=>t.status==='done');
+
+  wrap.innerHTML=usuarios.map(u=>{
+    let cards=ativas.filter(t=>t.responsavel===u.nome);
+    if(filtroStatus!=='todos'&&filtroStatus!=='done') cards=cards.filter(t=>t.status===filtroStatus);
+    if(filtroResp&&filtroResp!==u.nome) cards=[];
+    const avStyle=AV_STYLES[u.nome]||AV_COLORS[0];
+    const ini=AV_INI[u.nome]||'??';
     return `<div class="col">
       <div class="col-header">
         <div class="col-owner">
           <div class="av" style="${avStyle}">${ini}</div>
-          <span class="col-name">${col.label}</span>
+          <span class="col-name">${escHtml(u.nome)}</span>
         </div>
         <span class="col-count">${cards.length}</span>
       </div>
       ${cards.map(t=>cardHTML(t,today)).join('')}
-      <button class="add-task-btn" onclick="abrirModalNova('${col.resp}')">+ Adicionar tarefa</button>
+      <button class="add-task-btn" onclick="abrirModalNova('${escHtml(u.nome)}')">+ Adicionar tarefa</button>
     </div>`;
   }).join('');
+
+  // Concluídas embaixo
+  if(!doneWrap)return;
+  if(concluidas.length===0){
+    doneWrap.style.display='none';
+    return;
+  }
+  doneWrap.style.display='block';
+
+  let listaFiltrada=concluidas;
+  if(filtroResp) listaFiltrada=concluidas.filter(t=>t.responsavel===filtroResp);
+
+  doneWrap.innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;margin:28px 0 14px">
+      <div style="flex:1;height:0.5px;background:var(--border)"></div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3)">
+        ✅ Concluídas
+        <span style="background:var(--green-bg);color:var(--green);border-radius:99px;padding:1px 8px;font-size:10px">${listaFiltrada.length}</span>
+      </div>
+      <div style="flex:1;height:0.5px;background:var(--border)"></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${listaFiltrada.map(t=>{
+        const avStyle=AV_STYLES[t.responsavel]||AV_COLORS[0];
+        const ini=AV_INI[t.responsavel]||(t.responsavel||'').substring(0,2).toUpperCase();
+        const data=t.atualizado_em?new Date(t.atualizado_em).toLocaleDateString('pt-BR'):'';
+        return `<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);cursor:pointer" onclick="abrirModal('${t.id}')">
+          <div style="width:18px;height:18px;border-radius:50%;background:var(--green-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0">✓</div>
+          <div class="av" style="width:20px;height:20px;font-size:8px;flex-shrink:0;${avStyle}">${ini}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:500;color:var(--text2);text-decoration:line-through;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escHtml(t.titulo)}</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:2px">${escHtml(t.responsavel||'')} · ${data}</div>
+          </div>
+          <div style="font-size:11px;color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:2px 8px;background:var(--green-bg);white-space:nowrap;flex-shrink:0" onclick="event.stopPropagation();gerarPDF('${t.id}')">📄 PDF</div>
+        </div>`;
+      }).join('')}
+    </div>`;
 }
 
 function cardHTML(t,today){
@@ -638,7 +740,8 @@ async function excluirTarefa(){
 }
 
 // ── PDF ──────────────────────────────────────────────
-function gerarPDF(){
+function gerarPDF(idParam){
+  if(idParam) editId=idParam;
   const t=tarefas.find(x=>x.id===editId);
   if(!t)return;
   const hist=t.historico||[];
