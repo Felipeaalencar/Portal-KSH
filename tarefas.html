@@ -1005,10 +1005,15 @@ async function abrirModalUsuarios(){
   const el = document.getElementById('user-list-modal');
   el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Carregando...</div>';
   try {
-    const todos = await sbGet('usuarios?order=funcao,nome');
+    let todos;
+    try {
+      todos = await sbGet('usuarios?order=funcao');
+    } catch(e) {
+      todos = await sbGet('usuarios');
+    }
     todosUsuarios = todos || [];
     // Usuários ativos = os que estão no board agora
-    usuariosAtivos = new Set(usuarios.map(u => u.id || u.nome));
+    usuariosAtivos = new Set(usuarios.map(u => u.nome));
     renderUserList();
   } catch(e) {
     el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Erro ao carregar usuários: ' + e.message + '</div>';
@@ -1026,7 +1031,7 @@ function renderUserList(){
     return;
   }
   el.innerHTML = todosUsuarios.map((u,i) => {
-    const key = u.id || u.nome;
+    const key = u.nome;
     const ativo = usuariosAtivos.has(key);
     const style = AV_COLORS[i % AV_COLORS.length];
     const ini = (u.ini || (u.nome||'').substring(0,2)).toUpperCase();
@@ -1036,7 +1041,7 @@ function renderUserList(){
         <div class="user-row-nome">${escHtml(u.nome||'')}</div>
         <div class="user-row-func">${escHtml(u.funcao||'')}</div>
       </div>
-      <button class="user-toggle ${ativo?'on':'off'}" onclick="toggleUsuario('${escHtml(key)}',this)" title="${ativo?'Remover do board':'Adicionar ao board'}"></button>
+      <button class="user-toggle ${ativo?'on':'off'}" onclick="toggleUsuario(${JSON.stringify(key)},this)" title="${ativo?'Remover do board':'Adicionar ao board'}"></button>
     </div>`;
   }).join('');
 }
@@ -1052,7 +1057,7 @@ function toggleUsuario(key, btn){
     btn.classList.add('on');
   }
   // Atualiza o array usuarios com os ativos
-  usuarios = todosUsuarios.filter(u => usuariosAtivos.has(u.id || u.nome));
+  usuarios = todosUsuarios.filter(u => usuariosAtivos.has(u.nome));
   // Remonta mapas de estilo
   AV_STYLES = {};
   AV_INI = {};
