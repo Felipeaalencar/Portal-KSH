@@ -338,9 +338,9 @@ window.addEventListener('load',function(){
       funcao:u.funcao||'',
       av_style:u.av_style||'background:rgba(168,85,247,.2);color:#a855f7'
     };
-    document.getElementById('header-av').textContent=currentUser.ini;
-    document.getElementById('header-av').style.cssText=currentUser.av_style;
-    document.getElementById('header-name').textContent=currentUser.nome;
+    const _av=document.getElementById('header-av')||document.getElementById('ksh-av'); if(_av){_av.textContent=currentUser.ini;}
+    if(_av){_av.style.cssText=currentUser.av_style;}
+    // header-name removido (header unificado)
     carregarTarefas();
   }catch(e){window.location.href='index.html';}
 });
