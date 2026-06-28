@@ -304,8 +304,8 @@ textarea{resize:vertical;min-height:80px}
 .sel-pulse{width:5px;height:5px;border-radius:50%;background:#22c55e;animation:sel-pulse 2s infinite}
 @keyframes sel-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-.sel-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:0 20px;max-width:760px}
-.sel-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px 28px;cursor:pointer;text-align:center;min-width:160px;max-width:180px;transition:all .2s;position:relative;overflow:hidden}
+.sel-cards{display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;padding:0 20px;max-width:900px}
+.sel-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px 16px;cursor:pointer;text-align:center;width:130px;flex-shrink:0;transition:all .2s;position:relative;overflow:hidden}
 .sel-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;border-radius:16px}
 .sel-card:hover{transform:translateY(-3px)}
 .sel-card:hover::after{opacity:1}
@@ -379,11 +379,6 @@ textarea{resize:vertical;min-height:80px}
   </div>
 
   <div class="sel-cards" id="selector-inner">
-    <div id="card-documentos" class="sel-card c-doc" onclick="entrarDocumentos()">
-      <div class="sel-card-icon">📁</div>
-      <div class="sel-card-name">Documentos</div>
-      <div class="sel-card-desc">Licenças, seguros e manuais</div>
-    </div>
     <div class="sel-card c-crm" onclick="entrarCRM()">
       <div class="sel-card-icon">👥</div>
       <div class="sel-card-name">CRM</div>
@@ -403,6 +398,11 @@ textarea{resize:vertical;min-height:80px}
       <div class="sel-card-icon">🔧</div>
       <div class="sel-card-name">Ferramentas</div>
       <div class="sel-card-desc">Cálculos para campo</div>
+    </div>
+    <div id="card-documentos" class="sel-card c-doc" onclick="entrarDocumentos()">
+      <div class="sel-card-icon">📁</div>
+      <div class="sel-card-name">Documentos</div>
+      <div class="sel-card-desc">Licenças, seguros e manuais</div>
     </div>
   </div>
 
@@ -723,8 +723,8 @@ textarea{resize:vertical;min-height:80px}
 .sel-pulse{width:5px;height:5px;border-radius:50%;background:#22c55e;animation:sel-pulse 2s infinite}
 @keyframes sel-pulse{0%,100%{opacity:1}50%{opacity:0.3}}
 
-.sel-cards{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;padding:0 20px;max-width:760px}
-.sel-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:24px 28px;cursor:pointer;text-align:center;min-width:160px;max-width:180px;transition:all .2s;position:relative;overflow:hidden}
+.sel-cards{display:flex;gap:10px;flex-wrap:nowrap;justify-content:center;padding:0 20px;max-width:900px}
+.sel-card{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:20px 16px;cursor:pointer;text-align:center;width:130px;flex-shrink:0;transition:all .2s;position:relative;overflow:hidden}
 .sel-card::after{content:'';position:absolute;inset:0;opacity:0;transition:opacity .2s;border-radius:16px}
 .sel-card:hover{transform:translateY(-3px)}
 .sel-card:hover::after{opacity:1}
