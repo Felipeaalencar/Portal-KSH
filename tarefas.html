@@ -374,53 +374,53 @@ function voltarInicio(){
 
 // ── SUPABASE ─────────────────────────────────────────
 async function carregarTarefas(){
-  // Busca usuários ativos do Supabase primeiro
+  // 1. Busca usuários — tenta várias queries, sempre tem fallback
   try{
-    const us=await sbGet('usuarios?ativo=eq.true&order=funcao');
-    if(us&&us.length>0){
-      usuarios=us;
+    let us = null;
+    try{ us = await sbGet('usuarios?ativo=eq.true&order=funcao'); }catch(e1){
+      try{ us = await sbGet('usuarios?order=nome'); }catch(e2){
+        us = null;
+      }
+    }
+    if(us && us.length > 0){
+      usuarios = us;
     } else {
-      // fallback: usuários padrão
-      usuarios=[
-        {id:'u1',nome:'Felippe K',funcao:'Gestor'},
-        {id:'u2',nome:'Patricia',funcao:'Gestor'},
-        {id:'u3',nome:'Felipe A',funcao:'Gestor'},
-        {id:'u4',nome:'Jesse',funcao:'Tecnico'},
-        {id:'u5',nome:'Yuri',funcao:'Tecnico'},
+      usuarios = [
+        {nome:'Felippe K', funcao:'Gestor'},
+        {nome:'Patricia',  funcao:'Gestor'},
+        {nome:'Felipe A',  funcao:'Gestor'},
+        {nome:'Kilian',    funcao:'Gestor'},
       ];
     }
   }catch(e){
-    usuarios=[
-      {id:'u1',nome:'Felippe K',funcao:'Gestor'},
-      {id:'u2',nome:'Patricia',funcao:'Gestor'},
-      {id:'u3',nome:'Felipe A',funcao:'Gestor'},
+    usuarios = [
+      {nome:'Felippe K', funcao:'Gestor'},
+      {nome:'Patricia',  funcao:'Gestor'},
+      {nome:'Felipe A',  funcao:'Gestor'},
     ];
   }
 
-  // Monta mapas de estilo por usuário
+  // 2. Monta mapas de estilo
+  AV_STYLES = {}; AV_INI = {}; RESP_PILL_CLS = {};
   usuarios.forEach((u,i)=>{
-    const key=u.nome;
-    AV_STYLES[key]=AV_COLORS[i%AV_COLORS.length];
-    AV_INI[key]=(u.ini||(u.nome||'').substring(0,2).toUpperCase()).toUpperCase();
-    RESP_PILL_CLS[key]='sel-resp-'+i;
+    AV_STYLES[u.nome] = AV_COLORS[i % AV_COLORS.length];
+    AV_INI[u.nome]    = (u.ini||(u.nome||'').substring(0,2)).toUpperCase();
+    RESP_PILL_CLS[u.nome] = 'sel-resp-'+i;
   });
-
-  // Atualiza filtros de responsável dinamicamente
   renderFiltrosResp();
-  // Atualiza pills do modal
   renderPillsResp();
 
+  // 3. Busca tarefas — fallback para localStorage
   try{
-    const data=await sbGet('tarefas?order=criado_em.desc');
-    tarefas=data||[];
-    renderBoard();
+    const data = await sbGet('tarefas?order=criado_em.desc');
+    tarefas = Array.isArray(data) ? data : [];
   }catch(e){
-    tarefas=JSON.parse(localStorage.getItem('ksh_tarefas')||'[]');
-    renderBoard();
-    if(e.message.includes('does not exist')||e.message.includes('42P01')){
-      showToast('Tabela tarefas não encontrada — usando modo local',2);
-    }
+    tarefas = JSON.parse(localStorage.getItem('ksh_tarefas')||'[]');
+    showToast('Usando dados locais',2);
   }
+
+  // 4. Renderiza SEMPRE — nunca fica preso em "Carregando"
+  renderBoard();
 }
 
 function renderFiltrosResp(){
