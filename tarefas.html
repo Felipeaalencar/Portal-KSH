@@ -1000,7 +1000,7 @@ function showToast(msg,tipo){
 let todosUsuarios = [];
 let usuariosAtivos = new Set();
 
-async function abrirModalUsuarios(){
+async async function abrirModalUsuarios(){
   document.getElementById('ov-users').classList.add('on');
   const el = document.getElementById('user-list-modal');
   el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Carregando...</div>';
