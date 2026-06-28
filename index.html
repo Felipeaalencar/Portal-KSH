@@ -318,7 +318,9 @@ textarea{resize:vertical;min-height:80px}
 .sel-card.c-fer::after{background:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.1),transparent 70%)}
 .sel-card.c-fer:hover{border-color:rgba(245,158,11,0.4)}
 .sel-card.c-doc::after{background:radial-gradient(circle at 50% 0%,rgba(20,184,166,0.1),transparent 70%)}
+.sel-card.c-portal::after{background:radial-gradient(circle at 50% 0%,rgba(231,76,60,0.1),transparent 70%)}
 .sel-card.c-doc:hover{border-color:rgba(20,184,166,0.4)}
+.sel-card.c-portal:hover{border-color:rgba(231,76,60,0.4)}
 
 .sel-card-icon{font-size:32px;margin-bottom:12px;position:relative;z-index:1}
 .sel-card-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px;position:relative;z-index:1}
@@ -383,6 +385,11 @@ textarea{resize:vertical;min-height:80px}
       <div class="sel-card-icon">👥</div>
       <div class="sel-card-name">CRM</div>
       <div class="sel-card-desc">Pipeline, Leads e Comissões</div>
+    </div>
+    <div class="sel-card c-portal" onclick="entrarPortal()">
+      <div class="sel-card-icon" style="font-size:32px;margin-bottom:12px">🏠</div>
+      <div class="sel-card-name">Portal</div>
+      <div class="sel-card-desc">OS, Lançamentos<br>BI e Equipe</div>
     </div>
     <div class="sel-card c-fin" onclick="entrarFinanceiro()">
       <div class="sel-card-icon">📊</div>
@@ -737,7 +744,9 @@ textarea{resize:vertical;min-height:80px}
 .sel-card.c-fer::after{background:radial-gradient(circle at 50% 0%,rgba(245,158,11,0.1),transparent 70%)}
 .sel-card.c-fer:hover{border-color:rgba(245,158,11,0.4)}
 .sel-card.c-doc::after{background:radial-gradient(circle at 50% 0%,rgba(20,184,166,0.1),transparent 70%)}
+.sel-card.c-portal::after{background:radial-gradient(circle at 50% 0%,rgba(231,76,60,0.1),transparent 70%)}
 .sel-card.c-doc:hover{border-color:rgba(20,184,166,0.4)}
+.sel-card.c-portal:hover{border-color:rgba(231,76,60,0.4)}
 
 .sel-card-icon{font-size:32px;margin-bottom:12px;position:relative;z-index:1}
 .sel-card-name{font-size:15px;font-weight:700;color:var(--text);margin-bottom:5px;position:relative;z-index:1}
