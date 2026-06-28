@@ -168,6 +168,29 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .ksh-module-sub{font-size:11px;color:var(--text3);margin-top:1px}
 .ksh-header-right{display:flex;align-items:center;gap:10px}
 .ksh-avatar{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+
+.user-mgmt-btn{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s}
+.user-mgmt-btn:hover{background:var(--bg3);color:var(--text)}
+.ov-users{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;align-items:center;justify-content:center}
+.ov-users.on{display:flex}
+.modal-users{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;padding:22px;width:380px;max-width:95vw;max-height:80vh;display:flex;flex-direction:column}
+.modal-users h3{font-size:15px;font-weight:600;margin-bottom:4px}
+.modal-users-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.user-list-modal{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.user-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;transition:border .15s}
+.user-row:hover{border-color:var(--border2)}
+.user-row-av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
+.user-row-info{flex:1;min-width:0}
+.user-row-nome{font-size:13px;font-weight:500;color:var(--text)}
+.user-row-func{font-size:11px;color:var(--text3)}
+.user-toggle{width:36px;height:20px;border-radius:99px;border:none;cursor:pointer;position:relative;transition:background .2s;flex-shrink:0}
+.user-toggle.on{background:var(--green)}
+.user-toggle.off{background:var(--bg4,#2a2a2a);border:1px solid var(--border)}
+.user-toggle::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .2s}
+.user-toggle.on::after{left:18px}
+.user-toggle.off::after{left:2px}
+.modal-users-footer{display:flex;justify-content:flex-end}
+.btn-fechar-users{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:13px;padding:7px 16px;cursor:pointer;font-family:inherit}
 </style>
 </head>
 <body>
@@ -183,6 +206,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
   </div>
   <div class="ksh-header-right">
     <button class="btn-primary" id="btn-nova-tarefa" onclick="abrirModalNova()" style="font-size:12px;padding:6px 12px;border-radius:8px;border:1px solid rgba(168,85,247,.3);background:rgba(168,85,247,.1);color:#a855f7;cursor:pointer;font-family:inherit">+ Nova tarefa</button>
+    <button class="user-mgmt-btn" onclick="abrirModalUsuarios()" title="Gerenciar usuários">👥 Usuários</button>
     <div class="ksh-avatar" id="header-av" style="background:rgba(168,85,247,.2);color:#a855f7">??</div>
   </div>
 </div>
@@ -865,6 +889,20 @@ body{font-family:Arial,sans-serif;background:#f4f4f4;padding:32px}
   </div>
 </div>
 <script>window.onload=function(){window.print();}<\/script>
+
+<!-- MODAL USUÁRIOS -->
+<div class="ov-users" id="ov-users">
+  <div class="modal-users">
+    <h3>👥 Usuários no Kanban</h3>
+    <div class="modal-users-sub">Ative ou desative quem aparece no board. Usuários cadastrados no portal:</div>
+    <div class="user-list-modal" id="user-list-modal">
+      <div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Carregando...</div>
+    </div>
+    <div class="modal-users-footer">
+      <button class="btn-fechar-users" onclick="fecharModalUsuarios()">Fechar</button>
+    </div>
+  </div>
+</div>
 </body></html>`;
 
   const blob=new Blob([html],{type:'text/html'});
@@ -957,6 +995,84 @@ function showToast(msg,tipo){
   t.className='toast on'+(tipo===2?' err':tipo===1?' ok':'');
   setTimeout(()=>t.className='toast',3000);
 }
+
+// ── GESTÃO DE USUÁRIOS NO KANBAN ─────────────────────────────────
+let todosUsuarios = [];
+let usuariosAtivos = new Set();
+
+async function abrirModalUsuarios(){
+  document.getElementById('ov-users').classList.add('on');
+  const el = document.getElementById('user-list-modal');
+  el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Carregando...</div>';
+  try {
+    const todos = await sbGet('usuarios?order=funcao,nome');
+    todosUsuarios = todos || [];
+    // Usuários ativos = os que estão no board agora
+    usuariosAtivos = new Set(usuarios.map(u => u.id || u.nome));
+    renderUserList();
+  } catch(e) {
+    el.innerHTML = '<div style="color:var(--red);font-size:13px;padding:10px">Erro ao carregar usuários: ' + e.message + '</div>';
+  }
+}
+
+function fecharModalUsuarios(){
+  document.getElementById('ov-users').classList.remove('on');
+}
+
+function renderUserList(){
+  const el = document.getElementById('user-list-modal');
+  if(!todosUsuarios.length){
+    el.innerHTML = '<div style="color:var(--text3);font-size:13px;text-align:center;padding:20px">Nenhum usuário encontrado no Supabase.</div>';
+    return;
+  }
+  el.innerHTML = todosUsuarios.map((u,i) => {
+    const key = u.id || u.nome;
+    const ativo = usuariosAtivos.has(key);
+    const style = AV_COLORS[i % AV_COLORS.length];
+    const ini = (u.ini || (u.nome||'').substring(0,2)).toUpperCase();
+    return `<div class="user-row">
+      <div class="user-row-av" style="${style}">${escHtml(ini)}</div>
+      <div class="user-row-info">
+        <div class="user-row-nome">${escHtml(u.nome||'')}</div>
+        <div class="user-row-func">${escHtml(u.funcao||'')}</div>
+      </div>
+      <button class="user-toggle ${ativo?'on':'off'}" onclick="toggleUsuario('${escHtml(key)}',this)" title="${ativo?'Remover do board':'Adicionar ao board'}"></button>
+    </div>`;
+  }).join('');
+}
+
+function toggleUsuario(key, btn){
+  if(usuariosAtivos.has(key)){
+    usuariosAtivos.delete(key);
+    btn.classList.remove('on');
+    btn.classList.add('off');
+  } else {
+    usuariosAtivos.add(key);
+    btn.classList.remove('off');
+    btn.classList.add('on');
+  }
+  // Atualiza o array usuarios com os ativos
+  usuarios = todosUsuarios.filter(u => usuariosAtivos.has(u.id || u.nome));
+  // Remonta mapas de estilo
+  AV_STYLES = {};
+  AV_INI = {};
+  RESP_PILL_CLS = {};
+  usuarios.forEach((u,i) => {
+    const k = u.nome;
+    AV_STYLES[k] = AV_COLORS[i % AV_COLORS.length];
+    AV_INI[k] = (u.ini||(u.nome||'').substring(0,2).toUpperCase()).toUpperCase();
+    RESP_PILL_CLS[k] = 'sel-resp-'+i;
+  });
+  renderFiltrosResp();
+  renderPillsResp();
+  renderBoard();
+}
+
+// Fecha ao clicar fora do modal
+document.addEventListener('click', function(e){
+  const ov = document.getElementById('ov-users');
+  if(ov && ov.classList.contains('on') && e.target === ov) fecharModalUsuarios();
+});
 </script>
 </body>
 </html>
