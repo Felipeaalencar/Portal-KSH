@@ -42,13 +42,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .filter-sep{width:1px;height:20px;background:var(--border);margin:0 4px}
 
 /* ── KANBAN ── */
-.kanban-wrap{padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start}
+.kanban-wrap{padding:20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;align-items:start}
 @media(max-width:700px){.kanban-wrap{grid-template-columns:1fr}}
-.col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:12px}
-.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);padding:10px;min-width:0}
+.col-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .col-owner{display:flex;align-items:center;gap:8px}
 .av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;flex-shrink:0}
-.col-name{font-size:14px;font-weight:600}
+.col-name{font-size:13px;font-weight:600}
 .col-count{font-size:11px;color:var(--text3);background:var(--bg3);border:1px solid var(--border);border-radius:99px;padding:1px 8px}
 
 /* ── CARDS ── */
@@ -450,6 +450,9 @@ function renderBoard(){
   const ativas=tarefas.filter(t=>t.status!=='done');
   const concluidas=tarefas.filter(t=>t.status==='done');
 
+  // Ajusta o número de colunas dinamicamente
+  const nCols = usuarios.length;
+  wrap.style.gridTemplateColumns = `repeat(${nCols}, minmax(0, 1fr))`;
   wrap.innerHTML=usuarios.map(u=>{
     let cards=ativas.filter(t=>t.responsavel===u.nome);
     if(filtroStatus!=='todos'&&filtroStatus!=='done') cards=cards.filter(t=>t.status===filtroStatus);
