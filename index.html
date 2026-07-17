@@ -53,7 +53,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 .app-wrap{display:none;min-height:100vh}.app-wrap.on{display:flex}
 .sidebar{width:210px;min-height:100vh;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh;z-index:50}
 .s-logo{padding:14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.s-logo img{height:34px}
+.s-logo img{width:38px;height:38px;object-fit:contain}
 .s-logo-text{font-size:11px;font-weight:600;line-height:1.3}
 .s-logo-sub{font-size:9px;color:var(--text3);letter-spacing:1px;text-transform:uppercase}
 .nav{padding:10px 8px;flex:1;overflow-y:auto}
@@ -505,6 +505,7 @@ textarea{resize:vertical;min-height:80px}
       <span style="font-size:10px;color:var(--text3)">v2.0</span>
     </div>
     <div class="s-bottom">
+      <button onclick="voltarInicio()" style="width:100%;background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:7px 10px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;margin-bottom:8px;transition:all .15s" onmouseover="this.style.background='var(--bg3)';this.style.color='var(--text)'" onmouseout="this.style.background='none';this.style.color='var(--text2)'">← Início</button>
       <div class="s-user" onclick="logout()">
         <div style="position:relative">
           <div class="s-avatar" id="sidebar-av"></div>
