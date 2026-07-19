@@ -329,7 +329,7 @@ function renderTabelaTecnicos(lista) {
     <td style="font-weight:500">${t.nome||'—'}</td>
     <td>${t.email||'—'}</td>
     <td>${t.telefone||'—'}</td>
-    <td>${t.valor_hora != null ? 'R$ ' + Number(t.valor_hora).toFixed(2).replace('.', ',') : '—'}</td>
+    <td>${t.valor_hora != null ? '$' + Number(t.valor_hora).toFixed(2) : '—'}</td>
     <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">Editar</button></td>
   </tr>`).join('');
 }
