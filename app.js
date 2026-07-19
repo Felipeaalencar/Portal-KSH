@@ -134,6 +134,10 @@ const PAGE_TITLES = {
 };
 
 function goPage(btn, pageId, title, section) {
+  if (window.innerWidth <= 860) {
+    document.querySelector('.sb')?.classList.remove('open');
+    document.getElementById('sb-overlay')?.classList.remove('on');
+  }
   document.querySelectorAll('.sb-item,.sb-child').forEach(b => b.classList.remove('on'));
   if (btn) btn.classList.add('on');
   else document.querySelectorAll('.sb-item,.sb-child').forEach(b => {
@@ -186,6 +190,11 @@ function getSubtitle(id) {
 }
 
 // ── SIDEBAR TOGGLES ───────────────────────────────────────────
+function toggleSidebar() {
+  document.querySelector('.sb')?.classList.toggle('open');
+  document.getElementById('sb-overlay')?.classList.toggle('on');
+}
+
 function toggleSec(id, hd) {
   const body = document.getElementById('sec-' + id);
   const span = hd.querySelector('span');
@@ -508,7 +517,7 @@ async function abrirOS(id) {
     <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
   </div>
   <div style="padding:18px 20px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+    <div class="os-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
         <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cliente</div>
         <div style="font-size:13px;font-weight:600">${os.cliente_nome||os.cliente||'—'}</div>
@@ -538,7 +547,7 @@ async function abrirOS(id) {
           <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
         </label>
       </div>
-      <div id="fotos-${id}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+      <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); return '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar" para começar.</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">Enviando...</div>
