@@ -742,7 +742,7 @@ async function carregarOS() {
   const el = document.getElementById('os-lista');
   console.log('carregarOS chamada, os-lista existe:', !!el);
   try {
-    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=criado_em.desc', {
+    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=created_at.desc', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
     });
     const resp = await r.json();
@@ -799,7 +799,7 @@ function renderOSLista(lista) {
         <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${STATUS_BG[o.status]||'#f5f5f3'};color:${STATUS_COLOR[o.status]||'#888'}">${STATUS_LABEL[o.status]||o.status}</span>
         ${o.origem==='orcamento'?'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">De orçamento</span>':'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f5f5f3;color:#888">Manual</span>'}
       </div>
-      <span style="font-size:11px;color:#bbb">${new Date(o.criado_em).toLocaleDateString('pt-BR')}</span>
+      <span style="font-size:11px;color:#bbb">${new Date(o.created_at||o.criado_em).toLocaleDateString('pt-BR')}</span>
     </div>
     <div style="font-size:14px;font-weight:600;margin-bottom:4px">${o.titulo||'Sem título'}</div>
     <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#888">
@@ -817,8 +817,8 @@ async function abrirOS(id) {
 
   // Busca fotos e notas
   const [fotosR, notasR] = await Promise.all([
-    fetch(SB_URL + '/rest/v1/os_fotos?os_id=eq.' + id + '&order=criado_em.desc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } }),
-    fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + id + '&order=criado_em.asc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } })
+    fetch(SB_URL + '/rest/v1/os_fotos?os_id=eq.' + id + '&order=created_at.desc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } }),
+    fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + id + '&order=created_at.asc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } })
   ]);
   const fotos = await fotosR.json() || [];
   const notas = await notasR.json() || [];
@@ -880,7 +880,7 @@ async function abrirOS(id) {
         ${notas.map(n => `
         <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
           <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
-          <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.criado_em).toLocaleString('pt-BR')}</div>
+          <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.created_at||n.criado_em).toLocaleString('pt-BR')}</div>
         </div>`).join('') || '<div style="color:#bbb;font-size:12px">Nenhuma anotação ainda.</div>'}
       </div>
       <div style="display:flex;gap:8px">
@@ -1082,7 +1082,7 @@ async function adicionarNota(osId) {
     if (lista) lista.innerHTML = notas.map(n => `
     <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
       <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
-      <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.criado_em).toLocaleString('pt-BR')}</div>
+      <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.created_at||n.criado_em).toLocaleString('pt-BR')}</div>
     </div>`).join('');
   } catch(e) { toast_show('Erro ao salvar nota', 'err'); }
 }
