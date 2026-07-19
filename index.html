@@ -855,586 +855,113 @@ function renderOSLista(lista) {
 
 async function abrirOS(id) {
   const os = osData.find(o => o.id === id);
-  if (!os) return;
-
-  // Busca fotos e notas
-  const [fotosR, notasR] = await Promise.all([
-    fetch(SB_URL + '/rest/v1/os_fotos?os_id=eq.' + id + '&order=created_at.desc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } }),
-    fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + id + '&order=created_at.asc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } })
-  ]);
-  const fotos = await fotosR.json() || [];
-  const notas = await notasR.json() || [];
+  if (!os) { toast_show('OS não encontrada', 'err'); return; }
 
   const det = document.getElementById('modal-os-det');
+  if (!det) { toast_show('Modal não encontrado', 'err'); return; }
+
+  // Mostra modal com loading
+  det.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">Carregando...</div>';
+  document.getElementById('modal-os-det-bg').style.display = 'flex';
+
+  // Busca fotos e notas
+  let fotos = [], notas = [];
+  try {
+    const [fotosR, notasR] = await Promise.all([
+      fetch(SB_URL + '/rest/v1/os_fotos?os_id=eq.' + id + '&order=created_at.desc', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+      }),
+      fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + id + '&order=created_at.asc', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+      })
+    ]);
+    const fr = await fotosR.json();
+    const nr = await notasR.json();
+    fotos = Array.isArray(fr) ? fr : [];
+    notas = Array.isArray(nr) ? nr : [];
+  } catch(e) {
+    console.error('Erro ao buscar fotos/notas:', e);
+  }
+
   det.innerHTML = `
-  <div style="padding:20px 24px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
+  <div style="padding:18px 22px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
     <div>
       <div style="font-size:11px;color:#888;margin-bottom:2px">OS #${os.numero||'—'} · <span style="color:${STATUS_COLOR[os.status]||'#888'}">${STATUS_LABEL[os.status]||os.status}</span></div>
       <div style="font-size:16px;font-weight:700">${os.titulo||'Sem título'}</div>
     </div>
-    <button onclick="fecharDetOS()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+    <button onclick="fecharDetOS()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb;line-height:1">×</button>
   </div>
-  <div style="padding:20px 24px">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+
+  <div style="padding:20px 22px">
+
+    <!-- DADOS DO CLIENTE -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
         <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cliente</div>
-        <div style="font-size:13px;font-weight:500">${os.cliente_nome||'—'}</div>
-        ${os.cliente_tel?`<div style="font-size:12px;color:#888;margin-top:2px">${os.cliente_tel}</div>`:''}
+        <div style="font-size:13px;font-weight:600">${os.cliente_nome||os.cliente||'—'}</div>
+        ${os.cliente_tel?`<div style="font-size:12px;color:#555;margin-top:2px">📞 ${os.cliente_tel}</div>`:''}
+        ${os.cliente_email?`<div style="font-size:12px;color:#555;margin-top:2px">✉️ ${os.cliente_email}</div>`:''}
       </div>
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
         <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Técnico</div>
-        <div style="font-size:13px;font-weight:500">${os.tecnico_nome||'—'}</div>
+        <div style="font-size:13px;font-weight:600">${os.tecnico_nome||'—'}</div>
+        <div style="font-size:11px;color:#888;margin-top:4px">Criado por ${os.criado_por||'—'}</div>
       </div>
-      ${os.endereco?`<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Endereço</div><div style="font-size:13px">${os.endereco}</div></div>`:''}
+      ${os.endereco?`<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Endereço</div>
+        <div style="font-size:13px">${os.endereco}</div>
+      </div>`:''}
+      ${os.descricao?`<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2">
+        <div style="font-size:10px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Descrição do serviço</div>
+        <div style="font-size:13px;color:#78350f">${os.descricao}</div>
+      </div>`:''}
     </div>
 
     <!-- STATUS -->
-    <div style="margin-bottom:20px">
+    <div style="margin-bottom:18px">
       <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">Atualizar status</div>
       <div style="display:flex;gap:6px;flex-wrap:wrap">
         ${Object.entries(STATUS_LABEL).map(([s,l]) => `
-        <button onclick="atualizarStatusOS('${id}','${s}')" style="padding:5px 12px;border-radius:99px;border:1px solid ${os.status===s?STATUS_COLOR[s]:'#e8e8e5'};background:${os.status===s?STATUS_BG[s]:'#fff'};color:${os.status===s?STATUS_COLOR[s]:'#555'};font-size:11px;font-weight:${os.status===s?'600':'400'};cursor:pointer;font-family:inherit">${l}</button>`).join('')}
+        <button onclick="atualizarStatusOS('${id}','${s}')" style="padding:5px 14px;border-radius:99px;border:1.5px solid ${os.status===s?STATUS_COLOR[s]:'#e8e8e5'};background:${os.status===s?STATUS_BG[s]:'#fff'};color:${os.status===s?STATUS_COLOR[s]:'#555'};font-size:12px;font-weight:${os.status===s?'600':'400'};cursor:pointer;font-family:inherit">${l}</button>`).join('')}
       </div>
     </div>
 
     <!-- FOTOS -->
-    <div style="margin-bottom:20px">
+    <div style="margin-bottom:18px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">Fotos (${fotos.length})</div>
-        <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">
+        <label style="display:flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">
           📷 Adicionar foto
           <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
         </label>
       </div>
       <div id="fotos-grid-${id}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
         ${fotos.length ? fotos.map(f => `
-        <a href="${f.drive_url}" target="_blank" style="aspect-ratio:1;border-radius:8px;overflow:hidden;display:block;background:#f5f5f3;border:1px solid #e8e8e5">
-          ${f.thumb_url ? `<img src="${f.thumb_url}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">🖼️</div>`}
-        </a>`).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto ainda. Clique em "Adicionar foto" para começar.</div>'}
+        <a href="${f.drive_url}" target="_blank" style="aspect-ratio:1;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5">
+          ${f.thumb_url?`<img src="${f.thumb_url}" style="width:100%;height:100%;object-fit:cover">`:'<div style="font-size:28px">🖼️</div>'}
+        </a>`).join('') : '<div style="grid-column:span 3;text-align:center;padding:24px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar foto" para começar.</div>'}
       </div>
-      <div id="upload-progress-${id}" style="display:none;margin-top:8px;font-size:12px;color:#2563eb">Enviando fotos...</div>
+      <div id="upload-progress-${id}" style="display:none;margin-top:8px;font-size:12px;color:#2563eb;text-align:center">Enviando fotos...</div>
     </div>
 
-    <!-- NOTAS -->
+    <!-- ANOTAÇÕES -->
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">Anotações (${notas.length})</div>
-      <div id="notas-lista-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-        ${notas.map(n => `
+      <div id="notas-lista-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:12px">
+        ${notas.length ? notas.map(n => `
         <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
-          <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
+          <div style="font-size:13px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
           <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.created_at||n.criado_em).toLocaleString('pt-BR')}</div>
-        </div>`).join('') || '<div style="color:#bbb;font-size:12px">Nenhuma anotação ainda.</div>'}
+        </div>`).join('') : '<div style="color:#bbb;font-size:12px;padding:8px 0">Nenhuma anotação ainda.</div>'}
       </div>
       <div style="display:flex;gap:8px">
-        <input id="nova-nota-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')adicionarNota('${id}')">
-        <button onclick="adicionarNota('${id}')" style="padding:7px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
+        <input id="nova-nota-${id}" placeholder="Adicionar anotação do serviço..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')adicionarNota('${id}')">
+        <button onclick="adicionarNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
       </div>
     </div>
 
     ${os.drive_folder_url?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e8e8e5"><a href="${os.drive_folder_url}" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">📁 Abrir pasta no Google Drive</a></div>`:''}
   </div>`;
-
-  document.getElementById('modal-os-det-bg').style.display = 'flex';
 }
 
-async function deletarOS(id, titulo) {
-  if (!confirm('Deletar a OS "' + titulo + '"?\nEsta ação não pode ser desfeita.')) return;
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
-      method: 'DELETE',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
-    });
-    if (!r.ok) throw new Error(await r.text());
-    toast_show('OS deletada', 'ok');
-    carregarOS();
-  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
-}
-
-function editarOS(id) {
-  const os = osData.find(o => o.id === id);
-  if (!os) return;
-
-  // Abre modal de edição
-  document.getElementById('modal-edit-os-bg').style.display = 'flex';
-  document.getElementById('edit-os-id').value = id;
-  document.getElementById('edit-os-titulo').value = os.titulo || '';
-  document.getElementById('edit-os-tecnico').value = os.tecnico_nome || '';
-  document.getElementById('edit-os-desc').value = os.descricao || '';
-  document.getElementById('edit-os-status').value = os.status || 'aberta';
-  document.getElementById('edit-os-cliente-info').textContent = os.cliente_nome || os.cliente || '—';
-}
-
-function fecharEditOS() {
-  document.getElementById('modal-edit-os-bg').style.display = 'none';
-}
-
-async function salvarEditOS() {
-  const id = document.getElementById('edit-os-id').value;
-  const dados = {
-    titulo: document.getElementById('edit-os-titulo').value.trim(),
-    tecnico_nome: document.getElementById('edit-os-tecnico').value.trim() || null,
-    descricao: document.getElementById('edit-os-desc').value.trim() || null,
-    status: document.getElementById('edit-os-status').value,
-  };
-  if (!dados.titulo) { toast_show('Título obrigatório', 'err'); return; }
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
-      method: 'PATCH',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(dados)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    fecharEditOS();
-    toast_show('OS atualizada!', 'ok');
-    carregarOS();
-  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
-}
-
-function fecharDetOS() {
-  document.getElementById('modal-os-det-bg').style.display = 'none';
-  carregarOS();
-}
-
-// Modal nova OS
-function abrirModalNovaOS() {
-  document.getElementById('modal-os-bg').style.display = 'flex';
-  setTimeout(() => document.getElementById('os-titulo')?.focus(), 100);
-}
-function fecharModalOS() {
-  document.getElementById('modal-os-bg').style.display = 'none';
-  osClienteSelecionado = null;
-}
-
-// ── BUSCA CLIENTE NO CRM ─────────────────────────────────────
-let osClienteSelecionado = null;
-let buscaClienteTimer = null;
-
-async function buscarClienteOS(termo) {
-  clearTimeout(buscaClienteTimer);
-  const resultados = document.getElementById('os-cliente-resultados');
-  const naoEncontrado = document.getElementById('os-cliente-nao-encontrado');
-  
-  if (!termo || termo.length < 2) {
-    resultados.style.display = 'none';
-    naoEncontrado.style.display = 'none';
-    return;
-  }
-
-  buscaClienteTimer = setTimeout(async () => {
-    try {
-      const r = await fetch(SB_URL + '/rest/v1/clientes?nome=ilike.*' + encodeURIComponent(termo) + '*&ativo=eq.true&limit=8', {
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
-      });
-      const clientes = await r.json() || [];
-      
-      if (!clientes.length) {
-        resultados.style.display = 'none';
-        naoEncontrado.style.display = 'block';
-        return;
-      }
-      
-      naoEncontrado.style.display = 'none';
-      resultados.style.display = 'block';
-      resultados.innerHTML = clientes.map(cl => `
-        <div onclick="selecionarClienteOS(${JSON.stringify(cl).replace(/"/g,'&quot;')})" 
-             style="padding:10px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3;transition:background .1s"
-             onmouseover="this.style.background='#f9f9f7'" onmouseout="this.style.background='#fff'">
-          <div style="font-size:13px;font-weight:500">${cl.nome}</div>
-          <div style="font-size:11px;color:#888;margin-top:1px">${[cl.email,cl.telefone,cl.endereco].filter(Boolean).join(' · ')}</div>
-        </div>`).join('');
-    } catch(e) {
-      resultados.style.display = 'none';
-    }
-  }, 300);
-}
-
-function selecionarClienteOS(cliente) {
-  osClienteSelecionado = cliente;
-  document.getElementById('os-cliente-busca').value = '';
-  document.getElementById('os-cliente-resultados').style.display = 'none';
-  document.getElementById('os-cliente-nao-encontrado').style.display = 'none';
-  document.getElementById('os-cliente-selecionado').style.display = 'block';
-  document.getElementById('os-cliente-nome-exibido').textContent = cliente.nome;
-  const dados = [cliente.email, cliente.telefone, cliente.endereco].filter(Boolean).join(' · ');
-  document.getElementById('os-cliente-dados-exibidos').textContent = dados;
-}
-
-function limparClienteOS() {
-  osClienteSelecionado = null;
-  document.getElementById('os-cliente-selecionado').style.display = 'none';
-  document.getElementById('os-cliente-busca').value = '';
-  document.getElementById('os-cliente-busca').focus();
-}
-
-function abrirCadastroCliente() {
-  document.getElementById('modal-cliente-bg').style.display = 'flex';
-  setTimeout(() => document.getElementById('nc-nome')?.focus(), 100);
-}
-
-function fecharCadastroCliente() {
-  document.getElementById('modal-cliente-bg').style.display = 'none';
-}
-
-async function salvarNovoCliente() {
-  const nome = document.getElementById('nc-nome')?.value.trim();
-  const email = document.getElementById('nc-email')?.value.trim();
-  const telefone = document.getElementById('nc-tel')?.value.trim();
-  const endereco = document.getElementById('nc-endereco')?.value.trim();
-  
-  if (!nome || !email || !telefone || !endereco) {
-    toast_show('Preencha todos os campos obrigatórios', 'err');
-    return;
-  }
-  
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/clientes', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify({ nome, email, telefone, endereco, contato: document.getElementById('nc-contato')?.value.trim()||null, ativo: true })
-    });
-    if (!r.ok) throw new Error(await r.text());
-    const [cliente] = await r.json();
-    fecharCadastroCliente();
-    selecionarClienteOS(cliente);
-    toast_show('Cliente cadastrado no CRM!', 'ok');
-  } catch(e) {
-    toast_show('Erro ao cadastrar: ' + e.message, 'err');
-  }
-}
-
-async function salvarOS() {
-  const titulo = document.getElementById('os-titulo')?.value.trim();
-  if (!titulo) { toast_show('Título é obrigatório', 'err'); return; }
-  if (!osClienteSelecionado) { toast_show('Selecione um cliente do CRM', 'err'); document.getElementById('os-cliente-busca')?.focus(); return; }
-  const nova = {
-    titulo,
-    cliente: osClienteSelecionado.nome,
-    cliente_nome: osClienteSelecionado.nome,
-    cliente_tel: osClienteSelecionado.telefone||null,
-    cliente_email: osClienteSelecionado.email||null,
-    endereco: osClienteSelecionado.endereco||null,
-    tecnico_nome: document.getElementById('os-tecnico')?.value.trim()||null,
-    descricao: document.getElementById('os-desc')?.value.trim()||null,
-    status: 'aberta',
-    origem: 'manual',
-    criado_por: ME.nome
-  };
-  try {
-    const r = await fetch(SB_URL + '/rest/v1/ordens_servico', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
-      body: JSON.stringify(nova)
-    });
-    if (!r.ok) throw new Error(await r.text());
-    fecharModalOS();
-    toast_show('OS criada com sucesso!', 'ok');
-    setTimeout(carregarOS, 100);
-    // Cria lead no CRM automaticamente (OS manual)
-    criarLeadAutomatico(nova);
-  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
-}
-
-async function criarLeadAutomatico(os) {
-  // Cria lead no CRM quando OS é criada manualmente
-  try {
-    await fetch(SB_URL + '/rest/v1/crm_leads', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nome: os.cliente_nome||'Lead de OS', origem: 'os_manual', status: 'lead', criado_por: ME.nome })
-    });
-  } catch(e) { console.log('Lead não criado (tabela CRM pode não existir ainda):', e.message); }
-}
-
-async function atualizarStatusOS(id, status) {
-  try {
-    await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
-      method: 'PATCH',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status, atualizado_em: new Date().toISOString() })
-    });
-    toast_show('Status atualizado!', 'ok');
-    fecharDetOS();
-  } catch(e) { toast_show('Erro ao atualizar', 'err'); }
-}
-
-async function adicionarNota(osId) {
-  const input = document.getElementById('nova-nota-' + osId);
-  const texto = input?.value.trim();
-  if (!texto) return;
-  try {
-    await fetch(SB_URL + '/rest/v1/os_notas', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ os_id: osId, texto, autor: ME.nome })
-    });
-    input.value = '';
-    // Atualiza lista de notas
-    const r = await fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + osId + '&order=criado_em.asc', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
-    });
-    const notas = await r.json();
-    const lista = document.getElementById('notas-lista-' + osId);
-    if (lista) lista.innerHTML = notas.map(n => `
-    <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
-      <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
-      <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.created_at||n.criado_em).toLocaleString('pt-BR')}</div>
-    </div>`).join('');
-  } catch(e) { toast_show('Erro ao salvar nota', 'err'); }
-}
-
-// ── GOOGLE DRIVE ─────────────────────────────────────────────
-function conectarGoogle() {
-  const scope = 'https://www.googleapis.com/auth/drive.file';
-  const url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
-    'client_id=' + GOOGLE_CLIENT_ID +
-    '&redirect_uri=' + encodeURIComponent(window.location.origin) +
-    '&response_type=token' +
-    '&scope=' + encodeURIComponent(scope);
-  window.open(url, 'google_auth', 'width=500,height=600');
-}
-
-// Recebe o token do Google após autenticação
-window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'google_token') {
-    googleAccessToken = e.data.token;
-    const el = document.getElementById('google-status-txt');
-    if (el) el.innerHTML = '✅ Google Drive conectado — pronto para upload de fotos';
-    document.getElementById('google-status').style.background = '#f0fdf4';
-    document.getElementById('google-status').style.borderColor = '#bbf7d0';
-    document.getElementById('google-status').style.color = '#166534';
-  }
-});
-
-// Verifica token do Google no hash após redirect
-window.addEventListener('load', function() {
-  const hash = new URLSearchParams(window.location.hash.substring(1));
-  const token = hash.get('access_token');
-  if (token && hash.get('scope') && hash.get('scope').includes('drive')) {
-    googleAccessToken = token;
-    history.replaceState(null, '', window.location.pathname);
-  }
-});
-
-async function uploadFotos(event, osId) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-
-  if (!googleAccessToken) {
-    alert('Conecte o Google Drive primeiro para fazer upload de fotos.');
-    return;
-  }
-
-  const progress = document.getElementById('upload-progress-' + osId);
-  if (progress) progress.style.display = 'block';
-
-  // Garante que a OS tem uma pasta no Drive
-  const os = osData.find(o => o.id === osId);
-  let folderId = os?.drive_folder_id;
-
-  if (!folderId) {
-    folderId = await criarPastaDrive(os?.titulo || 'OS ' + osId);
-    if (folderId) {
-      const folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
-      await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + osId, {
-        method: 'PATCH',
-        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drive_folder_id: folderId, drive_folder_url: folderUrl })
-      });
-    }
-  }
-
-  for (let i = 0; i < files.length; i++) {
-    if (progress) progress.textContent = `Enviando foto ${i+1} de ${files.length}...`;
-    try {
-      const driveFile = await uploadParaDrive(files[i], folderId);
-      if (driveFile) {
-        await fetch(SB_URL + '/rest/v1/os_fotos', {
-          method: 'POST',
-          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            os_id: osId,
-            nome: files[i].name,
-            drive_url: 'https://drive.google.com/file/d/' + driveFile.id + '/view',
-            thumb_url: driveFile.thumbnailLink || null,
-            enviado_por: ME.nome
-          })
-        });
-      }
-    } catch(e) { console.error('Erro no upload:', e); }
-  }
-
-  if (progress) progress.style.display = 'none';
-  toast_show('Fotos enviadas!', 'ok');
-  abrirOS(osId);
-}
-
-async function criarPastaDrive(nome) {
-  try {
-    const r = await fetch('https://www.googleapis.com/drive/v3/files', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'KSH OS - ' + nome, mimeType: 'application/vnd.google-apps.folder' })
-    });
-    const d = await r.json();
-    // Torna a pasta acessível via link
-    await fetch('https://www.googleapis.com/drive/v3/files/' + d.id + '/permissions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'reader', type: 'anyone' })
-    });
-    return d.id;
-  } catch(e) { console.error('Erro ao criar pasta:', e); return null; }
-}
-
-async function uploadParaDrive(file, folderId) {
-  const meta = { name: file.name, parents: folderId ? [folderId] : [] };
-  const form = new FormData();
-  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
-  form.append('file', file);
-  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,thumbnailLink', {
-    method: 'POST',
-    headers: { 'Authorization': 'Bearer ' + googleAccessToken },
-    body: form
-  });
-  // Torna o arquivo público
-  const d = await r.json();
-  if (d.id) {
-    await fetch('https://www.googleapis.com/drive/v3/files/' + d.id + '/permissions', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: 'reader', type: 'anyone' })
-    });
-  }
-  return d;
-}
-
-
-function renderTarefas() {
-  return `
-  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#2563eb">
-    📅 Tarefas sincronizadas com o Google Calendar da empresa. Conecte sua conta Google para ativar.
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar tarefas..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none">
-    <button class="btn-sec">Sincronizar Google Calendar</button>
-  </div>
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-    ${['A fazer','Em andamento','Concluídas'].map(col=>`
-    <div style="background:#f5f5f3;border-radius:10px;padding:10px">
-      <div style="font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">${col}</div>
-      <div style="background:#fff;border:1px dashed #e8e8e5;border-radius:8px;padding:20px;text-align:center;color:#bbb;font-size:11px">Vazio</div>
-    </div>`).join('')}
-  </div>`;
-}
-
-function renderFerramentas() {
-  return `
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-    ${[['ITENS CADASTRADOS','—'],['MALETAS','—'],['EM CAMPO','—']].map(([l,v])=>`
-    <div class="kpi"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div></div>`).join('')}
-  </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar equipamentos..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none">
-    <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none"><option>Todas as categorias</option><option>Maletas</option><option>Ferramentas</option><option>Equipamentos</option></select>
-  </div>
-  <div style="background:#fff;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">
-    <table style="width:100%;border-collapse:collapse;font-size:12px">
-      <thead><tr style="border-bottom:1px solid #e8e8e5;background:#f9f9f7">
-        <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Item</th>
-        <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Categoria</th>
-        <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Status</th>
-        <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Responsável</th>
-      </tr></thead>
-      <tbody><tr><td colspan="4" style="padding:40px;text-align:center;color:#bbb;font-size:12px">Nenhum item cadastrado. Clique em "+ Novo Item" para começar.</td></tr></tbody>
-    </table>
-  </div>`;
-}
-
-// ══ SIDEBAR TOGGLES ══════════════════════════════════
-function toggleSec(id, hd) {
-  const body = document.getElementById('sec-' + id);
-  const span = hd.querySelector('span');
-  const open = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
-  body.style.maxHeight = open ? '0px' : '500px';
-  span.textContent = open ? '+' : '−';
-  span.classList.toggle('open', !open);
-}
-
-function toggleGroup(id, hd) {
-  const body = document.getElementById(id);
-  const open = body.classList.contains('on');
-  body.classList.toggle('on', !open);
-  hd.classList.toggle('on', !open);
-}
-
-// ══ LOGOUT ══════════════════════════════════════════
-function logout() {
-  if (!confirm('Sair do portal?')) return;
-  sessionStorage.clear(); ME = null;
-  document.getElementById('v-app').style.display = 'none';
-  document.getElementById('v-login').style.display = 'flex';
-  document.getElementById('l-email').value = '';
-  document.getElementById('l-senha').value = '';
-  document.getElementById('l-err').style.display = 'none';
-  document.getElementById('l-btn').textContent = 'Entrar';
-  document.getElementById('l-btn').disabled = false;
-}
-
-// ══ TOAST ════════════════════════════════════════════
-function toast_show(msg, type) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast on' + (type ? ' ' + type : '');
-  setTimeout(() => t.className = 'toast', 3000);
-}
-
-// ══ INIT ═════════════════════════════════════════════
-window.addEventListener('load', async function() {
-  // Verifica token de convite/reset na URL
-  const hash = window.location.hash;
-  const search = window.location.search;
-  let token = null, type = null;
-  const hp = new URLSearchParams(hash.substring(1));
-  token = hp.get('access_token'); type = hp.get('type');
-  if (!token) { const sp = new URLSearchParams(search); token = sp.get('access_token'); type = sp.get('type'); }
-  if ((type === 'invite' || type === 'recovery') && token) {
-    history.replaceState(null, '', window.location.pathname);
-    mostrarTelaReset(token);
-    return;
-  }
-  // Restaura sessão
-  const saved = sessionStorage.getItem('ksh_me');
-  if (saved) { try { ME = JSON.parse(saved); iniciarApp(); goPage('inicio', document.getElementById('nav-inicio'), 'Início', ''); } catch(e) { sessionStorage.clear(); } }
-});
-
-function mostrarTelaReset(token) {
-  document.getElementById('v-login').innerHTML = `
-  <div class="l-logo"><img src="${document.querySelector('.l-logo img').src}" alt="KSH"><div class="l-logo-name">Kilian Smart Homes</div></div>
-  <div class="l-card">
-    <h2>Criar sua senha</h2><p>Escolha uma senha para acessar o portal</p>
-    <label class="l-lbl">Nova senha</label>
-    <div class="l-field"><span class="l-ic">🔒</span><input type="password" id="r-nova" placeholder="Mínimo 8 caracteres"></div>
-    <label class="l-lbl">Confirmar senha</label>
-    <div class="l-field"><span class="l-ic">🔒</span><input type="password" id="r-conf" placeholder="Repita a senha"></div>
-    <button class="l-btn" onclick="salvarSenha('${token}')">Salvar e entrar</button>
-    <div class="l-err" id="r-err"></div>
-  </div>`;
-}
-
-async function salvarSenha(token) {
-  const nova = document.getElementById('r-nova').value;
-  const conf = document.getElementById('r-conf').value;
-  const err = document.getElementById('r-err');
-  if (nova.length < 8) { err.textContent = 'Mínimo 8 caracteres'; err.style.color='#e74c3c'; err.style.display='block'; return; }
-  if (nova !== conf) { err.textContent = 'As senhas não coincidem'; err.style.color='#e74c3c'; err.style.display='block'; return; }
-  const r = await fetch(SB_URL + '/auth/v1/user', {
-    method: 'PUT', headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: nova })
-  });
-  const d = await r.json();
-  if (r.ok) { ME = { email: d.email, nome: d.email.split('@')[0], funcao: 'Gestor', ini: d.email.substring(0,2).toUpperCase(), token }; sessionStorage.setItem('ksh_me', JSON.stringify(ME)); iniciarApp(); }
-  else { err.textContent = 'Erro ao salvar.'; err.style.color='#e74c3c'; err.style.display='block'; }
-}
-</script>
-</body>
-</html>
+>
