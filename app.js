@@ -973,11 +973,17 @@ async function gerarResumoNota(osId) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
       body: JSON.stringify({ texto })
     });
-    if (!r.ok) throw new Error('IA indisponível (' + r.status + ')');
+    if (!r.ok) {
+      let detalhe = '';
+      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
+      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
+    }
     const d = await r.json();
     mostrarPreviaNota(osId, d.resumo || texto);
   } catch(e) {
-    // IA ainda não publicada/disponível: não trava o técnico, salva a anotação direto
+    // IA ainda não disponível: mostra o motivo (debug) e não trava o técnico, salva a anotação direto
+    console.error('resumo-nota falhou:', e);
+    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
     await salvarNotaDireta(osId, texto);
   } finally {
     if (btn) { btn.textContent = tr('os_enviar'); btn.disabled = false; }
