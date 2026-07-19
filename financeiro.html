@@ -410,6 +410,23 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 </div>
 
 <script>
+
+// Se rodando dentro de iframe, esconde sidebar e headers próprios
+if(window.self !== window.top){
+  document.addEventListener('DOMContentLoaded', function(){
+    // Esconde qualquer sidebar, header próprio, topbar
+    const toHide = document.querySelectorAll('.sidebar, .s-sidebar, .ksh-header, .topbar-wrap, .app-sidebar, #sidebar, .app-layout > aside');
+    toHide.forEach(el => { if(el) el.style.display='none'; });
+    // Expande o conteúdo principal para ocupar tudo
+    const main = document.querySelector('.main-content, .app-content, .main, #conteudo, .content-wrap, .app-layout');
+    if(main){ main.style.marginLeft='0'; main.style.width='100%'; }
+    const appLayout = document.querySelector('.app-layout');
+    if(appLayout){ appLayout.style.gridTemplateColumns='1fr'; appLayout.style.display='block'; }
+    // Remove padding/margin do body
+    document.body.style.overflow='auto';
+  });
+}
+
 if (!sessionStorage.getItem('ksh_user')) {
   window.location.href = '/';
 }
