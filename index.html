@@ -454,11 +454,11 @@ function goPage(pageId, btn, title, section) {
   document.getElementById('mod-sub').textContent = info.sub;
   const html = renderPage(pageId);
   document.getElementById('mod-content').innerHTML = html;
-  // Garante que o DOM foi atualizado antes de carregar dados
-  requestAnimationFrame(() => requestAnimationFrame(() => {
+  // Carrega dados apos DOM atualizado
+  setTimeout(() => {
     if (pageId === 'kshcam') carregarOS();
     if (pageId === 'crm-clientes') carregarClientes();
-  }));
+  }, 50);
   const bcParts = section ? section + ' › <b>' + info.title + '</b>' : '<b>' + info.title + '</b>';
   document.getElementById('bc').innerHTML = 'Portal › ' + bcParts;
   document.getElementById('tb-actions').innerHTML = getPageActions(pageId);
@@ -739,6 +739,8 @@ function renderKSHCam() {
 let osData = [];
 
 async function carregarOS() {
+  const el = document.getElementById('os-lista');
+  console.log('carregarOS chamada, os-lista existe:', !!el);
   try {
     const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=criado_em.desc', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
@@ -1027,7 +1029,7 @@ async function salvarOS() {
     if (!r.ok) throw new Error(await r.text());
     fecharModalOS();
     toast_show('OS criada com sucesso!', 'ok');
-    carregarOS();
+    setTimeout(carregarOS, 100);
     // Cria lead no CRM automaticamente (OS manual)
     criarLeadAutomatico(nova);
   } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
