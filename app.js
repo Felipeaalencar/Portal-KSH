@@ -217,6 +217,8 @@ const I18N = {
   os_cadastrar_novo_cliente: { en: 'Register new client', pt: 'Cadastrar novo cliente' },
   label_tecnico_resp: { en: 'Assigned technician', pt: 'Técnico responsável' },
   os_tecnico_ph: { en: "Technician's name", pt: 'Nome do técnico' },
+  os_tecnico_selecione: { en: 'Select a technician...', pt: 'Selecione um técnico...' },
+  os_tecnico_nao_cadastrado: { en: 'not registered', pt: 'não cadastrado' },
   label_desc_servico: { en: 'Service description', pt: 'Descrição do serviço' },
   os_desc_ph: { en: 'Describe the service...', pt: 'Descreva o serviço...' },
   btn_criar_os: { en: 'Create Work Order', pt: 'Criar OS' },
@@ -1046,9 +1048,27 @@ async function confirmarNota(osId) {
 // Nova OS
 let osCliSel = null;
 
+async function popularSelectTecnicos(selectId, selecionado) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  let lista = [];
+  try {
+    lista = await sbGet('tecnicos?ativo=eq.true&order=nome');
+    tecnicosData = lista;
+  } catch(e) { lista = tecnicosData || []; }
+  const nomes = lista.map(t => t.nome);
+  let opts = '<option value="">' + tr('os_tecnico_selecione') + '</option>';
+  opts += lista.map(t => '<option value="' + String(t.nome).replace(/"/g,'&quot;') + '"' + (t.nome === selecionado ? ' selected' : '') + '>' + t.nome + '</option>').join('');
+  if (selecionado && !nomes.includes(selecionado)) {
+    opts += '<option value="' + String(selecionado).replace(/"/g,'&quot;') + '" selected>' + selecionado + ' (' + tr('os_tecnico_nao_cadastrado') + ')</option>';
+  }
+  sel.innerHTML = opts;
+}
+
 function abrirNovaOS() {
   osCliSel = null;
-  ['os-titulo','os-tecnico','os-desc','os-cli-busca'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  ['os-titulo','os-desc','os-cli-busca'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  popularSelectTecnicos('os-tecnico', '');
   document.getElementById('os-cli-sel').style.display = 'none';
   document.getElementById('os-cli-novo').style.display = 'none';
   document.getElementById('os-cli-res').style.display = 'none';
@@ -1135,13 +1155,13 @@ async function salvarNovaOS() {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
-function editarOS(id) {
+async function editarOS(id) {
   const os = osData.find(o => o.id === id);
   if (!os) return;
   document.getElementById('edit-os-id').value = id;
   document.getElementById('edit-os-titulo').value = os.titulo||'';
   document.getElementById('edit-os-status').value = os.status||'aberta';
-  document.getElementById('edit-os-tecnico').value = os.tecnico_nome||'';
+  await popularSelectTecnicos('edit-os-tecnico', os.tecnico_nome||'');
   document.getElementById('edit-os-desc').value = os.descricao||'';
   document.getElementById('edit-os-cli-info').textContent = tr('cliente_colon') + (os.cliente_nome||os.cliente||'—');
   abrirModal('m-edit-os');
