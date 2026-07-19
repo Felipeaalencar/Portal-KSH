@@ -401,6 +401,30 @@ function toast(msg, err){
   el.className = 'toast on' + (err ? ' err' : '');
   setTimeout(() => el.className = 'toast', 3000);
 }
+
+async function esqueceuSenha() {
+  const email = document.getElementById('inp-email').value.trim();
+  if (!email) { mostrarErro('Digite seu email primeiro'); return; }
+  const btn = document.getElementById('btn-login');
+  const errEl = document.getElementById('login-error');
+  btn.textContent = 'Enviando...';
+  btn.disabled = true;
+  errEl.style.display = 'none';
+  try {
+    await fetch(SB_URL + '/auth/v1/recover', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    errEl.style.color = '#22c55e';
+    errEl.textContent = '✓ Email enviado! Verifique sua caixa de entrada.';
+    errEl.style.display = 'block';
+  } catch(e) {
+    mostrarErro('Erro de conexão.');
+  }
+  btn.textContent = 'Entrar';
+  btn.disabled = false;
+}
 </script>
 
 <!-- DEFINIR SENHA (convite / reset) -->
