@@ -695,6 +695,49 @@ async function renderKSHCam() {
   await carregarOS();
 }
 
+
+function filtrarOS() {
+  if (!Array.isArray(osData)) return;
+  const q = (document.getElementById('os-busca')?.value||'').toLowerCase();
+  const s = document.getElementById('os-filtro')?.value||'';
+  const lista = osData.filter(o =>
+    (!s || o.status === s) &&
+    (!q || (o.titulo||'').toLowerCase().includes(q) ||
+           (o.cliente||o.cliente_nome||'').toLowerCase().includes(q) ||
+           String(o.numero||'').includes(q))
+  );
+  renderOSLista(lista);
+}
+
+function renderOSLista(lista) {
+  const el = document.getElementById('os-lista');
+  if (!el) return;
+  if (!lista || !lista.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Nenhuma OS encontrada</div>';
+    return;
+  }
+  el.innerHTML = lista.map(o => `
+  <div style="background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:14px 16px;margin-bottom:8px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:11px;color:#888">OS #\${o.numero||'—'}</span>
+        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:\${S_BG[o.status]||'#f5f5f3'};color:\${S_COLOR[o.status]||'#888'}">\${S_LABEL[o.status]||o.status}</span>
+      </div>
+      <span style="font-size:11px;color:#bbb">\${new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px;cursor:pointer" onclick="abrirOS('\${o.id}')">\${o.titulo||'Sem título'}</div>
+    <div style="font-size:12px;color:#888;margin-bottom:10px;display:flex;gap:16px">
+      \${(o.cliente||o.cliente_nome)?'<span>👤 '+(o.cliente||o.cliente_nome)+'</span>':''}
+      \${o.tecnico_nome?'<span>🔧 '+o.tecnico_nome+'</span>':''}
+    </div>
+    <div style="display:flex;justify-content:flex-end;gap:6px">
+      <button onclick="abrirOS('\${o.id}')" style="padding:4px 12px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;font-weight:500">Ver detalhes</button>
+      <button onclick="editarOS('\${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#555">Editar</button>
+      <button onclick="deletarOS('\${o.id}','\${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#e74c3c">Deletar</button>
+    </div>
+  </div>`).join('');
+}
+
 async function carregarOS() {
   const el = document.getElementById('os-lista');
   if (!el) return;
