@@ -370,7 +370,21 @@ async function fazerLogout(){
 }
 
 // ── RESTAURAR SESSÃO ─────────────────────────────────────────
-window.addEventListener('load', function(){
+window.addEventListener('load', async function(){
+  // DEBUG: mostra a URL completa para entender o formato
+  const fullHash = window.location.hash;
+  const fullSearch = window.location.search;
+  
+  // Tenta capturar code (PKCE) na query string
+  const urlParams = new URLSearchParams(fullSearch);
+  const code = urlParams.get('code');
+  
+  if (code) {
+    // Formato PKCE - troca code por sessão via Supabase
+    await processarConvitePKCE(code);
+    return;
+  }
+  
   if(verificarTokenURL()) return; // token de convite/reset detectado
   const saved = sessionStorage.getItem('ksh_user');
   if(saved){
