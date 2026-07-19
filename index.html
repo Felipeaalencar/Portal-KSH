@@ -117,6 +117,15 @@ body{font-family:'DM Sans',sans-serif;background:#f0f0ed;color:#1a1a1a;height:10
 }
 .toast.on{opacity:1}
 .toast.err{background:#e74c3c}
+
+/* ── RESET SENHA ─────────────────────────────────────────── */
+#reset-wrap{
+  display:none;flex-direction:column;align-items:center;
+  justify-content:center;height:100vh;gap:20px;background:#f0f0ed
+}
+#reset-wrap .login-card h2{margin-bottom:4px}
+#reset-wrap .login-card p{margin-bottom:22px}
+
 </style>
 </head>
 <body>
@@ -357,6 +366,7 @@ async function fazerLogout(){
 
 // ── RESTAURAR SESSÃO ─────────────────────────────────────────
 window.addEventListener('load', function(){
+  if(verificarTokenURL()) return; // token de convite/reset detectado
   const saved = sessionStorage.getItem('ksh_user');
   if(saved){
     try{
@@ -373,5 +383,35 @@ function toast(msg, err){
   setTimeout(() => el.className = 'toast', 3000);
 }
 </script>
+
+<!-- DEFINIR SENHA (convite / reset) -->
+<div id="reset-wrap">
+  <div class="login-brand">
+    <img src="" id="reset-logo" alt="KSH">
+    <div class="login-brand-name">Kilian Smart Homes</div>
+    <div class="login-brand-sub">Portal de Gestão · South Florida</div>
+  </div>
+  <div class="login-card">
+    <h2 id="reset-title">Criar sua senha</h2>
+    <p id="reset-sub">Escolha uma senha para acessar o portal</p>
+    <label class="flabel">Nova senha</label>
+    <div class="field">
+      <span class="field-ic">🔒</span>
+      <input type="password" id="inp-nova-senha" placeholder="Mínimo 8 caracteres"
+             oninput="validarSenha()">
+    </div>
+    <label class="flabel">Confirmar senha</label>
+    <div class="field">
+      <span class="field-ic">🔒</span>
+      <input type="password" id="inp-conf-senha" placeholder="Repita a senha"
+             onkeydown="if(event.key==='Enter')definirSenha()">
+    </div>
+    <div id="senha-strength" style="font-size:11px;color:#bbb;margin-bottom:8px"></div>
+    <button class="btn-login" id="btn-reset" onclick="definirSenha()">Criar senha e entrar</button>
+    <div class="login-error" id="reset-error"></div>
+  </div>
+  <div class="login-footer">Kilian Smart Homes © 2026</div>
+</div>
+
 </body>
 </html>
