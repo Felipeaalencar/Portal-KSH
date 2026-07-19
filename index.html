@@ -389,6 +389,7 @@ function sbH() {
 async function sbGet(path) {
   const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } });
   const d = await r.json();
+  if (!r.ok) throw new Error(d.message || d.hint || JSON.stringify(d));
   return Array.isArray(d) ? d : [];
 }
 
