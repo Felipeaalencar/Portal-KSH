@@ -222,6 +222,12 @@ const I18N = {
   os_sem_anotacoes: { en: 'No notes yet.', pt: 'Nenhuma anotação.' },
   os_add_nota_ph: { en: 'Add a note...', pt: 'Adicionar anotação...' },
   os_enviar: { en: 'Send', pt: 'Enviar' },
+  nota_gravar_title: { en: 'Record a voice note', pt: 'Gravar uma anotação por voz' },
+  nota_gravando: { en: 'Recording... tap to stop', pt: 'Gravando... toque pra parar' },
+  nota_transcrevendo: { en: 'Transcribing audio...', pt: 'Transcrevendo áudio...' },
+  nota_erro_microfone: { en: "Couldn't access the microphone", pt: 'Não foi possível acessar o microfone' },
+  nota_erro_transcricao: { en: 'Could not transcribe the audio', pt: 'Não foi possível transcrever o áudio' },
+  nota_audio_vazio: { en: "Didn't understand any speech, try again", pt: 'Não entendi nenhuma fala, tenta de novo' },
   os_gerando: { en: 'Generating...', pt: 'Gerando...' },
   os_resumo_ia: { en: 'AI suggested summary', pt: 'Resumo sugerido pela IA' },
   os_confirmar: { en: '✓ Confirm', pt: '✓ Confirmar' },
@@ -981,8 +987,10 @@ async function abrirOS(id) {
       <div id="nota-previa-${id}" style="display:none"></div>
       <div id="nota-form-${id}" style="display:flex;gap:8px">
         <input id="nota-input-${id}" placeholder="${tr('os_add_nota_ph')}" style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')gerarResumoNota('${id}')">
+        <button id="nota-mic-${id}" onclick="toggleGravacaoAudio('${id}')" title="${tr('nota_gravar_title')}" style="padding:8px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;color:#555;font-size:14px;cursor:pointer;font-family:inherit">🎤</button>
         <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_enviar')}</button>
       </div>
+      <div id="nota-rec-status-${id}" style="display:none;font-size:11px;color:#e74c3c;margin-top:6px"></div>
     </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       ${os.drive_folder_url?'<a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">'+tr('os_abrir_drive')+'</a>':'<span></span>'}
@@ -1503,6 +1511,96 @@ async function salvarNota(osId) {
 }
 
 // Anotações com resumo aprimorado por IA (revisão do técnico antes de salvar)
+// ── Anotação por voz: grava, transcreve (Whisper) e cai no mesmo fluxo de resumo por IA ──
+let gravacoesAtivas = {};
+
+function blobParaBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(String(r.result).split(',')[1] || '');
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+async function toggleGravacaoAudio(osId) {
+  const ativa = gravacoesAtivas[osId];
+  if (ativa) {
+    ativa.recorder.stop();
+    return;
+  }
+
+  if (!navigator.mediaDevices || !window.MediaRecorder) {
+    toast(tr('nota_erro_microfone'), 'err');
+    return;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    toast(tr('nota_erro_microfone'), 'err');
+    return;
+  }
+
+  const candidatos = ['audio/webm', 'audio/mp4', 'audio/ogg'];
+  const mime = candidatos.find(m => window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported(m)) || '';
+  const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+
+  const micBtn = document.getElementById('nota-mic-' + osId);
+  const statusEl = document.getElementById('nota-rec-status-' + osId);
+  const inicioEm = Date.now();
+  let timerId = null;
+
+  function atualizarTimer() {
+    if (!statusEl) return;
+    const seg = Math.floor((Date.now() - inicioEm) / 1000);
+    const m = String(Math.floor(seg / 60)).padStart(2, '0');
+    const s = String(seg % 60).padStart(2, '0');
+    statusEl.textContent = '● ' + tr('nota_gravando') + ' (' + m + ':' + s + ')';
+  }
+
+  recorder.onstop = async () => {
+    clearInterval(timerId);
+    stream.getTracks().forEach(t => t.stop());
+    delete gravacoesAtivas[osId];
+    if (micBtn) { micBtn.textContent = '🎤'; micBtn.style.background = '#fff'; micBtn.style.color = '#555'; }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#2563eb'; statusEl.textContent = tr('nota_transcrevendo'); }
+
+    const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+    if (!blob.size) { if (statusEl) statusEl.style.display = 'none'; return; }
+
+    try {
+      const audio_base64 = await blobParaBase64(blob);
+      const r = await fetch(SB_URL + '/functions/v1/transcrever-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+        body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro');
+      const texto = (d.texto || '').trim();
+      if (statusEl) statusEl.style.display = 'none';
+      if (!texto) { toast(tr('nota_audio_vazio'), 'err'); return; }
+      const inp = document.getElementById('nota-input-' + osId);
+      if (inp) inp.value = texto;
+      gerarResumoNota(osId);
+    } catch(e) {
+      if (statusEl) statusEl.style.display = 'none';
+      toast(tr('nota_erro_transcricao'), 'err');
+    }
+  };
+
+  recorder.start();
+  gravacoesAtivas[osId] = { recorder };
+  if (micBtn) { micBtn.textContent = '⏹'; micBtn.style.background = '#e74c3c'; micBtn.style.color = '#fff'; }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; }
+  atualizarTimer();
+  timerId = setInterval(atualizarTimer, 1000);
+}
+
 async function gerarResumoNota(osId) {
   const inp = document.getElementById('nota-input-' + osId);
   const texto = inp?.value.trim();
