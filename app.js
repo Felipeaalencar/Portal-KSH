@@ -844,7 +844,12 @@ async function renderKSHCam() {
   </div>
   <div id="os-lista"></div>`;
 
-  if (await garantirTokenDrive()) atualizarDriveStatus(true);
+  if (await garantirTokenDrive()) {
+    atualizarDriveStatus(true);
+  } else {
+    // segunda chance em segundo plano (ex: celular que ainda estava conectando na rede ao abrir a pagina)
+    setTimeout(async () => { if (await garantirTokenDrive()) atualizarDriveStatus(true); }, 5000);
+  }
   await carregarOS();
 }
 
@@ -1884,21 +1889,28 @@ async function trocarCodigoGoogle(code) {
   }
 }
 
-async function renovarTokenDrive() {
+async function renovarTokenDrive(tentativa) {
+  tentativa = tentativa || 0;
   try {
     const r = await fetch(SB_URL + '/functions/v1/swift-worker', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || tr('erro_prefix') + 'Google Drive');
+    if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
     googleToken = d.access_token;
     googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
     sessionStorage.setItem('ksh_drive_token', googleToken);
     sessionStorage.setItem('ksh_drive_token_exp', String(googleTokenExpira));
     return true;
   } catch(e) {
-    console.error(e);
+    console.error('renovarTokenDrive falhou (tentativa ' + (tentativa + 1) + '):', e);
+    // Rede instável (comum em celular) pode falhar uma vez só; tenta mais 2x antes de desistir
+    // e mostrar "desconectado" (o tecnico em campo nao tem como reconectar manualmente).
+    if (tentativa < 2) {
+      await new Promise(res => setTimeout(res, 700 * (tentativa + 1)));
+      return renovarTokenDrive(tentativa + 1);
+    }
     return false;
   }
 }
