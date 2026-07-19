@@ -825,7 +825,8 @@ const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', conc
 function bannerDriveDesconectadoHTML() {
   const podeReconectar = ME && ME.funcao === 'Gestor';
   if (podeReconectar) {
-    return tr('drive_nao_conectado') + '<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">' + tr('drive_conectar_agora') + '</span>' + tr('drive_conectar_suffix');
+    const detalhe = ultimoErroDrive ? '<div style="font-size:10px;color:#a16207;margin-top:4px">' + (LANG==='pt'?'Detalhe tecnico: ':'Technical detail: ') + ultimoErroDrive + '</div>' : '';
+    return tr('drive_nao_conectado') + '<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">' + tr('drive_conectar_agora') + '</span>' + tr('drive_conectar_suffix') + detalhe;
   }
   return tr('drive_nao_conectado_tecnico');
 }
@@ -1899,6 +1900,7 @@ async function trocarCodigoGoogle(code) {
   }
 }
 
+let ultimoErroDrive = null;
 async function renovarTokenDrive(tentativa) {
   tentativa = tentativa || 0;
   try {
@@ -1906,15 +1908,17 @@ async function renovarTokenDrive(tentativa) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error((d && d.error) || ('HTTP ' + r.status));
     googleToken = d.access_token;
     googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
     sessionStorage.setItem('ksh_drive_token', googleToken);
     sessionStorage.setItem('ksh_drive_token_exp', String(googleTokenExpira));
+    ultimoErroDrive = null;
     return true;
   } catch(e) {
     console.error('renovarTokenDrive falhou (tentativa ' + (tentativa + 1) + '):', e);
+    ultimoErroDrive = e.message || String(e);
     // Rede instável (comum em celular) pode falhar uma vez só; tenta mais 2x antes de desistir
     // e mostrar "desconectado" (o tecnico em campo nao tem como reconectar manualmente).
     if (tentativa < 2) {
