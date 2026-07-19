@@ -584,7 +584,9 @@ async function carregarOS() {
     const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=criado_em.desc', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
     });
-    osData = await r.json() || [];
+    const resp = await r.json();
+    osData = Array.isArray(resp) ? resp : [];
+    if (!Array.isArray(resp)) console.error('Supabase OS error:', resp);
     renderOSLista(osData);
     atualizarKPIsOS();
   } catch(e) {
