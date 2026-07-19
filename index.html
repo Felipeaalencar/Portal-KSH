@@ -460,6 +460,7 @@ function goPage(pageId, btn, title, section) {
 
 function renderPage(id) {
   // Páginas com conteúdo específico
+  if (id === 'crm-clientes') return renderClientes();
   if (id === 'crm-orcamentos') return renderOrcamentos();
   if (id === 'kshcam') return renderKSHCam();
   if (id === 'tarefas') return renderTarefas();
@@ -471,7 +472,7 @@ function renderPage(id) {
 function getPageActions(id) {
   const actions = {
     'crm-orcamentos': '<button class="btn-sec">Atualizar</button><button class="btn-pri">+ Novo Orcamento</button>',
-    'crm-clientes': '<button class="btn-pri">+ Novo Cliente</button>',
+    'crm-clientes': '<button class="btn-pri" onclick="abrirModalNovoCliente()">+ Novo Cliente</button>',
     'kshcam': '<button class="btn-sec" onclick="carregarOS()">Atualizar</button><button class="btn-pri" onclick="abrirModalNovaOS()">+ Nova OS</button>',
     'tarefas': '<button class="btn-pri">+ Nova Tarefa</button>',
     'ferramentas': '<button class="btn-pri">+ Novo Item</button>',
@@ -481,6 +482,124 @@ function getPageActions(id) {
 }
 
 // ══ RENDER PÁGINAS ════════════════════════════════════
+function renderClientes() {
+  carregarClientes();
+  return `
+  <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
+    <input placeholder="Buscar cliente por nome, email ou telefone..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-search" oninput="filtrarClientes()">
+    <button onclick="abrirModalNovoCliente()" style="padding:7px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">+ Novo Cliente</button>
+  </div>
+  <div style="background:#fff;border:1px solid #e8e8e5;border-radius:10px;overflow:hidden">
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="border-bottom:1px solid #e8e8e5;background:#f9f9f7">
+          <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Nome</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Email</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Telefone</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">Endereço</th>
+          <th style="padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px">OS</th>
+        </tr>
+      </thead>
+      <tbody id="clientes-tbody">
+        <tr><td colspan="5" style="padding:40px;text-align:center;color:#bbb">Carregando...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- MODAL NOVO CLIENTE -->
+  <div id="modal-novo-cli-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:460px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700">Novo Cliente</div>
+        <button onclick="fecharModalNovoCliente()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
+      </div>
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Nome completo *</label>
+      <input id="novo-cli-nome" placeholder="Nome do cliente" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Email *</label>
+      <input id="novo-cli-email" type="email" placeholder="email@exemplo.com" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Telefone *</label>
+      <input id="novo-cli-tel" placeholder="(555) 000-0000" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Endereço *</label>
+      <input id="novo-cli-end" placeholder="Endereço completo" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Contato adicional</label>
+      <input id="novo-cli-contato" placeholder="Ex: Porteiro, cônjuge..." style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:16px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="fecharModalNovoCliente()" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="salvarNovoClienteCRM()" style="padding:8px 16px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Cadastrar</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+let clientesData = [];
+
+async function carregarClientes() {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/clientes?order=nome&ativo=eq.true', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+    });
+    clientesData = await r.json() || [];
+    if (!Array.isArray(clientesData)) clientesData = [];
+    renderClientesTabela(clientesData);
+  } catch(e) {
+    const tb = document.getElementById('clientes-tbody');
+    if(tb) tb.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#e74c3c">Erro ao carregar: ' + e.message + '</td></tr>';
+  }
+}
+
+function filtrarClientes() {
+  const busca = (document.getElementById('cli-search')?.value||'').toLowerCase();
+  const lista = busca ? clientesData.filter(c =>
+    (c.nome||'').toLowerCase().includes(busca) ||
+    (c.email||'').toLowerCase().includes(busca) ||
+    (c.telefone||'').toLowerCase().includes(busca)
+  ) : clientesData;
+  renderClientesTabela(lista);
+}
+
+function renderClientesTabela(lista) {
+  const tb = document.getElementById('clientes-tbody');
+  if (!tb) return;
+  if (!lista.length) {
+    tb.innerHTML = '<tr><td colspan="5" style="padding:40px;text-align:center;color:#bbb">Nenhum cliente encontrado</td></tr>';
+    return;
+  }
+  tb.innerHTML = lista.map(cl => `
+  <tr style="border-bottom:1px solid #f5f5f3;cursor:pointer" onmouseover="this.style.background='#f9f9f7'" onmouseout="this.style.background=''">
+    <td style="padding:10px 14px;font-weight:500">${cl.nome||'—'}</td>
+    <td style="padding:10px 14px;color:#555">${cl.email||'—'}</td>
+    <td style="padding:10px 14px;color:#555">${cl.telefone||'—'}</td>
+    <td style="padding:10px 14px;color:#555;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${cl.endereco||'—'}</td>
+    <td style="padding:10px 14px"><button onclick="goPage(null,'kshcam','KSHCam','Operações')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:99px;font-size:11px;cursor:pointer;font-family:inherit;background:#fff">Ver OS</button></td>
+  </tr>`).join('');
+}
+
+function abrirModalNovoCliente() {
+  document.getElementById('modal-novo-cli-bg').style.display = 'flex';
+}
+function fecharModalNovoCliente() {
+  document.getElementById('modal-novo-cli-bg').style.display = 'none';
+}
+
+async function salvarNovoClienteCRM() {
+  const nome = document.getElementById('novo-cli-nome')?.value.trim();
+  const email = document.getElementById('novo-cli-email')?.value.trim();
+  const telefone = document.getElementById('novo-cli-tel')?.value.trim();
+  const endereco = document.getElementById('novo-cli-end')?.value.trim();
+  if (!nome||!email||!telefone||!endereco) { toast_show('Preencha todos os campos obrigatórios','err'); return; }
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/clientes', {
+      method:'POST',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+ME.token,'Content-Type':'application/json','Prefer':'return=minimal'},
+      body:JSON.stringify({nome,email,telefone,endereco,contato:document.getElementById('novo-cli-contato')?.value.trim()||null,ativo:true})
+    });
+    if (!r.ok) throw new Error(await r.text());
+    fecharModalNovoCliente();
+    toast_show('Cliente cadastrado!','ok');
+    carregarClientes();
+  } catch(e) { toast_show('Erro: '+e.message,'err'); }
+}
+
 function renderOrcamentos() {
   return `
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">
@@ -645,7 +764,7 @@ function filtrarOS() {
   let lista = osData.filter(o => {
     if (status && o.status !== status) return false;
     if (origem && o.origem !== origem) return false;
-    if (busca && !((o.titulo||'').toLowerCase().includes(busca) || (o.cliente_nome||'').toLowerCase().includes(busca) || String(o.numero||'').includes(busca))) return false;
+    if (busca && !((o.titulo||'').toLowerCase().includes(busca) || (o.cliente||o.cliente_nome||'').toLowerCase().includes(busca) || String(o.numero||'').includes(busca))) return false;
     return true;
   });
   renderOSLista(lista);
@@ -674,7 +793,7 @@ function renderOSLista(lista) {
     </div>
     <div style="font-size:14px;font-weight:600;margin-bottom:4px">${o.titulo||'Sem título'}</div>
     <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#888">
-      ${o.cliente_nome?`<span>👤 ${o.cliente_nome}</span>`:''}
+      ${(o.cliente||o.cliente_nome)?`<span>👤 ${o.cliente||o.cliente_nome}</span>`:''}
       ${o.tecnico_nome?`<span>🔧 ${o.tecnico_nome}</span>`:''}
       ${o.endereco?`<span>📍 ${o.endereco}</span>`:''}
     </div>
@@ -884,6 +1003,7 @@ async function salvarOS() {
   if (!osClienteSelecionado) { toast_show('Selecione um cliente do CRM', 'err'); document.getElementById('os-cliente-busca')?.focus(); return; }
   const nova = {
     titulo,
+    cliente: osClienteSelecionado.nome,
     cliente_nome: osClienteSelecionado.nome,
     cliente_tel: osClienteSelecionado.telefone||null,
     cliente_email: osClienteSelecionado.email||null,
