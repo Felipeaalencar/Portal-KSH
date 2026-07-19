@@ -546,22 +546,32 @@ function renderKSHCam() {
 
   <!-- MODAL NOVA OS -->
   <div id="modal-os-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
-    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
         <div style="font-size:16px;font-weight:700">Nova Ordem de Serviço</div>
         <button onclick="fecharModalOS()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
       </div>
       <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Título *</label>
-      <input id="os-titulo" placeholder="Ex: Instalação sistema Crestron" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
-      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Cliente</label>
-      <input id="os-cliente" placeholder="Nome do cliente" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
-      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Telefone</label>
-      <input id="os-tel" placeholder="(555) 000-0000" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
-      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Endereço</label>
-      <input id="os-endereco" placeholder="Endereço completo" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <input id="os-titulo" placeholder="Ex: Instalação sistema Crestron" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:14px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Cliente * <span style="color:#888;font-weight:400">(buscar no CRM)</span></label>
+      <div style="position:relative;margin-bottom:4px">
+        <input id="os-cliente-busca" placeholder="Digite o nome do cliente..." style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none" oninput="buscarClienteOS(this.value)" autocomplete="off">
+        <div id="os-cliente-resultados" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #e8e8e5;border-radius:0 0 8px 8px;box-shadow:0 4px 12px rgba(0,0,0,.1);z-index:10;max-height:180px;overflow-y:auto"></div>
+      </div>
+      <div id="os-cliente-selecionado" style="display:none;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font-weight:600;color:#166534" id="os-cliente-nome-exibido">—</div>
+          <button onclick="limparClienteOS()" style="background:none;border:none;cursor:pointer;color:#888;font-size:12px">Trocar</button>
+        </div>
+        <div id="os-cliente-dados-exibidos" style="color:#555;margin-top:3px"></div>
+      </div>
+      <div id="os-cliente-nao-encontrado" style="display:none;margin-bottom:14px">
+        <div style="font-size:12px;color:#888;margin-bottom:6px">Cliente não encontrado no CRM.</div>
+        <button onclick="abrirCadastroCliente()" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#2563eb">+ Cadastrar novo cliente no CRM</button>
+      </div>
       <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Técnico responsável</label>
-      <input id="os-tecnico" placeholder="Nome do técnico" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
-      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Descrição</label>
+      <input id="os-tecnico" placeholder="Nome do técnico" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:14px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Descrição do serviço</label>
       <textarea id="os-desc" placeholder="Descreva o serviço a ser realizado..." style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:16px;height:80px;resize:vertical"></textarea>
       <div style="display:flex;gap:8px;justify-content:flex-end">
         <button onclick="fecharModalOS()" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
@@ -570,7 +580,33 @@ function renderKSHCam() {
     </div>
   </div>
 
-  <!-- MODAL DETALHE OS -->
+  <!-- MODAL CADASTRO CLIENTE -->
+  <div id="modal-cliente-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1100;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.2)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div style="font-size:15px;font-weight:700">Cadastrar Novo Cliente</div>
+        <button onclick="fecharCadastroCliente()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
+      </div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:16px">
+        O cliente será cadastrado no CRM antes de criar a OS.
+      </div>
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Nome completo *</label>
+      <input id="nc-nome" placeholder="Nome do cliente" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Email *</label>
+      <input id="nc-email" type="email" placeholder="email@exemplo.com" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Telefone *</label>
+      <input id="nc-tel" placeholder="(555) 000-0000" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Endereço *</label>
+      <input id="nc-endereco" placeholder="Endereço completo" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:11px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Contato adicional</label>
+      <input id="nc-contato" placeholder="Ex: Porteiro, cônjuge..." style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:16px">
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="fecharCadastroCliente()" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="salvarNovoCliente()" style="padding:8px 16px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Cadastrar e usar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="modal-os-det-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
     <div id="modal-os-det" style="background:#fff;border-radius:12px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)"></div>
   </div>`;
