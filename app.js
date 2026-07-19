@@ -1589,7 +1589,8 @@ async function toggleGravacaoAudio(osId) {
       gerarResumoNota(osId);
     } catch(e) {
       if (statusEl) statusEl.style.display = 'none';
-      toast(tr('nota_erro_transcricao'), 'err');
+      console.error('transcrever-audio falhou:', e);
+      toast(tr('nota_erro_transcricao') + ': ' + e.message, 'err');
     }
   };
 
