@@ -16,13 +16,39 @@ function sbH() {
   return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' };
 }
 
+// Garante que ME.token ainda é válido, renovando com o refresh_token quando necessário
+// (silencioso, sem pedir pro usuário logar de novo). Evita o erro "JWT expired".
+async function garantirSessao() {
+  if (!ME) return false;
+  if (ME.expiraEm && Date.now() < ME.expiraEm) return true;
+  if (!ME.refresh_token) return false;
+  try {
+    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: ME.refresh_token })
+    });
+    const d = await r.json();
+    if (!r.ok) return false;
+    ME.token = d.access_token;
+    ME.refresh_token = d.refresh_token || ME.refresh_token;
+    ME.expiraEm = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
+    sessionStorage.setItem('ksh_me', JSON.stringify(ME));
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
 async function sbGet(path) {
+  await garantirSessao();
   const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } });
   const d = await r.json();
   return Array.isArray(d) ? d : [];
 }
 
 async function sbPost(path, body) {
+  await garantirSessao();
   const r = await fetch(SB_URL + '/rest/v1/' + path, {
     method: 'POST', headers: { ...sbH(), 'Prefer': 'return=representation' },
     body: JSON.stringify(body)
@@ -32,6 +58,7 @@ async function sbPost(path, body) {
 }
 
 async function sbPatch(path, body) {
+  await garantirSessao();
   const r = await fetch(SB_URL + '/rest/v1/' + path, {
     method: 'PATCH', headers: sbH(), body: JSON.stringify(body)
   });
@@ -39,6 +66,7 @@ async function sbPatch(path, body) {
 }
 
 async function sbDelete(path) {
+  await garantirSessao();
   const r = await fetch(SB_URL + '/rest/v1/' + path, { method: 'DELETE', headers: sbH() });
   if (!r.ok) throw new Error((await r.json()).message || r.statusText);
 }
@@ -67,7 +95,12 @@ async function login() {
     });
     const ps = await pr.json();
     const p = Array.isArray(ps) && ps[0] ? ps[0] : {};
-    ME = { email: d.user.email, nome: p.nome || email.split('@')[0], funcao: p.funcao || 'Gestor', ini: (p.nome || email).substring(0,2).toUpperCase(), token: d.access_token };
+    ME = {
+      email: d.user.email, nome: p.nome || email.split('@')[0], funcao: p.funcao || 'Gestor',
+      ini: (p.nome || email).substring(0,2).toUpperCase(),
+      token: d.access_token, refresh_token: d.refresh_token,
+      expiraEm: Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000
+    };
     sessionStorage.setItem('ksh_me', JSON.stringify(ME));
     iniciarApp();
   } catch(e) { showErr('Erro de conexão: ' + e.message); btn.textContent = 'Entrar'; btn.disabled = false; }
