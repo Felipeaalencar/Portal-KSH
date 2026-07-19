@@ -149,6 +149,7 @@ const I18N = {
   drive_conectar_agora: { en: 'Connect now', pt: 'Conectar agora' },
   drive_conectar_suffix: { en: ' to upload photos', pt: ' para fazer upload de fotos' },
   drive_conectado: { en: '✅ Google Drive connected', pt: '✅ Google Drive conectado' },
+  drive_reconectar: { en: 'Reconnect', pt: 'Reconectar' },
   kpi_total: { en: 'TOTAL', pt: 'TOTAL' },
   kpi_abertas: { en: 'OPEN', pt: 'ABERTAS' },
   kpi_em_campo: { en: 'IN FIELD', pt: 'EM CAMPO' },
@@ -1858,7 +1859,7 @@ async function deletarOS(id, titulo) {
 function atualizarDriveStatus(ok) {
   const el = document.getElementById('g-drive-status');
   if (!el) return;
-  if (ok) { el.style.background='#f0fdf4'; el.style.borderColor='#bbf7d0'; el.style.color='#166534'; el.innerHTML=tr('drive_conectado'); }
+  if (ok) { el.style.background='#f0fdf4'; el.style.borderColor='#bbf7d0'; el.style.color='#166534'; el.innerHTML=tr('drive_conectado')+' &middot; <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">'+tr('drive_reconectar')+'</span>'; }
 }
 
 function conectarGoogle() {
