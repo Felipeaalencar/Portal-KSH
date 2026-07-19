@@ -349,37 +349,61 @@ function sbH() {
 
 // Garante que ME.token ainda é válido, renovando com o refresh_token quando necessário
 // (silencioso, sem pedir pro usuário logar de novo). Evita o erro "JWT expired".
+let refreshEmAndamento = null;
 async function garantirSessao() {
   if (!ME) return false;
   if (ME.expiraEm && Date.now() < ME.expiraEm) return true;
   if (!ME.refresh_token) return false;
-  try {
-    const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: ME.refresh_token })
-    });
-    const d = await r.json();
-    if (!r.ok) return false;
-    ME.token = d.access_token;
-    ME.refresh_token = d.refresh_token || ME.refresh_token;
-    ME.expiraEm = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
-    sessionStorage.setItem('ksh_me', JSON.stringify(ME));
-    return true;
-  } catch(e) {
-    return false;
-  }
+  // Evita que vários pedidos simultâneos disparem refresh ao mesmo tempo:
+  // o refresh_token do Supabase é de uso único, então dois refreshes em paralelo
+  // derrubavam a sessão (um dos dois ficava com token velho e inválido).
+  if (refreshEmAndamento) return refreshEmAndamento;
+  refreshEmAndamento = (async () => {
+    try {
+      const r = await fetch(SB_URL + '/auth/v1/token?grant_type=refresh_token', {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: ME.refresh_token })
+      });
+      const d = await r.json();
+      if (!r.ok) return false;
+      ME.token = d.access_token;
+      ME.refresh_token = d.refresh_token || ME.refresh_token;
+      ME.expiraEm = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
+      sessionStorage.setItem('ksh_me', JSON.stringify(ME));
+      return true;
+    } catch(e) {
+      return false;
+    } finally {
+      refreshEmAndamento = null;
+    }
+  })();
+  return refreshEmAndamento;
+}
+
+function forcarRelogin() {
+  sessionStorage.removeItem('ksh_me');
+  ME = null;
+  toast(LANG==='pt' ? 'Sua sessão expirou. Faça login novamente.' : 'Your session expired. Please log in again.', 'err');
+  document.getElementById('v-app').style.display = 'none';
+  document.getElementById('v-login').style.display = 'flex';
 }
 
 async function sbGet(path) {
-  await garantirSessao();
+  const sessaoOk = await garantirSessao();
+  if (!sessaoOk && (!ME || !ME.expiraEm || Date.now() >= ME.expiraEm)) {
+    forcarRelogin();
+    throw new Error(LANG==='pt' ? 'Sessão expirada' : 'Session expired');
+  }
   const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } });
   const d = await r.json();
+  if (!r.ok) throw new Error((d && (d.message || d.msg)) || r.statusText || 'Erro');
   return Array.isArray(d) ? d : [];
 }
 
 async function sbPost(path, body) {
-  await garantirSessao();
+  const sessaoOk = await garantirSessao();
+  if (!sessaoOk && (!ME || !ME.expiraEm || Date.now() >= ME.expiraEm)) { forcarRelogin(); throw new Error(LANG==='pt' ? 'Sessão expirada' : 'Session expired'); }
   const r = await fetch(SB_URL + '/rest/v1/' + path, {
     method: 'POST', headers: { ...sbH(), 'Prefer': 'return=representation' },
     body: JSON.stringify(body)
@@ -389,7 +413,8 @@ async function sbPost(path, body) {
 }
 
 async function sbPatch(path, body) {
-  await garantirSessao();
+  const sessaoOk = await garantirSessao();
+  if (!sessaoOk && (!ME || !ME.expiraEm || Date.now() >= ME.expiraEm)) { forcarRelogin(); throw new Error(LANG==='pt' ? 'Sessão expirada' : 'Session expired'); }
   const r = await fetch(SB_URL + '/rest/v1/' + path, {
     method: 'PATCH', headers: sbH(), body: JSON.stringify(body)
   });
@@ -397,7 +422,8 @@ async function sbPatch(path, body) {
 }
 
 async function sbDelete(path) {
-  await garantirSessao();
+  const sessaoOk = await garantirSessao();
+  if (!sessaoOk && (!ME || !ME.expiraEm || Date.now() >= ME.expiraEm)) { forcarRelogin(); throw new Error(LANG==='pt' ? 'Sessão expirada' : 'Session expired'); }
   const r = await fetch(SB_URL + '/rest/v1/' + path, { method: 'DELETE', headers: sbH() });
   if (!r.ok) throw new Error((await r.json()).message || r.statusText);
 }
