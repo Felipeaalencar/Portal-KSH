@@ -1,7 +1,7 @@
 const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
 const GID = '1088652003799-j35u5263s0qkn91e8fiqddb4i2j3l11i.apps.googleusercontent.com';
-let ME = null, googleToken = null;
+let ME = null, googleToken = sessionStorage.getItem('ksh_drive_token') || null;
 
 // ── HELPERS ──────────────────────────────────────────────────
 function toast(msg, type) {
@@ -407,7 +407,7 @@ async function abrirOS(id) {
   content.innerHTML = `
   <div style="padding:16px 20px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
     <div>
-      <div style="font-size:11px;color:#888;margin-bottom:1px">OS #${os.numero||'—'} · <span style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
+      <div style="font-size:11px;color:#888;margin-bottom:1px">OS #${os.numero||'—'} · <span id="os-status-header-${id}" style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
       <div style="font-size:16px;font-weight:700">${os.titulo||'Sem título'}</div>
     </div>
     <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
@@ -430,9 +430,10 @@ async function abrirOS(id) {
     </div>
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">Status</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${Object.entries(S_LABEL).map(([s,l]) => '<button onclick="mudarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
+      <div id="status-pills-${id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${Object.entries(S_LABEL).map(([s,l]) => '<button data-status="'+s+'" onclick="selecionarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
       </div>
+      <button id="status-save-${id}" onclick="salvarStatusOS('${id}')" style="display:none;padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">💾 Salvar alterações</button>
     </div>
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -462,11 +463,36 @@ async function abrirOS(id) {
   </div>`;
 }
 
-async function mudarStatusOS(id, status) {
+let statusPendente = {};
+
+function selecionarStatusOS(id, status) {
+  statusPendente[id] = status;
+  const wrap = document.getElementById('status-pills-' + id);
+  if (wrap) wrap.querySelectorAll('button[data-status]').forEach(b => {
+    const s = b.dataset.status;
+    const on = s === status;
+    b.style.border = '1.5px solid ' + (on ? S_COLOR[s] : '#e8e8e5');
+    b.style.background = on ? S_BG[s] : '#fff';
+    b.style.color = on ? S_COLOR[s] : '#555';
+    b.style.fontWeight = on ? '600' : '400';
+  });
+  const os = osData.find(o => o.id === id);
+  const saveBtn = document.getElementById('status-save-' + id);
+  if (saveBtn) saveBtn.style.display = (os && os.status !== status) ? 'inline-block' : 'none';
+}
+
+async function salvarStatusOS(id) {
+  const status = statusPendente[id];
+  if (!status) return;
   try {
     await sbPatch('ordens_servico?id=eq.' + id, { status });
+    const os = osData.find(o => o.id === id);
+    if (os) os.status = status;
+    const saveBtn = document.getElementById('status-save-' + id);
+    if (saveBtn) saveBtn.style.display = 'none';
+    const headerEl = document.getElementById('os-status-header-' + id);
+    if (headerEl) { headerEl.textContent = S_LABEL[status] || status; headerEl.style.color = S_COLOR[status] || '#888'; }
     toast('Status atualizado!', 'ok');
-    fecharModal('m-det-os');
     carregarOS();
   } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
@@ -497,14 +523,27 @@ async function gerarResumoNota(osId) {
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
       body: JSON.stringify({ texto })
     });
+    if (!r.ok) throw new Error('IA indisponível (' + r.status + ')');
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Erro ao gerar resumo');
     mostrarPreviaNota(osId, d.resumo || texto);
   } catch(e) {
-    toast('Erro ao gerar resumo: ' + e.message, 'err');
+    // IA ainda não publicada/disponível: não trava o técnico, salva a anotação direto
+    await salvarNotaDireta(osId, texto);
   } finally {
     if (btn) { btn.textContent = 'Enviar'; btn.disabled = false; }
   }
+}
+
+async function salvarNotaDireta(osId, texto) {
+  try {
+    await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
+    const inp = document.getElementById('nota-input-' + osId);
+    if (inp) inp.value = '';
+    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
+    const listEl = document.getElementById('notas-' + osId);
+    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>';
+    toast('Anotação salva!', 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
 function mostrarPreviaNota(osId, resumo) {
@@ -544,16 +583,8 @@ async function confirmarNota(osId) {
   const el = document.getElementById('nota-texto-ia-' + osId);
   const texto = el?.innerText.trim();
   if (!texto) return;
-  try {
-    await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
-    const inp = document.getElementById('nota-input-' + osId);
-    if (inp) inp.value = '';
-    cancelarPreviaNota(osId);
-    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
-    const listEl = document.getElementById('notas-' + osId);
-    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>';
-    toast('Anotação salva!', 'ok');
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  cancelarPreviaNota(osId);
+  await salvarNotaDireta(osId, texto);
 }
 
 // Nova OS
@@ -701,12 +732,17 @@ async function uploadFotos(event, osId) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
   if (!googleToken) { toast('Conecte o Google Drive primeiro','err'); return; }
+  const testR = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', { headers: { 'Authorization': 'Bearer ' + googleToken } }).catch(() => null);
+  if (!testR || testR.status === 401) { limparTokenDrive(); toast('Conexão com o Google Drive expirou — clique em "Conectar agora"','err'); return; }
   const prog = document.getElementById('upload-prog');
   if (prog) prog.style.display = 'block';
   const os = osData.find(o => o.id === osId);
   let folderId = os?.drive_folder_id;
   if (!folderId) {
-    folderId = await criarPastaDrive('KSH OS #' + (os?.numero||osId));
+    const parentId = await getPastaPortal();
+    const nomeCliente = (os?.cliente_nome || os?.cliente || 'Cliente').trim();
+    const nomePasta = 'KSH ' + (os?.numero || osId) + ' - ' + nomeCliente;
+    folderId = await criarPastaDrive(nomePasta, parentId);
     if (folderId) {
       await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
       os.drive_folder_id = folderId;
@@ -728,14 +764,41 @@ async function uploadFotos(event, osId) {
   abrirOS(osId);
 }
 
-async function criarPastaDrive(nome) {
+function limparTokenDrive() {
+  googleToken = null;
+  sessionStorage.removeItem('ksh_drive_token');
+  const el = document.getElementById('g-drive-status');
+  if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML='📁 Google Drive não conectado — <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">Conectar agora</span> para fazer upload de fotos'; }
+}
+
+async function criarPastaDrive(nome, parentId) {
+  const body = { name: nome, mimeType: 'application/vnd.google-apps.folder' };
+  if (parentId) body.parents = [parentId];
   const r = await fetch('https://www.googleapis.com/drive/v3/files', {
     method:'POST', headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},
-    body: JSON.stringify({ name: nome, mimeType: 'application/vnd.google-apps.folder' })
+    body: JSON.stringify(body)
   });
   const d = await r.json();
   if (d.id) await fetch('https://www.googleapis.com/drive/v3/files/'+d.id+'/permissions',{method:'POST',headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
   return d.id;
+}
+
+// Pasta raiz "Portal" — cria uma vez e reaproveita (cacheada na sessão) para todas as OS
+let portalFolderId = null;
+async function getPastaPortal() {
+  if (portalFolderId) return portalFolderId;
+  const cached = sessionStorage.getItem('ksh_portal_folder_id');
+  if (cached) { portalFolderId = cached; return portalFolderId; }
+  try {
+    const q = encodeURIComponent("name='Portal' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', { headers: { 'Authorization': 'Bearer ' + googleToken } });
+    const d = await r.json();
+    portalFolderId = (d.files && d.files[0] && d.files[0].id) || await criarPastaDrive('Portal');
+  } catch(e) {
+    portalFolderId = await criarPastaDrive('Portal');
+  }
+  if (portalFolderId) sessionStorage.setItem('ksh_portal_folder_id', portalFolderId);
+  return portalFolderId;
 }
 
 async function uploadDrive(file, folderId) {
@@ -755,6 +818,7 @@ window.addEventListener('load', function() {
   const gt = hash.get('access_token');
   if (gt && hash.get('scope') && hash.get('scope').includes('drive')) {
     googleToken = gt;
+    sessionStorage.setItem('ksh_drive_token', gt);
     history.replaceState(null, '', window.location.pathname);
   }
   // Verifica token convite Supabase
