@@ -195,6 +195,22 @@ const I18N = {
   os_pdf_sem_fotos: { en: 'No photos to show.', pt: 'Nenhuma foto para mostrar.' },
   os_pdf_fotos_drive_offline: { en: 'Connect Google Drive to include photos in the PDF.', pt: 'Conecte o Google Drive para incluir as fotos no PDF.' },
   os_pdf_gerado: { en: 'PDF generated', pt: 'PDF gerado' },
+  fe_mover: { en: 'Move', pt: 'Mover' },
+  fe_caneta: { en: 'Pen', pt: 'Caneta' },
+  fe_seta: { en: 'Arrow', pt: 'Seta' },
+  fe_circulo: { en: 'Circle', pt: 'Círculo' },
+  fe_texto: { en: 'Text', pt: 'Texto' },
+  fe_texto_ph: { en: 'Write the annotation and confirm', pt: 'Escreva a anotação e confirme' },
+  fe_dica: { en: 'Text: click the point to write. Arrow/Circle: drag. Move: drag any mark to reposition.', pt: 'Texto: clique no ponto pra escrever. Seta/Círculo: arraste. Mover: arraste qualquer marcação pra reposicionar.' },
+  fe_abrir_original: { en: 'Open original in Drive', pt: 'Abrir original no Drive' },
+  fe_comentario_ph: { en: 'Write a comment...', pt: 'Escreva um comentário...' },
+  fe_postar: { en: 'Post', pt: 'Postar' },
+  fe_sem_comentarios: { en: 'No comments yet.', pt: 'Nenhum comentário ainda.' },
+  fe_salvo: { en: 'Annotations saved', pt: 'Marcações salvas' },
+  btn_desfazer: { en: 'Undo', pt: 'Desfazer' },
+  btn_limpar: { en: 'Clear', pt: 'Limpar' },
+  btn_adicionar: { en: 'Add', pt: 'Adicionar' },
+  foto_tem_marcacao: { en: 'Has markup', pt: 'Tem marcação' },
   os_enviando: { en: 'Uploading...', pt: 'Enviando...' },
   os_enviando_progresso: { en: 'Uploading ', pt: 'Enviando ' },
   cliente_selecione_um: { en: 'Select a client from the CRM', pt: 'Selecione um cliente do CRM' },
@@ -949,7 +965,7 @@ async function abrirOS(id) {
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5' + (priv ? ';opacity:.55' : '') + '"><a href="'+f.drive_url+'" target="_blank" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; const temMarca = Array.isArray(f.anotacoes) && f.anotacoes.length > 0; return '<div onclick="abrirFotoEditor(\''+f.id+'\',\''+id+'\')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5;cursor:pointer' + (priv ? ';opacity:.55' : '') + '"><div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</div><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+(temMarca?'<span title="'+tr('foto_tem_marcacao')+'" style="position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);font-size:11px;display:flex;align-items:center;justify-content:center">✏️</span>':'')+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
@@ -990,6 +1006,322 @@ async function toggleFotoInterna(fotoId, osId, novoValor) {
     await sbPatch('os_fotos?id=eq.' + fotoId, { interna: novoValor });
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// ── Editor de foto: desenhar, marcar texto, mover e comentar por foto ──
+let feState = null;
+
+function feCentroid(pts) {
+  let sx = 0, sy = 0;
+  pts.forEach(p => { sx += p.x; sy += p.y; });
+  return { x: sx / pts.length, y: sy / pts.length };
+}
+
+function feHandlePoints(s) {
+  if (s.type === 'text') return [{ key: 'a', x: s.x1, y: s.y1 }];
+  if (s.type === 'arrow' || s.type === 'circle') return [{ key: '1', x: s.x1, y: s.y1 }, { key: '2', x: s.x2, y: s.y2 }];
+  if (s.type === 'pen') { const c = feCentroid(s.pts); return [{ key: 'move', x: c.x, y: c.y }]; }
+  return [];
+}
+
+function feDrawStroke(ctx, s, scale) {
+  scale = scale || 1;
+  ctx.strokeStyle = s.color;
+  ctx.fillStyle = s.color;
+  ctx.lineWidth = 3 * scale;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  if (s.type === 'pen') {
+    ctx.beginPath();
+    s.pts.forEach((p, i) => i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+    ctx.stroke();
+  } else if (s.type === 'circle') {
+    const rx = Math.abs(s.x2 - s.x1) / 2, ry = Math.abs(s.y2 - s.y1) / 2;
+    const cx = (s.x1 + s.x2) / 2, cy = (s.y1 + s.y2) / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else if (s.type === 'arrow') {
+    ctx.beginPath();
+    ctx.moveTo(s.x1, s.y1);
+    ctx.lineTo(s.x2, s.y2);
+    ctx.stroke();
+    const ang = Math.atan2(s.y2 - s.y1, s.x2 - s.x1);
+    ctx.beginPath();
+    ctx.moveTo(s.x2, s.y2);
+    ctx.lineTo(s.x2 - 14 * scale * Math.cos(ang - 0.4), s.y2 - 14 * scale * Math.sin(ang - 0.4));
+    ctx.lineTo(s.x2 - 14 * scale * Math.cos(ang + 0.4), s.y2 - 14 * scale * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  } else if (s.type === 'text') {
+    ctx.save();
+    ctx.font = 'bold ' + (16 * scale) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.lineWidth = 4 * scale;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillStyle = s.color;
+    ctx.strokeText(s.text, s.x1, s.y1);
+    ctx.fillText(s.text, s.x1, s.y1);
+    ctx.restore();
+  }
+}
+
+function feRedraw(preview) {
+  if (!feState) return;
+  const canvas = document.getElementById('fe-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  feState.strokes.forEach(s => feDrawStroke(ctx, s));
+  if (preview) feDrawStroke(ctx, preview);
+  if (feState.textTarget) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(feState.textTarget.x, feState.textTarget.y, 6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+  if (feState.tool === 'move') {
+    feState.strokes.forEach(s => {
+      feHandlePoints(s).forEach(hp => {
+        ctx.save();
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(hp.x, hp.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+        ctx.restore();
+      });
+    });
+  }
+}
+
+function feFindHandle(p) {
+  const thresh = 16;
+  const strokes = feState.strokes;
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const s = strokes[i];
+    for (const hp of feHandlePoints(s)) {
+      if (Math.hypot(p.x - hp.x, p.y - hp.y) < thresh) return { s, key: hp.key };
+    }
+  }
+  return null;
+}
+
+function feRenderComments() {
+  const list = document.getElementById('fe-comments');
+  if (!list || !feState) return;
+  const cs = feState.comentarios;
+  list.innerHTML = cs.length ? '' : '<div style="font-size:12px;color:#bbb">' + tr('fe_sem_comentarios') + '</div>';
+  cs.forEach(c => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:8px;align-items:flex-start';
+    const ini = (c.autor || '?').substring(0, 2).toUpperCase();
+    const quando = new Date(c.criado_em).toLocaleString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+    row.innerHTML = '<div style="width:24px;height:24px;border-radius:50%;background:#eef2ff;color:#4338ca;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">' + ini + '</div>' +
+      '<div><div style="font-size:12px;font-weight:600">' + (c.autor || '—') + '</div>' +
+      '<div style="font-size:10px;color:#bbb;margin-bottom:2px">' + quando + '</div>' +
+      '<div style="font-size:12px">' + c.texto + '</div></div>';
+    list.appendChild(row);
+  });
+}
+
+async function abrirFotoEditor(fotoId, osId) {
+  const content = document.getElementById('m-foto-editor-content');
+  content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">' + tr('loading') + '</div>';
+  abrirModal('m-foto-editor');
+
+  let foto, comentarios = [];
+  try {
+    const [fs, cs] = await Promise.all([
+      sbGet('os_fotos?id=eq.' + fotoId),
+      sbGet('os_foto_comentarios?foto_id=eq.' + fotoId + '&order=criado_em.asc')
+    ]);
+    foto = fs[0];
+    comentarios = cs;
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); fecharModal('m-foto-editor'); return; }
+  if (!foto) { fecharModal('m-foto-editor'); return; }
+
+  const fid = driveFileIdFromUrl(foto.drive_url);
+  const src = foto.thumb_url || (fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w1200') : '');
+
+  feState = { fotoId, osId, strokes: Array.isArray(foto.anotacoes) ? JSON.parse(JSON.stringify(foto.anotacoes)) : [], comentarios, tool: 'move', color: '#f59e0b', drawing: false, start: null, textTarget: null, dragHandle: null };
+
+  content.innerHTML = `
+  <div style="display:flex;flex-wrap:wrap">
+    <div style="flex:1;min-width:320px;padding:16px;border-right:1px solid #e8e8e5">
+      <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="fe-tool btn-sec" data-tool="move">${tr('fe_mover')}</button>
+        <button class="fe-tool btn-sec" data-tool="pen">${tr('fe_caneta')}</button>
+        <button class="fe-tool btn-sec" data-tool="arrow">${tr('fe_seta')}</button>
+        <button class="fe-tool btn-sec" data-tool="circle">${tr('fe_circulo')}</button>
+        <button class="fe-tool btn-sec" data-tool="text">${tr('fe_texto')}</button>
+        <span style="width:1px;background:#e8e8e5;margin:2px 6px"></span>
+        <button class="fe-color" data-color="#f59e0b" style="width:24px;height:24px;padding:0;border-radius:50%;background:#f59e0b;border:2px solid #1a1a1a;cursor:pointer"></button>
+        <button class="fe-color" data-color="#e74c3c" style="width:24px;height:24px;padding:0;border-radius:50%;background:#e74c3c;border:2px solid transparent;cursor:pointer"></button>
+        <button class="fe-color" data-color="#2563eb" style="width:24px;height:24px;padding:0;border-radius:50%;background:#2563eb;border:2px solid transparent;cursor:pointer"></button>
+        <span style="flex:1"></span>
+        <button id="fe-undo" class="btn-sec">${tr('btn_desfazer')}</button>
+        <button id="fe-clear" class="btn-sec">${tr('btn_limpar')}</button>
+      </div>
+      <div id="fe-canvas-wrap" style="position:relative;background:#f5f5f3;border-radius:8px;overflow:hidden;line-height:0">
+        <img id="fe-photo" src="${src}" style="width:100%;display:block">
+        <canvas id="fe-canvas" style="position:absolute;left:0;top:0;width:100%;height:100%;cursor:crosshair;touch-action:none"></canvas>
+      </div>
+      <div id="fe-text-panel" style="display:none;gap:6px;margin-top:8px">
+        <input id="fe-text-input" placeholder="${tr('fe_texto_ph')}" class="f-inp" style="margin-bottom:0;flex:1">
+        <button class="btn-pri" id="fe-text-confirm">${tr('btn_adicionar')}</button>
+        <button class="btn-sec" id="fe-text-cancel">${tr('btn_cancelar')}</button>
+      </div>
+      <div style="font-size:11px;color:#bbb;margin-top:6px">${tr('fe_dica')}</div>
+    </div>
+    <div style="width:230px;flex-shrink:0;padding:16px;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
+        <span style="font-size:13px;font-weight:600">${tr('os_fotos_label')}</span>
+        <button class="modal-close" onclick="fecharModal('m-foto-editor')">×</button>
+      </div>
+      <a href="${foto.drive_url}" target="_blank" style="font-size:11px;color:#2563eb;margin-bottom:10px;text-decoration:none">${tr('fe_abrir_original')}</a>
+      <div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin:10px 0 8px">${tr('os_anotacoes_label')}</div>
+      <div id="fe-comments" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;margin-bottom:10px;min-height:100px"></div>
+      <input id="fe-comment-input" class="f-inp" placeholder="${tr('fe_comentario_ph')}" style="margin-bottom:6px">
+      <button class="btn-pri" id="fe-comment-post" style="width:100%">${tr('fe_postar')}</button>
+      <button class="btn-pri" id="fe-save" style="width:100%;margin-top:14px">${tr('btn_salvar')}</button>
+    </div>
+  </div>`;
+
+  feRenderComments();
+
+  const img = document.getElementById('fe-photo');
+  const canvas = document.getElementById('fe-canvas');
+  function sizeCanvas() {
+    canvas.width = img.naturalWidth || 800;
+    canvas.height = img.naturalHeight || 600;
+    feRedraw();
+  }
+  if (img.complete && img.naturalWidth) sizeCanvas(); else img.onload = sizeCanvas;
+
+  document.querySelectorAll('.fe-tool').forEach(b => {
+    b.onclick = () => {
+      feState.tool = b.dataset.tool;
+      document.querySelectorAll('.fe-tool').forEach(x => x.style.background = '');
+      b.style.background = '#f5f5f3';
+      feRedraw();
+    };
+  });
+  document.querySelector('.fe-tool[data-tool="move"]').style.background = '#f5f5f3';
+  document.querySelectorAll('.fe-color').forEach(b => {
+    b.onclick = () => {
+      feState.color = b.dataset.color;
+      document.querySelectorAll('.fe-color').forEach(x => x.style.border = '2px solid transparent');
+      b.style.border = '2px solid #1a1a1a';
+    };
+  });
+
+  document.getElementById('fe-undo').onclick = () => { feState.strokes.pop(); feRedraw(); };
+  document.getElementById('fe-clear').onclick = () => { feState.strokes = []; feRedraw(); };
+
+  document.getElementById('fe-text-confirm').onclick = () => {
+    const inp = document.getElementById('fe-text-input');
+    const val = inp.value.trim();
+    if (val && feState.textTarget) {
+      feState.strokes.push({ type: 'text', color: feState.color, text: val, x1: feState.textTarget.x, y1: feState.textTarget.y });
+    }
+    inp.value = '';
+    feState.textTarget = null;
+    document.getElementById('fe-text-panel').style.display = 'none';
+    feRedraw();
+  };
+  document.getElementById('fe-text-cancel').onclick = () => {
+    document.getElementById('fe-text-input').value = '';
+    feState.textTarget = null;
+    document.getElementById('fe-text-panel').style.display = 'none';
+    feRedraw();
+  };
+  document.getElementById('fe-text-input').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('fe-text-confirm').click(); });
+
+  document.getElementById('fe-comment-post').onclick = async () => {
+    const inp = document.getElementById('fe-comment-input');
+    const texto = inp.value.trim();
+    if (!texto) return;
+    try {
+      await sbPost('os_foto_comentarios', { foto_id: fotoId, os_id: osId, autor: ME.nome, texto });
+      feState.comentarios.push({ autor: ME.nome, texto, criado_em: new Date().toISOString() });
+      inp.value = '';
+      feRenderComments();
+    } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  };
+
+  document.getElementById('fe-save').onclick = async () => {
+    try {
+      await sbPatch('os_fotos?id=eq.' + fotoId, { anotacoes: feState.strokes });
+      toast(tr('fe_salvo'), 'ok');
+      fecharModal('m-foto-editor');
+      abrirOS(osId);
+    } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  };
+
+  function fePos(e) {
+    const r = canvas.getBoundingClientRect();
+    const cx = e.touches ? e.touches[0].clientX : e.clientX;
+    const cy = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: (cx - r.left) * (canvas.width / r.width), y: (cy - r.top) * (canvas.height / r.height) };
+  }
+
+  canvas.addEventListener('pointerdown', e => {
+    const p = fePos(e);
+    if (feState.tool === 'text') {
+      feState.textTarget = p;
+      document.getElementById('fe-text-panel').style.display = 'flex';
+      document.getElementById('fe-text-input').focus();
+      feRedraw();
+      return;
+    }
+    if (feState.tool === 'move') {
+      feState.dragHandle = feFindHandle(p);
+      if (feState.dragHandle && feState.dragHandle.key === 'move') {
+        feState.dragHandle.origPts = feState.dragHandle.s.pts.map(pt => ({ x: pt.x, y: pt.y }));
+        feState.dragHandle.startPos = p;
+      }
+      return;
+    }
+    feState.drawing = true;
+    feState.start = p;
+    if (feState.tool === 'pen') feState.strokes.push({ type: 'pen', color: feState.color, pts: [p] });
+  });
+  canvas.addEventListener('pointermove', e => {
+    const p = fePos(e);
+    if (feState.tool === 'move' && feState.dragHandle) {
+      const dh = feState.dragHandle;
+      if (dh.key === 'a' || dh.key === '1') { dh.s.x1 = p.x; dh.s.y1 = p.y; }
+      else if (dh.key === '2') { dh.s.x2 = p.x; dh.s.y2 = p.y; }
+      else if (dh.key === 'move') {
+        const dx = p.x - dh.startPos.x, dy = p.y - dh.startPos.y;
+        dh.s.pts = dh.origPts.map(pt => ({ x: pt.x + dx, y: pt.y + dy }));
+      }
+      feRedraw();
+      return;
+    }
+    if (!feState.drawing) return;
+    if (feState.tool === 'pen') {
+      feState.strokes[feState.strokes.length - 1].pts.push(p);
+      feRedraw();
+    } else {
+      feRedraw({ type: feState.tool, color: feState.color, x1: feState.start.x, y1: feState.start.y, x2: p.x, y2: p.y });
+    }
+  });
+  canvas.addEventListener('pointerup', e => {
+    if (feState.tool === 'move') { feState.dragHandle = null; return; }
+    if (!feState.drawing) return;
+    feState.drawing = false;
+    if (feState.tool !== 'pen') {
+      const p = fePos(e);
+      feState.strokes.push({ type: feState.tool, color: feState.color, x1: feState.start.x, y1: feState.start.y, x2: p.x, y2: p.y });
+      feRedraw();
+    }
+  });
 }
 
 function driveFileIdFromUrl(url) {
