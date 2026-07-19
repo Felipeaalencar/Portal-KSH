@@ -452,7 +452,13 @@ function goPage(pageId, btn, title, section) {
   const info = PAGE_INFO[pageId] || { title, sub: '' };
   document.getElementById('mod-title').textContent = info.title;
   document.getElementById('mod-sub').textContent = info.sub;
-  document.getElementById('mod-content').innerHTML = renderPage(pageId);
+  const html = renderPage(pageId);
+  document.getElementById('mod-content').innerHTML = html;
+  // Garante que o DOM foi atualizado antes de carregar dados
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    if (pageId === 'kshcam') carregarOS();
+    if (pageId === 'crm-clientes') carregarClientes();
+  }));
   const bcParts = section ? section + ' › <b>' + info.title + '</b>' : '<b>' + info.title + '</b>';
   document.getElementById('bc').innerHTML = 'Portal › ' + bcParts;
   document.getElementById('tb-actions').innerHTML = getPageActions(pageId);
@@ -483,7 +489,6 @@ function getPageActions(id) {
 
 // ══ RENDER PÁGINAS ════════════════════════════════════
 function renderClientes() {
-  setTimeout(carregarClientes, 100);
   return `
   <div style="display:flex;gap:8px;margin-bottom:16px;align-items:center">
     <input placeholder="Buscar cliente por nome, email ou telefone..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-search" oninput="filtrarClientes()">
@@ -629,7 +634,6 @@ function renderOrcamentos() {
 }
 
 function renderKSHCam() {
-  setTimeout(carregarOS, 100);
   return `
   <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="os-kpis">
     <div class="kpi"><div class="kpi-lbl">TOTAL OS</div><div class="kpi-val" id="kpi-total">—</div></div>
