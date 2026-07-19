@@ -704,8 +704,10 @@ async function carregarOS() {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
     });
     const d = await r.json();
+    console.log('Supabase response:', r.status, JSON.stringify(d).substring(0,200));
     osData = Array.isArray(d) ? d : [];
-    if (!r.ok) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro: ' + (d.message||d.hint||JSON.stringify(d)) + '</div>'; return; }
+    if (!r.ok) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro ' + r.status + ': ' + (d.message||d.hint||JSON.stringify(d)) + '</div>'; return; }
+    if (!Array.isArray(d)) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Resposta inválida: ' + JSON.stringify(d).substring(0,100) + '</div>'; return; }
     renderOSLista(osData);
     const tot = document.getElementById('kpi-tot');
     if (tot) {
