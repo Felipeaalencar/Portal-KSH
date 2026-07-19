@@ -200,6 +200,10 @@ const I18N = {
   fe_seta: { en: 'Arrow', pt: 'Seta' },
   fe_circulo: { en: 'Circle', pt: 'Círculo' },
   fe_texto: { en: 'Text', pt: 'Texto' },
+  fe_tam_p: { en: 'S', pt: 'P' },
+  fe_tam_m: { en: 'M', pt: 'M' },
+  fe_tam_g: { en: 'L', pt: 'G' },
+  fe_tam_title: { en: 'Text size', pt: 'Tamanho do texto' },
   fe_texto_ph: { en: 'Write the annotation and confirm', pt: 'Escreva a anotação e confirme' },
   fe_dica: { en: 'Text: click the point to write. Arrow/Circle: drag. Move: drag any mark to reposition.', pt: 'Texto: clique no ponto pra escrever. Seta/Círculo: arraste. Mover: arraste qualquer marcação pra reposicionar.' },
   fe_abrir_original: { en: 'Open original in Drive', pt: 'Abrir original no Drive' },
@@ -1055,9 +1059,10 @@ function feDrawStroke(ctx, s, scale) {
     ctx.fill();
   } else if (s.type === 'text') {
     ctx.save();
-    ctx.font = 'bold ' + (16 * scale) + 'px sans-serif';
+    const fsz = (s.size || 40) * scale;
+    ctx.font = 'bold ' + fsz + 'px sans-serif';
     ctx.textAlign = 'center';
-    ctx.lineWidth = 4 * scale;
+    ctx.lineWidth = Math.max(2, fsz / 9);
     ctx.strokeStyle = 'rgba(0,0,0,0.6)';
     ctx.fillStyle = s.color;
     ctx.strokeText(s.text, s.x1, s.y1);
@@ -1148,7 +1153,7 @@ async function abrirFotoEditor(fotoId, osId) {
   const fid = driveFileIdFromUrl(foto.drive_url);
   const src = foto.thumb_url || (fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w1200') : '');
 
-  feState = { fotoId, osId, strokes: Array.isArray(foto.anotacoes) ? JSON.parse(JSON.stringify(foto.anotacoes)) : [], comentarios, tool: 'move', color: '#f59e0b', drawing: false, start: null, textTarget: null, dragHandle: null };
+  feState = { fotoId, osId, strokes: Array.isArray(foto.anotacoes) ? JSON.parse(JSON.stringify(foto.anotacoes)) : [], comentarios, tool: 'move', color: '#f59e0b', fontSize: 40, selectedText: null, drawing: false, start: null, textTarget: null, dragHandle: null };
 
   content.innerHTML = `
   <div style="display:flex;flex-wrap:wrap">
@@ -1163,6 +1168,10 @@ async function abrirFotoEditor(fotoId, osId) {
         <button class="fe-color" data-color="#f59e0b" style="width:24px;height:24px;padding:0;border-radius:50%;background:#f59e0b;border:2px solid #1a1a1a;cursor:pointer"></button>
         <button class="fe-color" data-color="#e74c3c" style="width:24px;height:24px;padding:0;border-radius:50%;background:#e74c3c;border:2px solid transparent;cursor:pointer"></button>
         <button class="fe-color" data-color="#2563eb" style="width:24px;height:24px;padding:0;border-radius:50%;background:#2563eb;border:2px solid transparent;cursor:pointer"></button>
+        <span style="width:1px;background:#e8e8e5;margin:2px 6px"></span>
+        <button class="fe-size btn-sec" data-size="26" title="${tr('fe_tam_title')}" style="padding:6px 10px;font-size:11px">${tr('fe_tam_p')}</button>
+        <button class="fe-size btn-sec" data-size="40" title="${tr('fe_tam_title')}" style="padding:6px 10px;font-size:13px">${tr('fe_tam_m')}</button>
+        <button class="fe-size btn-sec" data-size="60" title="${tr('fe_tam_title')}" style="padding:6px 10px;font-size:15px">${tr('fe_tam_g')}</button>
         <span style="flex:1"></span>
         <button id="fe-undo" class="btn-sec">${tr('btn_desfazer')}</button>
         <button id="fe-clear" class="btn-sec">${tr('btn_limpar')}</button>
@@ -1217,8 +1226,18 @@ async function abrirFotoEditor(fotoId, osId) {
       feState.color = b.dataset.color;
       document.querySelectorAll('.fe-color').forEach(x => x.style.border = '2px solid transparent');
       b.style.border = '2px solid #1a1a1a';
+      if (feState.selectedText) { feState.selectedText.color = feState.color; feRedraw(); }
     };
   });
+  document.querySelectorAll('.fe-size').forEach(b => {
+    b.onclick = () => {
+      feState.fontSize = parseInt(b.dataset.size, 10);
+      document.querySelectorAll('.fe-size').forEach(x => x.style.background = '');
+      b.style.background = '#f5f5f3';
+      if (feState.selectedText) { feState.selectedText.size = feState.fontSize; feRedraw(); }
+    };
+  });
+  document.querySelector('.fe-size[data-size="40"]').style.background = '#f5f5f3';
 
   document.getElementById('fe-undo').onclick = () => { feState.strokes.pop(); feRedraw(); };
   document.getElementById('fe-clear').onclick = () => { feState.strokes = []; feRedraw(); };
@@ -1227,7 +1246,7 @@ async function abrirFotoEditor(fotoId, osId) {
     const inp = document.getElementById('fe-text-input');
     const val = inp.value.trim();
     if (val && feState.textTarget) {
-      feState.strokes.push({ type: 'text', color: feState.color, text: val, x1: feState.textTarget.x, y1: feState.textTarget.y });
+      feState.strokes.push({ type: 'text', color: feState.color, size: feState.fontSize, text: val, x1: feState.textTarget.x, y1: feState.textTarget.y });
     }
     inp.value = '';
     feState.textTarget = null;
@@ -1281,6 +1300,7 @@ async function abrirFotoEditor(fotoId, osId) {
     }
     if (feState.tool === 'move') {
       feState.dragHandle = feFindHandle(p);
+      feState.selectedText = (feState.dragHandle && feState.dragHandle.s.type === 'text') ? feState.dragHandle.s : null;
       if (feState.dragHandle && feState.dragHandle.key === 'move') {
         feState.dragHandle.origPts = feState.dragHandle.s.pts.map(pt => ({ x: pt.x, y: pt.y }));
         feState.dragHandle.startPos = p;
