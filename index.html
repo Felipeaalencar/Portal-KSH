@@ -662,7 +662,7 @@ function editarCliente(id) {
 }
 
 // ── KSHCAM ────────────────────────────────────────────────────
-let osData = [];
+let osData = []; // garantido array
 const S_LABEL = { aberta:'Aberta', agendada:'Agendada', em_campo:'Em campo', concluida:'Concluída' };
 const S_COLOR = { aberta:'#d97706', agendada:'#7c3aed', em_campo:'#2563eb', concluida:'#16a34a' };
 const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
@@ -710,9 +710,9 @@ async function carregarOS() {
     const tot = document.getElementById('kpi-tot');
     if (tot) {
       tot.textContent = osData.length;
-      document.getElementById('kpi-ab').textContent = osData.filter(o=>o.status==='aberta').length;
-      document.getElementById('kpi-ec').textContent = osData.filter(o=>o.status==='em_campo').length;
-      document.getElementById('kpi-co').textContent = osData.filter(o=>o.status==='concluida').length;
+      document.getElementById('kpi-ab').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='aberta').length;
+      document.getElementById('kpi-ec').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='em_campo').length;
+      document.getElementById('kpi-co').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='concluida').length;
     }
   } catch(e) {
     osData = [];
