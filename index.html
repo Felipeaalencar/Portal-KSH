@@ -746,8 +746,12 @@ async function carregarOS() {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
     });
     const resp = await r.json();
-    osData = Array.isArray(resp) ? resp : [];
-    if (!Array.isArray(resp)) console.error('Supabase OS error:', resp);
+    if (!Array.isArray(resp)) {
+      console.error('Supabase OS error detalhado:', JSON.stringify(resp));
+      document.getElementById('os-lista').innerHTML = '<div style="padding:20px;color:#e74c3c;font-size:12px">Erro Supabase: ' + (resp.message||resp.hint||JSON.stringify(resp)) + '</div>';
+      return;
+    }
+    osData = resp;
     renderOSLista(osData);
     atualizarKPIsOS();
   } catch(e) {
