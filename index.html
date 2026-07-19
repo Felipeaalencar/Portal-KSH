@@ -340,6 +340,7 @@ async function login() {
   if (!email || !senha) { showErr('Preencha email e senha'); return; }
   btn.textContent = 'Entrando...'; btn.disabled = true; err.style.display = 'none';
   try {
+    console.log('Tentando login em:', SB_URL);
     const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
       method: 'POST',
       headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
@@ -355,7 +356,7 @@ async function login() {
     ME = { email: d.user.email, nome: p.nome || email.split('@')[0], funcao: p.funcao || 'Gestor', ini: p.ini || (p.nome || email).substring(0,2).toUpperCase(), token: d.access_token };
     sessionStorage.setItem('ksh_me', JSON.stringify(ME));
     iniciarApp();
-  } catch(e) { showErr('Erro de conexão.'); btn.textContent = 'Entrar'; btn.disabled = false; }
+  } catch(e) { showErr('Erro: ' + e.message); btn.textContent = 'Entrar'; btn.disabled = false; console.error(e); }
 }
 
 function showErr(msg) {
