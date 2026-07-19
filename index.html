@@ -329,6 +329,8 @@ body{font-family:'DM Sans',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 
 <script>
 const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
+const GOOGLE_CLIENT_ID = '1088652003799-j35u5263s0qkn91e8fiqddb4i2j3l11i.apps.googleusercontent.com';
+let googleAccessToken = null;
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
 let ME = null;
 
@@ -470,7 +472,7 @@ function getPageActions(id) {
   const actions = {
     'crm-orcamentos': '<button class="btn-sec">Atualizar</button><button class="btn-pri">+ Novo Orcamento</button>',
     'crm-clientes': '<button class="btn-pri">+ Novo Cliente</button>',
-    'kshcam': '<button class="btn-sec">Atualizar</button><button class="btn-pri">+ Nova OS</button>',
+    'kshcam': '<button class="btn-sec" onclick="carregarOS()">Atualizar</button><button class="btn-pri" onclick="abrirModalNovaOS()">+ Nova OS</button>',
     'tarefas': '<button class="btn-pri">+ Nova Tarefa</button>',
     'ferramentas': '<button class="btn-pri">+ Novo Item</button>',
     'desp-lancar': '<button class="btn-pri">+ Nova Despesa</button>',
@@ -508,29 +510,441 @@ function renderOrcamentos() {
 }
 
 function renderKSHCam() {
+  carregarOS();
   return `
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
-    ${[['OS ABERTAS','—'],['EM CAMPO','—'],['CONCLUÍDAS','—']].map(([l,v])=>`
-    <div class="kpi"><div class="kpi-lbl">${l}</div><div class="kpi-val">${v}</div></div>`).join('')}
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px" id="os-kpis">
+    <div class="kpi"><div class="kpi-lbl">TOTAL OS</div><div class="kpi-val" id="kpi-total">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">ABERTAS</div><div class="kpi-val" id="kpi-abertas" style="color:#f59e0b">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">EM CAMPO</div><div class="kpi-val" id="kpi-campo" style="color:#2563eb">—</div></div>
+    <div class="kpi"><div class="kpi-lbl">CONCLUÍDAS</div><div class="kpi-val" id="kpi-concluidas" style="color:#16a34a">—</div></div>
   </div>
-  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#d97706">
-    ⚡ Toda OS criada manualmente por técnico gera um Lead automático no CRM. Orçamentos aprovados geram OS automaticamente.
+
+  <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e;display:flex;align-items:center;gap:8px" id="google-status">
+    <span>📁</span>
+    <span id="google-status-txt">Google Drive não conectado — <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">Conectar agora</span> para fazer upload de fotos</span>
   </div>
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar OS..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none">
-    <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none"><option>Todos os status</option><option>Aberta</option><option>Em campo</option><option>Concluída</option></select>
+
+  <div style="display:flex;gap:8px;margin-bottom:14px;align-items:center">
+    <input placeholder="Buscar OS por cliente, título ou número..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="os-search" oninput="filtrarOS()">
+    <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none" id="os-filtro-status" onchange="filtrarOS()">
+      <option value="">Todos os status</option>
+      <option value="aberta">Aberta</option>
+      <option value="agendada">Agendada</option>
+      <option value="em_campo">Em campo</option>
+      <option value="concluida">Concluída</option>
+    </select>
+    <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none" id="os-filtro-origem" onchange="filtrarOS()">
+      <option value="">Todas as origens</option>
+      <option value="manual">Manual</option>
+      <option value="orcamento">De orçamento</option>
+    </select>
   </div>
-  <div style="display:flex;flex-direction:column;gap:8px">
-    <div style="background:#fff;border:1px solid #e8e8e5;border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px">
-      <div style="width:36px;height:36px;border-radius:8px;background:#f0f9ff;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">📸</div>
-      <div style="flex:1">
-        <div style="font-size:13px;font-weight:500;margin-bottom:2px">Nenhuma OS encontrada</div>
-        <div style="font-size:11px;color:#888">Orçamentos aprovados aparecerão aqui automaticamente</div>
+
+  <div id="os-lista" style="display:flex;flex-direction:column;gap:8px">
+    <div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Carregando ordens de serviço...</div>
+  </div>
+
+  <!-- MODAL NOVA OS -->
+  <div id="modal-os-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+        <div style="font-size:16px;font-weight:700">Nova Ordem de Serviço</div>
+        <button onclick="fecharModalOS()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
       </div>
-      <button class="btn-pri" onclick="toast_show('Nova OS criada!','ok')">+ Nova OS</button>
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Título *</label>
+      <input id="os-titulo" placeholder="Ex: Instalação sistema Crestron" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Cliente</label>
+      <input id="os-cliente" placeholder="Nome do cliente" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Telefone</label>
+      <input id="os-tel" placeholder="(555) 000-0000" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Endereço</label>
+      <input id="os-endereco" placeholder="Endereço completo" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Técnico responsável</label>
+      <input id="os-tecnico" placeholder="Nome do técnico" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+      <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Descrição</label>
+      <textarea id="os-desc" placeholder="Descreva o serviço a ser realizado..." style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:16px;height:80px;resize:vertical"></textarea>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="fecharModalOS()" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+        <button onclick="salvarOS()" style="padding:8px 16px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Criar OS</button>
+      </div>
     </div>
+  </div>
+
+  <!-- MODAL DETALHE OS -->
+  <div id="modal-os-det-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+    <div id="modal-os-det" style="background:#fff;border-radius:12px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)"></div>
   </div>`;
 }
+
+// ── OS DATA ──────────────────────────────────────────────────
+let osData = [];
+
+async function carregarOS() {
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=criado_em.desc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+    });
+    osData = await r.json() || [];
+    renderOSLista(osData);
+    atualizarKPIsOS();
+  } catch(e) {
+    document.getElementById('os-lista') && (document.getElementById('os-lista').innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:13px">Erro ao carregar OS: ' + e.message + '</div>');
+  }
+}
+
+function atualizarKPIsOS() {
+  if (!document.getElementById('kpi-total')) return;
+  document.getElementById('kpi-total').textContent = osData.length;
+  document.getElementById('kpi-abertas').textContent = osData.filter(o=>o.status==='aberta').length;
+  document.getElementById('kpi-campo').textContent = osData.filter(o=>o.status==='em_campo').length;
+  document.getElementById('kpi-concluidas').textContent = osData.filter(o=>o.status==='concluida').length;
+}
+
+function filtrarOS() {
+  const busca = (document.getElementById('os-search')?.value||'').toLowerCase();
+  const status = document.getElementById('os-filtro-status')?.value||'';
+  const origem = document.getElementById('os-filtro-origem')?.value||'';
+  let lista = osData.filter(o => {
+    if (status && o.status !== status) return false;
+    if (origem && o.origem !== origem) return false;
+    if (busca && !((o.titulo||'').toLowerCase().includes(busca) || (o.cliente_nome||'').toLowerCase().includes(busca) || String(o.numero||'').includes(busca))) return false;
+    return true;
+  });
+  renderOSLista(lista);
+}
+
+const STATUS_LABEL = { aberta:'Aberta', agendada:'Agendada', em_campo:'Em campo', concluida:'Concluída' };
+const STATUS_COLOR = { aberta:'#f59e0b', agendada:'#8b5cf6', em_campo:'#2563eb', concluida:'#16a34a' };
+const STATUS_BG = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
+
+function renderOSLista(lista) {
+  const el = document.getElementById('os-lista');
+  if (!el) return;
+  if (!lista.length) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Nenhuma OS encontrada</div>';
+    return;
+  }
+  el.innerHTML = lista.map(o => `
+  <div style="background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:14px 16px;cursor:pointer;transition:border-color .15s" onclick="abrirOS('${o.id}')" onmouseover="this.style.borderColor='#1a1a1a'" onmouseout="this.style.borderColor='#e8e8e5'">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:11px;color:#888">OS #${o.numero||'—'}</span>
+        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${STATUS_BG[o.status]||'#f5f5f3'};color:${STATUS_COLOR[o.status]||'#888'}">${STATUS_LABEL[o.status]||o.status}</span>
+        ${o.origem==='orcamento'?'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">De orçamento</span>':'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f5f5f3;color:#888">Manual</span>'}
+      </div>
+      <span style="font-size:11px;color:#bbb">${new Date(o.criado_em).toLocaleDateString('pt-BR')}</span>
+    </div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:4px">${o.titulo||'Sem título'}</div>
+    <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#888">
+      ${o.cliente_nome?`<span>👤 ${o.cliente_nome}</span>`:''}
+      ${o.tecnico_nome?`<span>🔧 ${o.tecnico_nome}</span>`:''}
+      ${o.endereco?`<span>📍 ${o.endereco}</span>`:''}
+    </div>
+    ${o.drive_folder_url?'<div style="margin-top:6px"><a href="'+o.drive_folder_url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#2563eb;text-decoration:none">📁 Ver pasta no Drive</a></div>':''}
+  </div>`).join('');
+}
+
+async function abrirOS(id) {
+  const os = osData.find(o => o.id === id);
+  if (!os) return;
+
+  // Busca fotos e notas
+  const [fotosR, notasR] = await Promise.all([
+    fetch(SB_URL + '/rest/v1/os_fotos?os_id=eq.' + id + '&order=criado_em.desc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } }),
+    fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + id + '&order=criado_em.asc', { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } })
+  ]);
+  const fotos = await fotosR.json() || [];
+  const notas = await notasR.json() || [];
+
+  const det = document.getElementById('modal-os-det');
+  det.innerHTML = `
+  <div style="padding:20px 24px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:2px">OS #${os.numero||'—'} · <span style="color:${STATUS_COLOR[os.status]||'#888'}">${STATUS_LABEL[os.status]||os.status}</span></div>
+      <div style="font-size:16px;font-weight:700">${os.titulo||'Sem título'}</div>
+    </div>
+    <button onclick="fecharDetOS()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#888">×</button>
+  </div>
+  <div style="padding:20px 24px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+      <div style="background:#f9f9f7;border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cliente</div>
+        <div style="font-size:13px;font-weight:500">${os.cliente_nome||'—'}</div>
+        ${os.cliente_tel?`<div style="font-size:12px;color:#888;margin-top:2px">${os.cliente_tel}</div>`:''}
+      </div>
+      <div style="background:#f9f9f7;border-radius:8px;padding:12px">
+        <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Técnico</div>
+        <div style="font-size:13px;font-weight:500">${os.tecnico_nome||'—'}</div>
+      </div>
+      ${os.endereco?`<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Endereço</div><div style="font-size:13px">${os.endereco}</div></div>`:''}
+    </div>
+
+    <!-- STATUS -->
+    <div style="margin-bottom:20px">
+      <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">Atualizar status</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${Object.entries(STATUS_LABEL).map(([s,l]) => `
+        <button onclick="atualizarStatusOS('${id}','${s}')" style="padding:5px 12px;border-radius:99px;border:1px solid ${os.status===s?STATUS_COLOR[s]:'#e8e8e5'};background:${os.status===s?STATUS_BG[s]:'#fff'};color:${os.status===s?STATUS_COLOR[s]:'#555'};font-size:11px;font-weight:${os.status===s?'600':'400'};cursor:pointer;font-family:inherit">${l}</button>`).join('')}
+      </div>
+    </div>
+
+    <!-- FOTOS -->
+    <div style="margin-bottom:20px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600">Fotos (${fotos.length})</div>
+        <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">
+          📷 Adicionar foto
+          <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
+        </label>
+      </div>
+      <div id="fotos-grid-${id}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${fotos.length ? fotos.map(f => `
+        <a href="${f.drive_url}" target="_blank" style="aspect-ratio:1;border-radius:8px;overflow:hidden;display:block;background:#f5f5f3;border:1px solid #e8e8e5">
+          ${f.thumb_url ? `<img src="${f.thumb_url}" style="width:100%;height:100%;object-fit:cover">` : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:24px">🖼️</div>`}
+        </a>`).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto ainda. Clique em "Adicionar foto" para começar.</div>'}
+      </div>
+      <div id="upload-progress-${id}" style="display:none;margin-top:8px;font-size:12px;color:#2563eb">Enviando fotos...</div>
+    </div>
+
+    <!-- NOTAS -->
+    <div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Anotações (${notas.length})</div>
+      <div id="notas-lista-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+        ${notas.map(n => `
+        <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
+          <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
+          <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.criado_em).toLocaleString('pt-BR')}</div>
+        </div>`).join('') || '<div style="color:#bbb;font-size:12px">Nenhuma anotação ainda.</div>'}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="nova-nota-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')adicionarNota('${id}')">
+        <button onclick="adicionarNota('${id}')" style="padding:7px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
+      </div>
+    </div>
+
+    ${os.drive_folder_url?`<div style="margin-top:16px;padding-top:16px;border-top:1px solid #e8e8e5"><a href="${os.drive_folder_url}" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">📁 Abrir pasta no Google Drive</a></div>`:''}
+  </div>`;
+
+  document.getElementById('modal-os-det-bg').style.display = 'flex';
+}
+
+function fecharDetOS() {
+  document.getElementById('modal-os-det-bg').style.display = 'none';
+  carregarOS();
+}
+
+// Modal nova OS
+function abrirModalNovaOS() {
+  document.getElementById('modal-os-bg').style.display = 'flex';
+  setTimeout(() => document.getElementById('os-titulo')?.focus(), 100);
+}
+function fecharModalOS() {
+  document.getElementById('modal-os-bg').style.display = 'none';
+}
+
+async function salvarOS() {
+  const titulo = document.getElementById('os-titulo')?.value.trim();
+  if (!titulo) { alert('Título é obrigatório'); return; }
+  const nova = {
+    titulo,
+    cliente_nome: document.getElementById('os-cliente')?.value.trim()||null,
+    cliente_tel: document.getElementById('os-tel')?.value.trim()||null,
+    endereco: document.getElementById('os-endereco')?.value.trim()||null,
+    tecnico_nome: document.getElementById('os-tecnico')?.value.trim()||null,
+    descricao: document.getElementById('os-desc')?.value.trim()||null,
+    status: 'aberta',
+    origem: 'manual',
+    criado_por: ME.nome
+  };
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/ordens_servico', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify(nova)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    fecharModalOS();
+    toast_show('OS criada com sucesso!', 'ok');
+    carregarOS();
+    // Cria lead no CRM automaticamente (OS manual)
+    criarLeadAutomatico(nova);
+  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
+}
+
+async function criarLeadAutomatico(os) {
+  // Cria lead no CRM quando OS é criada manualmente
+  try {
+    await fetch(SB_URL + '/rest/v1/crm_leads', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome: os.cliente_nome||'Lead de OS', origem: 'os_manual', status: 'lead', criado_por: ME.nome })
+    });
+  } catch(e) { console.log('Lead não criado (tabela CRM pode não existir ainda):', e.message); }
+}
+
+async function atualizarStatusOS(id, status) {
+  try {
+    await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, atualizado_em: new Date().toISOString() })
+    });
+    toast_show('Status atualizado!', 'ok');
+    fecharDetOS();
+  } catch(e) { toast_show('Erro ao atualizar', 'err'); }
+}
+
+async function adicionarNota(osId) {
+  const input = document.getElementById('nova-nota-' + osId);
+  const texto = input?.value.trim();
+  if (!texto) return;
+  try {
+    await fetch(SB_URL + '/rest/v1/os_notas', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ os_id: osId, texto, autor: ME.nome })
+    });
+    input.value = '';
+    // Atualiza lista de notas
+    const r = await fetch(SB_URL + '/rest/v1/os_notas?os_id=eq.' + osId + '&order=criado_em.asc', {
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+    });
+    const notas = await r.json();
+    const lista = document.getElementById('notas-lista-' + osId);
+    if (lista) lista.innerHTML = notas.map(n => `
+    <div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">
+      <div style="font-size:12px;color:#1a1a1a;margin-bottom:4px">${n.texto}</div>
+      <div style="font-size:10px;color:#bbb">${n.autor||'—'} · ${new Date(n.criado_em).toLocaleString('pt-BR')}</div>
+    </div>`).join('');
+  } catch(e) { toast_show('Erro ao salvar nota', 'err'); }
+}
+
+// ── GOOGLE DRIVE ─────────────────────────────────────────────
+function conectarGoogle() {
+  const scope = 'https://www.googleapis.com/auth/drive.file';
+  const url = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+    'client_id=' + GOOGLE_CLIENT_ID +
+    '&redirect_uri=' + encodeURIComponent(window.location.origin) +
+    '&response_type=token' +
+    '&scope=' + encodeURIComponent(scope);
+  window.open(url, 'google_auth', 'width=500,height=600');
+}
+
+// Recebe o token do Google após autenticação
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'google_token') {
+    googleAccessToken = e.data.token;
+    const el = document.getElementById('google-status-txt');
+    if (el) el.innerHTML = '✅ Google Drive conectado — pronto para upload de fotos';
+    document.getElementById('google-status').style.background = '#f0fdf4';
+    document.getElementById('google-status').style.borderColor = '#bbf7d0';
+    document.getElementById('google-status').style.color = '#166534';
+  }
+});
+
+// Verifica token do Google no hash após redirect
+window.addEventListener('load', function() {
+  const hash = new URLSearchParams(window.location.hash.substring(1));
+  const token = hash.get('access_token');
+  if (token && hash.get('scope') && hash.get('scope').includes('drive')) {
+    googleAccessToken = token;
+    history.replaceState(null, '', window.location.pathname);
+  }
+});
+
+async function uploadFotos(event, osId) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+
+  if (!googleAccessToken) {
+    alert('Conecte o Google Drive primeiro para fazer upload de fotos.');
+    return;
+  }
+
+  const progress = document.getElementById('upload-progress-' + osId);
+  if (progress) progress.style.display = 'block';
+
+  // Garante que a OS tem uma pasta no Drive
+  const os = osData.find(o => o.id === osId);
+  let folderId = os?.drive_folder_id;
+
+  if (!folderId) {
+    folderId = await criarPastaDrive(os?.titulo || 'OS ' + osId);
+    if (folderId) {
+      const folderUrl = 'https://drive.google.com/drive/folders/' + folderId;
+      await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + osId, {
+        method: 'PATCH',
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drive_folder_id: folderId, drive_folder_url: folderUrl })
+      });
+    }
+  }
+
+  for (let i = 0; i < files.length; i++) {
+    if (progress) progress.textContent = `Enviando foto ${i+1} de ${files.length}...`;
+    try {
+      const driveFile = await uploadParaDrive(files[i], folderId);
+      if (driveFile) {
+        await fetch(SB_URL + '/rest/v1/os_fotos', {
+          method: 'POST',
+          headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            os_id: osId,
+            nome: files[i].name,
+            drive_url: 'https://drive.google.com/file/d/' + driveFile.id + '/view',
+            thumb_url: driveFile.thumbnailLink || null,
+            enviado_por: ME.nome
+          })
+        });
+      }
+    } catch(e) { console.error('Erro no upload:', e); }
+  }
+
+  if (progress) progress.style.display = 'none';
+  toast_show('Fotos enviadas!', 'ok');
+  abrirOS(osId);
+}
+
+async function criarPastaDrive(nome) {
+  try {
+    const r = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: 'KSH OS - ' + nome, mimeType: 'application/vnd.google-apps.folder' })
+    });
+    const d = await r.json();
+    // Torna a pasta acessível via link
+    await fetch('https://www.googleapis.com/drive/v3/files/' + d.id + '/permissions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+    return d.id;
+  } catch(e) { console.error('Erro ao criar pasta:', e); return null; }
+}
+
+async function uploadParaDrive(file, folderId) {
+  const meta = { name: file.name, parents: folderId ? [folderId] : [] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', file);
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,thumbnailLink', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + googleAccessToken },
+    body: form
+  });
+  // Torna o arquivo público
+  const d = await r.json();
+  if (d.id) {
+    await fetch('https://www.googleapis.com/drive/v3/files/' + d.id + '/permissions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + googleAccessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role: 'reader', type: 'anyone' })
+    });
+  }
+  return d;
+}
+
 
 function renderTarefas() {
   return `
