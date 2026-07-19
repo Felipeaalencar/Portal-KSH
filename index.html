@@ -662,7 +662,7 @@ function editarCliente(id) {
 }
 
 // ── KSHCAM ────────────────────────────────────────────────────
-let osData = []; // garantido array
+let osData = [];
 const S_LABEL = { aberta:'Aberta', agendada:'Agendada', em_campo:'Em campo', concluida:'Concluída' };
 const S_COLOR = { aberta:'#d97706', agendada:'#7c3aed', em_campo:'#2563eb', concluida:'#16a34a' };
 const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
@@ -695,72 +695,393 @@ async function renderKSHCam() {
   await carregarOS();
 }
 
+async function carregarOS() {
+  const el = document.getElementById('os-lista');
+  if (!el) return;
+  try {
+    osData = await sbGet('ordens_servico?order=created_at.desc');
+    renderOSLista(osData);
+    if (document.getElementById('kpi-tot')) {
+      document.getElementById('kpi-tot').textContent = osData.length;
+      document.getElementById('kpi-ab').textContent = osData.filter(o=>o.status==='aberta').length;
+      document.getElementById('kpi-ec').textContent = osData.filter(o=>o.status==='em_campo').length;
+      document.getElementById('kpi-co').textContent = osData.filter(o=>o.status==='concluida').length;
+    }
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro: ' + e.message + '</div>';
+  }
+}
 
 function filtrarOS() {
-  if (!Array.isArray(osData)) return;
   const q = (document.getElementById('os-busca')?.value||'').toLowerCase();
   const s = document.getElementById('os-filtro')?.value||'';
-  const lista = osData.filter(o =>
-    (!s || o.status === s) &&
-    (!q || (o.titulo||'').toLowerCase().includes(q) ||
-           (o.cliente||o.cliente_nome||'').toLowerCase().includes(q) ||
-           String(o.numero||'').includes(q))
-  );
-  renderOSLista(lista);
+  renderOSLista(osData.filter(o => (!s||o.status===s) && (!q||(o.titulo||'').toLowerCase().includes(q)||(o.cliente||o.cliente_nome||'').toLowerCase().includes(q)||String(o.numero||'').includes(q))));
 }
 
 function renderOSLista(lista) {
   const el = document.getElementById('os-lista');
   if (!el) return;
-  if (!lista || !lista.length) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Nenhuma OS encontrada</div>';
-    return;
-  }
+  if (!lista.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Nenhuma OS encontrada</div>'; return; }
   el.innerHTML = lista.map(o => `
   <div style="background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:14px 16px;margin-bottom:8px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:#888">OS #\${o.numero||'—'}</span>
-        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:\${S_BG[o.status]||'#f5f5f3'};color:\${S_COLOR[o.status]||'#888'}">\${S_LABEL[o.status]||o.status}</span>
+        <span style="font-size:11px;color:#888">OS #${o.numero||'—'}</span>
+        <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${S_BG[o.status]||'#f5f5f3'};color:${S_COLOR[o.status]||'#888'}">${S_LABEL[o.status]||o.status}</span>
+        ${o.origem==='manual'?'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f5f5f3;color:#888;border:1px solid #e8e8e5">Manual</span>':'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">De orçamento</span>'}
       </div>
-      <span style="font-size:11px;color:#bbb">\${new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
+      <span style="font-size:11px;color:#bbb">${new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
     </div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px;cursor:pointer" onclick="abrirOS('\${o.id}')">\${o.titulo||'Sem título'}</div>
-    <div style="font-size:12px;color:#888;margin-bottom:10px;display:flex;gap:16px">
-      \${(o.cliente||o.cliente_nome)?'<span>👤 '+(o.cliente||o.cliente_nome)+'</span>':''}
-      \${o.tecnico_nome?'<span>🔧 '+o.tecnico_nome+'</span>':''}
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px;cursor:pointer" onclick="abrirOS('${o.id}')">${o.titulo||'Sem título'}</div>
+    <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#888;margin-bottom:10px">
+      ${(o.cliente||o.cliente_nome)?'<span>👤 '+(o.cliente||o.cliente_nome)+'</span>':''}
+      ${o.tecnico_nome?'<span>🔧 '+o.tecnico_nome+'</span>':''}
+      ${o.endereco?'<span>📍 '+o.endereco+'</span>':''}
     </div>
-    <div style="display:flex;justify-content:flex-end;gap:6px">
-      <button onclick="abrirOS('\${o.id}')" style="padding:4px 12px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;font-weight:500">Ver detalhes</button>
-      <button onclick="editarOS('\${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#555">Editar</button>
-      <button onclick="deletarOS('\${o.id}','\${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#e74c3c">Deletar</button>
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>${o.drive_folder_url?'<a href="'+o.drive_folder_url+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none">📁 Ver no Drive</a>':''}</div>
+      <div style="display:flex;gap:6px">
+        <button onclick="abrirOS('${o.id}')" style="padding:4px 12px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#1a1a1a;font-weight:500">Ver detalhes</button>
+        <button onclick="editarOS('${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#555">Editar</button>
+        <button onclick="deletarOS('${o.id}','${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#e74c3c">Deletar</button>
+      </div>
     </div>
   </div>`).join('');
 }
 
-async function carregarOS() {
-  const el = document.getElementById('os-lista');
-  if (!el) return;
-  osData = [];
+// Abrir OS — modal de detalhe
+async function abrirOS(id) {
+  const os = osData.find(o => o.id === id);
+  if (!os) return;
+  const content = document.getElementById('m-det-os-content');
+  content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">Carregando...</div>';
+  abrirModal('m-det-os');
+
+  let fotos = [], notas = [];
   try {
-    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?order=created_at.desc', {
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
-    });
-    const d = await r.json();
-    console.log('Supabase response:', r.status, JSON.stringify(d).substring(0,200));
-    osData = Array.isArray(d) ? d : [];
-    if (!r.ok) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro ' + r.status + ': ' + (d.message||d.hint||JSON.stringify(d)) + '</div>'; return; }
-    if (!Array.isArray(d)) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Resposta inválida: ' + JSON.stringify(d).substring(0,100) + '</div>'; return; }
-    renderOSLista(osData);
-    const tot = document.getElementById('kpi-tot');
-    if (tot) {
-      tot.textContent = osData.length;
-      document.getElementById('kpi-ab').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='aberta').length;
-      document.getElementById('kpi-ec').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='em_campo').length;
-      document.getElementById('kpi-co').textContent = (Array.isArray(osData)?osData:[]).filter(o=>o.status==='concluida').length;
-    }
-  } catch(e) {
-    osData = [];
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro: ' + e.message + '</div>';
-  }
+    [fotos, notas] = await Promise.all([
+      sbGet('os_fotos?os_id=eq.' + id + '&order=created_at.desc'),
+      sbGet('os_notas?os_id=eq.' + id + '&order=created_at.asc')
+    ]);
+  } catch(e) {}
+
+  content.innerHTML = `
+  <div style="padding:16px 20px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
+    <div>
+      <div style="font-size:11px;color:#888;margin-bottom:1px">OS #${os.numero||'—'} · <span style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
+      <div style="font-size:16px;font-weight:700">${os.titulo||'Sem título'}</div>
+    </div>
+    <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
+  </div>
+  <div style="padding:18px 20px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#f9f9f7;border-radius:8px;padding:12px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cliente</div>
+        <div style="font-size:13px;font-weight:600">${os.cliente_nome||os.cliente||'—'}</div>
+        ${os.cliente_tel?'<div style="font-size:12px;color:#555;margin-top:2px">📞 '+os.cliente_tel+'</div>':''}
+        ${os.cliente_email?'<div style="font-size:12px;color:#555;margin-top:1px">✉️ '+os.cliente_email+'</div>':''}
+      </div>
+      <div style="background:#f9f9f7;border-radius:8px;padding:12px">
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Técnico</div>
+        <div style="font-size:13px;font-weight:600">${os.tecnico_nome||'—'}</div>
+        <div style="font-size:11px;color:#888;margin-top:3px">Por ${os.criado_por||'—'}</div>
+      </div>
+      ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Endereço</div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
+      ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Serviço</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">Status</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        ${Object.entries(S_LABEL).map(([s,l]) => '<button onclick="mudarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600">Fotos (${fotos.length})</div>
+        <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
+          📷 Adicionar
+          <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
+        </label>
+      </div>
+      <div id="fotos-${id}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        ${fotos.length ? fotos.map(f => '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(f.thumb_url?'<img src="'+f.thumb_url+'" style="width:100%;height:100%;object-fit:cover">':'<span style="font-size:28px">🖼️</span>')+'</a>').join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar" para começar.</div>'}
+      </div>
+      <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">Enviando...</div>
+    </div>
+    <div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Anotações (${notas.length})</div>
+      <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>'}
+      </div>
+      <div style="display:flex;gap:8px">
+        <input id="nota-input-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')salvarNota('${id}')">
+        <button onclick="salvarNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
+      </div>
+    </div>
+    ${os.drive_folder_url?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5"><a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">📁 Abrir pasta no Google Drive</a></div>':''}
+  </div>`;
 }
+
+async function mudarStatusOS(id, status) {
+  try {
+    await sbPatch('ordens_servico?id=eq.' + id, { status });
+    toast('Status atualizado!', 'ok');
+    fecharModal('m-det-os');
+    carregarOS();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function salvarNota(osId) {
+  const inp = document.getElementById('nota-input-' + osId);
+  const texto = inp?.value.trim();
+  if (!texto) return;
+  try {
+    await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
+    inp.value = '';
+    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=created_at.asc');
+    const el = document.getElementById('notas-' + osId);
+    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.created_at).toLocaleString('pt-BR')+'</div></div>').join('');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+// Nova OS
+let osCliSel = null;
+
+function abrirNovaOS() {
+  osCliSel = null;
+  ['os-titulo','os-tecnico','os-desc','os-cli-busca'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+  document.getElementById('os-cli-sel').style.display = 'none';
+  document.getElementById('os-cli-novo').style.display = 'none';
+  document.getElementById('os-cli-res').style.display = 'none';
+  abrirModal('m-nova-os');
+  setTimeout(() => document.getElementById('os-titulo')?.focus(), 100);
+}
+
+let buscaTimer = null;
+async function buscarClienteOS(q) {
+  clearTimeout(buscaTimer);
+  const res = document.getElementById('os-cli-res');
+  const novo = document.getElementById('os-cli-novo');
+  if (!q || q.length < 2) { res.style.display = 'none'; novo.style.display = 'none'; return; }
+  buscaTimer = setTimeout(async () => {
+    try {
+      const lista = await sbGet('clientes?nome=ilike.*' + encodeURIComponent(q) + '*&ativo=eq.true&limit=6');
+      if (!lista.length) { res.style.display = 'none'; novo.style.display = 'block'; return; }
+      novo.style.display = 'none';
+      res.style.display = 'block';
+      res.innerHTML = lista.map(c => '<div onclick="selecionarCliente(' + JSON.stringify(c).replace(/"/g,"'") + ')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3" onmouseover="this.style.background=\'#f9f9f7\'" onmouseout="this.style.background=\'\'"><div style="font-size:13px;font-weight:500">'+c.nome+'</div><div style="font-size:11px;color:#888">'+ [c.email,c.telefone,c.endereco].filter(Boolean).join(' · ')+'</div></div>').join('');
+    } catch(e) { res.style.display = 'none'; }
+  }, 300);
+}
+
+function selecionarCliente(c) {
+  osCliSel = c;
+  document.getElementById('os-cli-busca').value = '';
+  document.getElementById('os-cli-res').style.display = 'none';
+  document.getElementById('os-cli-novo').style.display = 'none';
+  document.getElementById('os-cli-sel').style.display = 'block';
+  document.getElementById('os-cli-nome').textContent = c.nome;
+  document.getElementById('os-cli-dados').textContent = [c.email,c.telefone,c.endereco].filter(Boolean).join(' · ');
+}
+
+function limparClienteOS() {
+  osCliSel = null;
+  document.getElementById('os-cli-sel').style.display = 'none';
+  document.getElementById('os-cli-busca').value = '';
+  document.getElementById('os-cli-busca').focus();
+}
+
+function abrirCadastroCliente() {
+  fecharModal('m-nova-os');
+  abrirModal('m-novo-cli');
+}
+
+async function salvarNovoCliente() {
+  const nome = document.getElementById('nc-nome')?.value.trim();
+  const email = document.getElementById('nc-email')?.value.trim();
+  const telefone = document.getElementById('nc-tel')?.value.trim();
+  const endereco = document.getElementById('nc-end')?.value.trim();
+  if (!nome||!email||!telefone||!endereco) { toast('Preencha todos os campos','err'); return; }
+  try {
+    const [c] = await sbPost('clientes', { nome, email, telefone, endereco, contato: document.getElementById('nc-contato')?.value.trim()||null, ativo: true });
+    fecharModal('m-novo-cli');
+    selecionarCliente(c);
+    abrirModal('m-nova-os');
+    toast('Cliente cadastrado!', 'ok');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function salvarNovaOS() {
+  const titulo = document.getElementById('os-titulo')?.value.trim();
+  if (!titulo) { toast('Título obrigatório', 'err'); return; }
+  if (!osCliSel) { toast('Selecione um cliente do CRM', 'err'); document.getElementById('os-cli-busca')?.focus(); return; }
+  try {
+    // Próximo número
+    const nums = await sbGet('ordens_servico?select=numero&order=numero.desc&limit=1');
+    const numero = (nums[0]?.numero || 0) + 1;
+    await sbPost('ordens_servico', {
+      numero, titulo,
+      cliente: osCliSel.nome, cliente_nome: osCliSel.nome,
+      cliente_tel: osCliSel.telefone||null, cliente_email: osCliSel.email||null,
+      endereco: osCliSel.endereco||null,
+      tecnico_nome: document.getElementById('os-tecnico')?.value.trim()||null,
+      descricao: document.getElementById('os-desc')?.value.trim()||null,
+      status: 'aberta', origem: 'manual', criado_por: ME.nome
+    });
+    fecharModal('m-nova-os');
+    toast('OS #' + numero + ' criada!', 'ok');
+    // Cria lead no CRM
+    try { await sbPost('crm_leads', { nome: osCliSel.nome, origem: 'os_manual', status: 'lead', criado_por: ME.nome }); } catch(e) {}
+    carregarOS();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+function editarOS(id) {
+  const os = osData.find(o => o.id === id);
+  if (!os) return;
+  document.getElementById('edit-os-id').value = id;
+  document.getElementById('edit-os-titulo').value = os.titulo||'';
+  document.getElementById('edit-os-status').value = os.status||'aberta';
+  document.getElementById('edit-os-tecnico').value = os.tecnico_nome||'';
+  document.getElementById('edit-os-desc').value = os.descricao||'';
+  document.getElementById('edit-os-cli-info').textContent = 'Cliente: ' + (os.cliente_nome||os.cliente||'—');
+  abrirModal('m-edit-os');
+}
+
+async function salvarEditOS() {
+  const id = document.getElementById('edit-os-id').value;
+  const titulo = document.getElementById('edit-os-titulo').value.trim();
+  if (!titulo) { toast('Título obrigatório','err'); return; }
+  try {
+    await sbPatch('ordens_servico?id=eq.' + id, {
+      titulo, status: document.getElementById('edit-os-status').value,
+      tecnico_nome: document.getElementById('edit-os-tecnico').value.trim()||null,
+      descricao: document.getElementById('edit-os-desc').value.trim()||null
+    });
+    fecharModal('m-edit-os');
+    toast('OS atualizada!', 'ok');
+    carregarOS();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+async function deletarOS(id, titulo) {
+  if (!confirm('Deletar OS "' + titulo + '"?\nEsta ação não pode ser desfeita.')) return;
+  try {
+    await sbDelete('ordens_servico?id=eq.' + id);
+    toast('OS deletada', 'ok');
+    carregarOS();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+// ── GOOGLE DRIVE ──────────────────────────────────────────────
+function atualizarDriveStatus(ok) {
+  const el = document.getElementById('g-drive-status');
+  if (!el) return;
+  if (ok) { el.style.background='#f0fdf4'; el.style.borderColor='#bbf7d0'; el.style.color='#166534'; el.innerHTML='✅ Google Drive conectado'; }
+}
+
+function conectarGoogle() {
+  const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GID + '&redirect_uri=' + encodeURIComponent(window.location.origin + window.location.pathname) + '&response_type=token&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file');
+  window.location.href = url;
+}
+
+async function uploadFotos(event, osId) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  if (!googleToken) { toast('Conecte o Google Drive primeiro','err'); return; }
+  const prog = document.getElementById('upload-prog');
+  if (prog) prog.style.display = 'block';
+  const os = osData.find(o => o.id === osId);
+  let folderId = os?.drive_folder_id;
+  if (!folderId) {
+    folderId = await criarPastaDrive('KSH OS #' + (os?.numero||osId));
+    if (folderId) {
+      await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
+      os.drive_folder_id = folderId;
+    }
+  }
+  for (let i = 0; i < files.length; i++) {
+    if (prog) prog.textContent = 'Enviando ' + (i+1) + '/' + files.length + '...';
+    try {
+      const d = await uploadDrive(files[i], folderId);
+      if (d?.id) {
+        await sbPost('os_fotos', { os_id: osId, nome: files[i].name, drive_url: 'https://drive.google.com/file/d/'+d.id+'/view', thumb_url: d.thumbnailLink||null, enviado_por: ME.nome });
+      }
+    } catch(e) { console.error(e); }
+  }
+  if (prog) prog.style.display = 'none';
+  toast('Fotos enviadas!', 'ok');
+  abrirOS(osId);
+}
+
+async function criarPastaDrive(nome) {
+  const r = await fetch('https://www.googleapis.com/drive/v3/files', {
+    method:'POST', headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},
+    body: JSON.stringify({ name: nome, mimeType: 'application/vnd.google-apps.folder' })
+  });
+  const d = await r.json();
+  if (d.id) await fetch('https://www.googleapis.com/drive/v3/files/'+d.id+'/permissions',{method:'POST',headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
+  return d.id;
+}
+
+async function uploadDrive(file, folderId) {
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify({name:file.name,parents:folderId?[folderId]:[]})],{type:'application/json'}));
+  form.append('file', file);
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,thumbnailLink',{method:'POST',headers:{'Authorization':'Bearer '+googleToken},body:form});
+  const d = await r.json();
+  if (d.id) await fetch('https://www.googleapis.com/drive/v3/files/'+d.id+'/permissions',{method:'POST',headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
+  return d;
+}
+
+// ── INIT ──────────────────────────────────────────────────────
+window.addEventListener('load', function() {
+  // Verifica token Google no hash
+  const hash = new URLSearchParams(window.location.hash.substring(1));
+  const gt = hash.get('access_token');
+  if (gt && hash.get('scope') && hash.get('scope').includes('drive')) {
+    googleToken = gt;
+    history.replaceState(null, '', window.location.pathname);
+  }
+  // Verifica token convite Supabase
+  const sp = new URLSearchParams(window.location.hash.substring(1));
+  const token = sp.get('access_token');
+  const type = sp.get('type');
+  if ((type === 'invite' || type === 'recovery') && token) {
+    history.replaceState(null, '', window.location.pathname);
+    mostrarTelaReset(token);
+    return;
+  }
+  // Restaura sessão
+  const saved = sessionStorage.getItem('ksh_me');
+  if (saved) {
+    try { ME = JSON.parse(saved); iniciarApp(); } catch(e) { sessionStorage.clear(); }
+  }
+});
+
+function mostrarTelaReset(token) {
+  document.getElementById('v-login').innerHTML = `
+  <div class="l-brand"><div class="l-brand-name">Kilian Smart Homes</div></div>
+  <div class="l-card">
+    <h2>Criar sua senha</h2><p>Escolha uma senha para acessar o portal</p>
+    <label class="l-lbl">Nova senha</label>
+    <div class="l-field"><input type="password" id="r-nova" placeholder="Mínimo 8 caracteres"></div>
+    <label class="l-lbl">Confirmar senha</label>
+    <div class="l-field"><input type="password" id="r-conf" placeholder="Repita a senha"></div>
+    <button class="l-btn" onclick="salvarSenha('${token}')">Salvar e entrar</button>
+    <div class="l-err" id="r-err"></div>
+  </div>`;
+}
+
+async function salvarSenha(token) {
+  const nova = document.getElementById('r-nova')?.value;
+  const conf = document.getElementById('r-conf')?.value;
+  if (nova.length < 8) { document.getElementById('r-err').textContent='Mínimo 8 caracteres'; document.getElementById('r-err').style.display='block'; return; }
+  if (nova !== conf) { document.getElementById('r-err').textContent='As senhas não coincidem'; document.getElementById('r-err').style.display='block'; return; }
+  const r = await fetch(SB_URL + '/auth/v1/user', { method:'PUT', headers:{'apikey':SB_KEY,'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify({password:nova}) });
+  const d = await r.json();
+  if (r.ok) { ME = {email:d.email,nome:d.email.split('@')[0],funcao:'Gestor',ini:d.email.substring(0,2).toUpperCase(),token}; sessionStorage.setItem('ksh_me',JSON.stringify(ME)); iniciarApp(); }
+}
+</script>
+</body>
+</html>
