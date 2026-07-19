@@ -2,6 +2,7 @@ const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
 const GID = '1088652003799-j35u5263s0qkn91e8fiqddb4i2j3l11i.apps.googleusercontent.com';
 let ME = null, googleToken = sessionStorage.getItem('ksh_drive_token') || null;
+let googleTokenExpira = parseInt(sessionStorage.getItem('ksh_drive_token_exp') || '0', 10);
 
 // ── HELPERS ──────────────────────────────────────────────────
 function toast(msg, type) {
@@ -414,7 +415,7 @@ async function renderKSHCam() {
   </div>
   <div id="os-lista"></div>`;
 
-  if (googleToken) atualizarDriveStatus(true);
+  if (await garantirTokenDrive()) atualizarDriveStatus(true);
   await carregarOS();
 }
 
@@ -836,16 +837,66 @@ function atualizarDriveStatus(ok) {
 }
 
 function conectarGoogle() {
-  const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GID + '&redirect_uri=' + encodeURIComponent(window.location.origin + window.location.pathname) + '&response_type=token&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file');
+  const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GID
+    + '&redirect_uri=' + encodeURIComponent(window.location.origin + window.location.pathname)
+    + '&response_type=code&access_type=offline&prompt=consent'
+    + '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file');
   window.location.href = url;
+}
+
+async function trocarCodigoGoogle(code) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/google-token-exchange', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+      body: JSON.stringify({ code })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro ao conectar Google Drive');
+    googleToken = d.access_token;
+    googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
+    sessionStorage.setItem('ksh_drive_token', googleToken);
+    sessionStorage.setItem('ksh_drive_token_exp', String(googleTokenExpira));
+    atualizarDriveStatus(true);
+    toast(d.has_refresh ? 'Google Drive conectado! Vai continuar conectado automaticamente.' : 'Google Drive conectado!', 'ok');
+  } catch(e) {
+    toast('Erro ao conectar Google Drive: ' + e.message, 'err');
+  }
+}
+
+async function renovarTokenDrive() {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/google-token-refresh', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro ao renovar Google Drive');
+    googleToken = d.access_token;
+    googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
+    sessionStorage.setItem('ksh_drive_token', googleToken);
+    sessionStorage.setItem('ksh_drive_token_exp', String(googleTokenExpira));
+    return true;
+  } catch(e) {
+    console.error(e);
+    return false;
+  }
+}
+
+// Garante um access_token válido: renova em silêncio via refresh_token salvo no servidor
+// (sem pedir pro usuário clicar em nada). Só volta false se o refresh_token não existir/for inválido.
+async function garantirTokenDrive() {
+  if (googleToken && Date.now() < googleTokenExpira) return true;
+  const ok = await renovarTokenDrive();
+  if (!ok) limparTokenDrive();
+  return ok;
 }
 
 async function uploadFotos(event, osId) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
-  if (!googleToken) { toast('Conecte o Google Drive primeiro','err'); return; }
-  const testR = await fetch('https://www.googleapis.com/drive/v3/about?fields=user', { headers: { 'Authorization': 'Bearer ' + googleToken } }).catch(() => null);
-  if (!testR || testR.status === 401) { limparTokenDrive(); toast('Conexão com o Google Drive expirou — clique em "Conectar agora"','err'); return; }
+  const conectado = await garantirTokenDrive();
+  if (!conectado) { toast('Conecte o Google Drive primeiro','err'); return; }
   const prog = document.getElementById('upload-prog');
   if (prog) prog.style.display = 'block';
   const os = osData.find(o => o.id === osId);
@@ -878,7 +929,9 @@ async function uploadFotos(event, osId) {
 
 function limparTokenDrive() {
   googleToken = null;
+  googleTokenExpira = 0;
   sessionStorage.removeItem('ksh_drive_token');
+  sessionStorage.removeItem('ksh_drive_token_exp');
   const el = document.getElementById('g-drive-status');
   if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML='📁 Google Drive não conectado — <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">Conectar agora</span> para fazer upload de fotos'; }
 }
@@ -925,13 +978,12 @@ async function uploadDrive(file, folderId) {
 
 // ── INIT ──────────────────────────────────────────────────────
 window.addEventListener('load', function() {
-  // Verifica token Google no hash
-  const hash = new URLSearchParams(window.location.hash.substring(1));
-  const gt = hash.get('access_token');
-  if (gt && hash.get('scope') && hash.get('scope').includes('drive')) {
-    googleToken = gt;
-    sessionStorage.setItem('ksh_drive_token', gt);
+  // Verifica retorno do OAuth do Google (authorization code flow)
+  const qs = new URLSearchParams(window.location.search);
+  const gcode = qs.get('code');
+  if (gcode && qs.get('scope') && qs.get('scope').includes('drive')) {
     history.replaceState(null, '', window.location.pathname);
+    trocarCodigoGoogle(gcode);
   }
   // Verifica token convite Supabase
   const sp = new URLSearchParams(window.location.hash.substring(1));
