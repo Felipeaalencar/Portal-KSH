@@ -700,7 +700,8 @@ async function carregarOS() {
   const el = document.getElementById('os-lista');
   if (!el) return;
   try {
-    osData = await sbGet('ordens_servico?order=created_at.desc');
+    const resp = await sbGet('ordens_servico?order=created_at.desc');
+    osData = Array.isArray(resp) ? resp : [];
     renderOSLista(osData);
     if (document.getElementById('kpi-tot')) {
       document.getElementById('kpi-tot').textContent = osData.length;
