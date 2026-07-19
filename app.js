@@ -389,8 +389,8 @@ async function abrirOS(id) {
   let fotos = [], notas = [];
   try {
     [fotos, notas] = await Promise.all([
-      sbGet('os_fotos?os_id=eq.' + id + '&order=created_at.desc'),
-      sbGet('os_notas?os_id=eq.' + id + '&order=created_at.asc')
+      sbGet('os_fotos?os_id=eq.' + id + '&order=criado_em.desc'),
+      sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc')
     ]);
   } catch(e) {}
 
@@ -440,7 +440,7 @@ async function abrirOS(id) {
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">Anotações (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>'}
+        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>'}
       </div>
       <div style="display:flex;gap:8px">
         <input id="nota-input-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')salvarNota('${id}')">
@@ -469,7 +469,7 @@ async function salvarNota(osId) {
     inp.value = '';
     const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=created_at.asc');
     const el = document.getElementById('notas-' + osId);
-    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.created_at).toLocaleString('pt-BR')+'</div></div>').join('');
+    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('');
   } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
