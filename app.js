@@ -452,9 +452,10 @@ async function abrirOS(id) {
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
         ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>'}
       </div>
-      <div style="display:flex;gap:8px">
-        <input id="nota-input-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')salvarNota('${id}')">
-        <button onclick="salvarNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
+      <div id="nota-previa-${id}" style="display:none"></div>
+      <div id="nota-form-${id}" style="display:flex;gap:8px">
+        <input id="nota-input-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')gerarResumoNota('${id}')">
+        <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
       </div>
     </div>
     ${os.drive_folder_url?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5"><a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">📁 Abrir pasta no Google Drive</a></div>':''}
@@ -480,6 +481,78 @@ async function salvarNota(osId) {
     const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=created_at.asc');
     const el = document.getElementById('notas-' + osId);
     if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('');
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+// Anotações com resumo aprimorado por IA (revisão do técnico antes de salvar)
+async function gerarResumoNota(osId) {
+  const inp = document.getElementById('nota-input-' + osId);
+  const texto = inp?.value.trim();
+  if (!texto) return;
+  const btn = document.getElementById('nota-btn-' + osId);
+  if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ texto })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro ao gerar resumo');
+    mostrarPreviaNota(osId, d.resumo || texto);
+  } catch(e) {
+    toast('Erro ao gerar resumo: ' + e.message, 'err');
+  } finally {
+    if (btn) { btn.textContent = 'Enviar'; btn.disabled = false; }
+  }
+}
+
+function mostrarPreviaNota(osId, resumo) {
+  document.getElementById('nota-form-' + osId).style.display = 'none';
+  const wrap = document.getElementById('nota-previa-' + osId);
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:10px">
+      <div style="font-size:10px;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600">Resumo sugerido pela IA</div>
+      <div id="nota-texto-ia-${osId}" contenteditable="false" style="font-size:13px;background:#fff;border:1.5px solid #e8e8e5;border-radius:7px;padding:9px 11px;margin-bottom:8px;outline:none">${resumo}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="cancelarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">Cancelar</button>
+        <button id="nota-editbtn-${osId}" onclick="toggleEditarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">✎ Editar</button>
+        <button onclick="confirmarNota('${osId}')" style="padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">✓ Confirmar</button>
+      </div>
+    </div>`;
+}
+
+function toggleEditarPreviaNota(osId) {
+  const el = document.getElementById('nota-texto-ia-' + osId);
+  const btn = document.getElementById('nota-editbtn-' + osId);
+  const editing = el.getAttribute('contenteditable') === 'true';
+  el.setAttribute('contenteditable', editing ? 'false' : 'true');
+  el.style.borderColor = editing ? '#e8e8e5' : '#1a1a1a';
+  btn.textContent = editing ? '✎ Editar' : '✓ Concluir edição';
+  if (!editing) el.focus();
+}
+
+function cancelarPreviaNota(osId) {
+  const wrap = document.getElementById('nota-previa-' + osId);
+  wrap.style.display = 'none';
+  wrap.innerHTML = '';
+  document.getElementById('nota-form-' + osId).style.display = 'flex';
+}
+
+async function confirmarNota(osId) {
+  const el = document.getElementById('nota-texto-ia-' + osId);
+  const texto = el?.innerText.trim();
+  if (!texto) return;
+  try {
+    await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
+    const inp = document.getElementById('nota-input-' + osId);
+    if (inp) inp.value = '';
+    cancelarPreviaNota(osId);
+    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
+    const listEl = document.getElementById('notas-' + osId);
+    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>';
+    toast('Anotação salva!', 'ok');
   } catch(e) { toast('Erro: ' + e.message, 'err'); }
 }
 
