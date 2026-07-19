@@ -467,12 +467,12 @@ function renderPage(id) {
 
 function getPageActions(id) {
   const actions = {
-    'crm-orcamentos': '<button class="btn-sec">↻ Atualizar</button><button class="btn-pri" onclick="toast_show('+ Novo Orçamento','ok')">+ Novo Orçamento</button>',
-    'crm-clientes': '<button class="btn-pri" onclick="toast_show('+ Novo Cliente','ok')">+ Novo Cliente</button>',
-    'kshcam': '<button class="btn-sec">↻ Atualizar</button><button class="btn-pri" onclick="toast_show('+ Nova OS Manual','ok')">+ Nova OS</button>',
-    'tarefas': '<button class="btn-pri" onclick="toast_show('+ Nova Tarefa','ok')">+ Nova Tarefa</button>',
-    'ferramentas': '<button class="btn-pri" onclick="toast_show('+ Novo Item','ok')">+ Novo Item</button>',
-    'desp-lancar': '<button class="btn-pri" onclick="toast_show('+ Nova Despesa','ok')">+ Nova Despesa</button>',
+    'crm-orcamentos': '<button class="btn-sec">Atualizar</button><button class="btn-pri">+ Novo Orcamento</button>',
+    'crm-clientes': '<button class="btn-pri">+ Novo Cliente</button>',
+    'kshcam': '<button class="btn-sec">Atualizar</button><button class="btn-pri">+ Nova OS</button>',
+    'tarefas': '<button class="btn-pri">+ Nova Tarefa</button>',
+    'ferramentas': '<button class="btn-pri">+ Novo Item</button>',
+    'desp-lancar': '<button class="btn-pri">+ Nova Despesa</button>',
   };
   return actions[id] || '';
 }
