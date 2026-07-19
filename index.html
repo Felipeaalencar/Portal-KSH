@@ -325,6 +325,37 @@ body{font-family:'DM Sans',sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
   </div>
 </div>
 
+<!-- MODAL EDITAR OS -->
+<div id="modal-edit-os-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <div style="font-size:16px;font-weight:700">Editar OS</div>
+      <button onclick="fecharEditOS()" style="background:none;border:none;cursor:pointer;font-size:18px;color:#888">×</button>
+    </div>
+    <input type="hidden" id="edit-os-id">
+    <div style="background:#f5f5f3;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:#888">
+      Cliente: <strong id="edit-os-cliente-info" style="color:#1a1a1a">—</strong>
+    </div>
+    <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Título *</label>
+    <input id="edit-os-titulo" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+    <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Status</label>
+    <select id="edit-os-status" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;background:#fff">
+      <option value="aberta">Aberta</option>
+      <option value="agendada">Agendada</option>
+      <option value="em_campo">Em campo</option>
+      <option value="concluida">Concluída</option>
+    </select>
+    <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Técnico responsável</label>
+    <input id="edit-os-tecnico" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px">
+    <label style="font-size:11px;font-weight:500;color:#444;display:block;margin-bottom:4px">Descrição</label>
+    <textarea id="edit-os-desc" style="width:100%;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:16px;height:80px;resize:vertical"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="fecharEditOS()" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:13px;cursor:pointer;font-family:inherit">Cancelar</button>
+      <button onclick="salvarEditOS()" style="padding:8px 16px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -807,7 +838,13 @@ function renderOSLista(lista) {
       ${o.tecnico_nome?`<span>🔧 ${o.tecnico_nome}</span>`:''}
       ${o.endereco?`<span>📍 ${o.endereco}</span>`:''}
     </div>
-    ${o.drive_folder_url?'<div style="margin-top:6px"><a href="'+o.drive_folder_url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#2563eb;text-decoration:none">📁 Ver pasta no Drive</a></div>':''}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid #f5f5f3">
+      <div>${o.drive_folder_url?'<a href="'+o.drive_folder_url+'" target="_blank" onclick="event.stopPropagation()" style="font-size:11px;color:#2563eb;text-decoration:none">📁 Ver pasta no Drive</a>':''}</div>
+      <div style="display:flex;gap:6px" onclick="event.stopPropagation()">
+        <button onclick="editarOS('${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;background:#fff;color:#555;transition:all .1s" onmouseover="this.style.borderColor='#1a1a1a'" onmouseout="this.style.borderColor='#e8e8e5'">Editar</button>
+        <button onclick="deletarOS('${o.id}','${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit;background:#fff;color:#e74c3c;transition:all .1s" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">Deletar</button>
+      </div>
+    </div>
   </div>`).join('');
 }
 
@@ -893,6 +930,59 @@ async function abrirOS(id) {
   </div>`;
 
   document.getElementById('modal-os-det-bg').style.display = 'flex';
+}
+
+async function deletarOS(id, titulo) {
+  if (!confirm('Deletar a OS "' + titulo + '"?\nEsta ação não pode ser desfeita.')) return;
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
+      method: 'DELETE',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+    });
+    if (!r.ok) throw new Error(await r.text());
+    toast_show('OS deletada', 'ok');
+    carregarOS();
+  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
+}
+
+function editarOS(id) {
+  const os = osData.find(o => o.id === id);
+  if (!os) return;
+
+  // Abre modal de edição
+  document.getElementById('modal-edit-os-bg').style.display = 'flex';
+  document.getElementById('edit-os-id').value = id;
+  document.getElementById('edit-os-titulo').value = os.titulo || '';
+  document.getElementById('edit-os-tecnico').value = os.tecnico_nome || '';
+  document.getElementById('edit-os-desc').value = os.descricao || '';
+  document.getElementById('edit-os-status').value = os.status || 'aberta';
+  document.getElementById('edit-os-cliente-info').textContent = os.cliente_nome || os.cliente || '—';
+}
+
+function fecharEditOS() {
+  document.getElementById('modal-edit-os-bg').style.display = 'none';
+}
+
+async function salvarEditOS() {
+  const id = document.getElementById('edit-os-id').value;
+  const dados = {
+    titulo: document.getElementById('edit-os-titulo').value.trim(),
+    tecnico_nome: document.getElementById('edit-os-tecnico').value.trim() || null,
+    descricao: document.getElementById('edit-os-desc').value.trim() || null,
+    status: document.getElementById('edit-os-status').value,
+  };
+  if (!dados.titulo) { toast_show('Título obrigatório', 'err'); return; }
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/ordens_servico?id=eq.' + id, {
+      method: 'PATCH',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(dados)
+    });
+    if (!r.ok) throw new Error(await r.text());
+    fecharEditOS();
+    toast_show('OS atualizada!', 'ok');
+    carregarOS();
+  } catch(e) { toast_show('Erro: ' + e.message, 'err'); }
 }
 
 function fecharDetOS() {
