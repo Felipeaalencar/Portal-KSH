@@ -389,7 +389,6 @@ function sbH() {
 async function sbGet(path) {
   const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token } });
   const d = await r.json();
-  if (!r.ok) throw new Error((d.message || d.hint || d.error || JSON.stringify(d)).substring(0,200));
   return Array.isArray(d) ? d : [];
 }
 
@@ -663,7 +662,7 @@ function editarCliente(id) {
 }
 
 // ── KSHCAM ────────────────────────────────────────────────────
-let osData = []; // sempre array
+let osData = [];
 const S_LABEL = { aberta:'Aberta', agendada:'Agendada', em_campo:'Em campo', concluida:'Concluída' };
 const S_COLOR = { aberta:'#d97706', agendada:'#7c3aed', em_campo:'#2563eb', concluida:'#16a34a' };
 const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
@@ -700,8 +699,7 @@ async function carregarOS() {
   const el = document.getElementById('os-lista');
   if (!el) return;
   try {
-    const resp = await sbGet('ordens_servico?order=created_at.desc');
-    osData = Array.isArray(resp) ? resp : [];
+    osData = await sbGet('ordens_servico?order=created_at.desc');
     renderOSLista(osData);
     if (document.getElementById('kpi-tot')) {
       document.getElementById('kpi-tot').textContent = osData.length;
@@ -710,8 +708,7 @@ async function carregarOS() {
       document.getElementById('kpi-co').textContent = osData.filter(o=>o.status==='concluida').length;
     }
   } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro Supabase: ' + (e.message||JSON.stringify(e)) + '</div>';
-    console.error('carregarOS erro completo:', e);
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro: ' + e.message + '</div>';
   }
 }
 
