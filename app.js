@@ -1590,7 +1590,7 @@ async function toggleGravacaoAudio(osId) {
 
     try {
       const audio_base64 = await blobParaBase64(blob);
-      const r = await fetch(SB_URL + '/functions/v1/transcrever-audio', {
+      const r = await fetch(SB_URL + '/functions/v1/bright-processor', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
         body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
