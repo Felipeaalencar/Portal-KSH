@@ -175,6 +175,26 @@ const I18N = {
   os_fotos_label: { en: 'Photos', pt: 'Fotos' },
   os_adicionar_foto: { en: '📷 Add', pt: '📷 Adicionar' },
   os_sem_fotos: { en: 'No photos yet. Tap "Add" to start.', pt: 'Nenhuma foto. Toque em "Adicionar" para começar.' },
+  os_notepad_label: { en: 'Notepad', pt: 'Bloco de notas' },
+  os_notepad_ph: { en: 'Free notes about this job (internal use, not shown to the client)...', pt: 'Anotações livres sobre este serviço (uso interno, não aparece pro cliente)...' },
+  os_notepad_salvar: { en: 'Save notepad', pt: 'Salvar bloco de notas' },
+  os_notepad_salvo: { en: 'Notepad saved', pt: 'Bloco de notas salvo' },
+  foto_marcar_privada: { en: 'Mark as private (hidden from client)', pt: 'Marcar como privada (não aparece pro cliente)' },
+  foto_marcar_publica: { en: 'Mark as visible to client', pt: 'Marcar como visível pro cliente' },
+  foto_privada_badge: { en: 'Private', pt: 'Privada' },
+  os_gerar_pdf: { en: '📄 Generate client PDF', pt: '📄 Gerar PDF do cliente' },
+  os_gerando_pdf: { en: 'Generating PDF...', pt: 'Gerando PDF...' },
+  os_pdf_titulo: { en: 'Service order', pt: 'Ordem de serviço' },
+  os_pdf_cliente: { en: 'Client', pt: 'Cliente' },
+  os_pdf_endereco: { en: 'Address', pt: 'Endereço' },
+  os_pdf_status: { en: 'Status', pt: 'Status' },
+  os_pdf_servico: { en: 'Service description', pt: 'Descrição do serviço' },
+  os_pdf_anotacoes: { en: 'Notes from the visit', pt: 'Anotações do atendimento' },
+  os_pdf_fotos: { en: 'Photos', pt: 'Fotos' },
+  os_pdf_sem_anotacoes: { en: 'No notes recorded.', pt: 'Nenhuma anotação registrada.' },
+  os_pdf_sem_fotos: { en: 'No photos to show.', pt: 'Nenhuma foto para mostrar.' },
+  os_pdf_fotos_drive_offline: { en: 'Connect Google Drive to include photos in the PDF.', pt: 'Conecte o Google Drive para incluir as fotos no PDF.' },
+  os_pdf_gerado: { en: 'PDF generated', pt: 'PDF gerado' },
   os_enviando: { en: 'Uploading...', pt: 'Enviando...' },
   os_enviando_progresso: { en: 'Uploading ', pt: 'Enviando ' },
   cliente_selecione_um: { en: 'Select a client from the CRM', pt: 'Selecione um cliente do CRM' },
@@ -881,6 +901,13 @@ async function abrirOS(id) {
       ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">'+tr('os_servico_label')+'</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
     </div>
     <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+        <div style="font-size:13px;font-weight:600">${tr('os_notepad_label')}</div>
+        <button id="notepad-save-${id}" onclick="salvarNotepad('${id}')" style="display:none;padding:5px 12px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:11px;cursor:pointer;font-family:inherit">${tr('os_notepad_salvar')}</button>
+      </div>
+      <textarea id="os-notepad-${id}" placeholder="${tr('os_notepad_ph')}" oninput="document.getElementById('notepad-save-${id}').style.display='inline-block'" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:vertical;background:#fffdf7">${os.notepad||''}</textarea>
+    </div>
+    <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">${tr('os_status_label')}</div>
       <div id="status-pills-${id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         ${Object.entries(S_LABEL).map(([s,l]) => '<button data-status="'+s+'" onclick="selecionarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
@@ -896,7 +923,7 @@ async function abrirOS(id) {
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); return '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; return '<div style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5' + (priv ? ';opacity:.55' : '') + '"><a href="'+f.drive_url+'" target="_blank" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
@@ -911,8 +938,143 @@ async function abrirOS(id) {
         <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_enviar')}</button>
       </div>
     </div>
-    ${os.drive_folder_url?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5"><a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">'+tr('os_abrir_drive')+'</a></div>':''}
+    <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+      ${os.drive_folder_url?'<a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">'+tr('os_abrir_drive')+'</a>':'<span></span>'}
+      <button id="pdf-btn-${id}" onclick="gerarResumoPDF('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_gerar_pdf')}</button>
+    </div>
   </div>`;
+}
+
+async function salvarNotepad(osId) {
+  const ta = document.getElementById('os-notepad-' + osId);
+  if (!ta) return;
+  const notepad = ta.value.trim();
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { notepad: notepad || null });
+    const os = osData.find(o => o.id === osId);
+    if (os) os.notepad = notepad;
+    const btn = document.getElementById('notepad-save-' + osId);
+    if (btn) btn.style.display = 'none';
+    toast(tr('os_notepad_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function toggleFotoInterna(fotoId, osId, novoValor) {
+  try {
+    await sbPatch('os_fotos?id=eq.' + fotoId, { interna: novoValor });
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function driveFileIdFromUrl(url) {
+  const m = (url || '').match(/\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : null;
+}
+
+async function gerarResumoPDF(osId) {
+  const os = osData.find(o => o.id === osId);
+  if (!os) return;
+  const btn = document.getElementById('pdf-btn-' + osId);
+  if (btn) { btn.textContent = tr('os_gerando_pdf'); btn.disabled = true; }
+  try {
+    const [notas, fotos] = await Promise.all([
+      sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc'),
+      sbGet('os_fotos?os_id=eq.' + osId + '&interna=eq.false&order=criado_em.asc')
+    ]);
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const margin = 40;
+    let y = 50;
+
+    doc.setFontSize(16);
+    doc.setTextColor(20);
+    doc.text(tr('os_pdf_titulo') + ' #' + (os.numero || '—'), margin, y);
+    y += 20;
+    doc.setFontSize(11);
+    doc.text(os.titulo || '', margin, y);
+    y += 26;
+
+    function campo(label, valor) {
+      if (!valor) return;
+      doc.setFontSize(9);
+      doc.setTextColor(120);
+      doc.text(label.toUpperCase(), margin, y);
+      doc.setTextColor(20);
+      doc.setFontSize(11);
+      y += 14;
+      const linhas = doc.splitTextToSize(String(valor), pageW - margin*2);
+      doc.text(linhas, margin, y);
+      y += linhas.length * 14 + 10;
+    }
+
+    campo(tr('os_pdf_cliente'), os.cliente_nome || os.cliente);
+    campo(tr('os_pdf_endereco'), os.endereco);
+    campo(tr('os_pdf_status'), S_LABEL[os.status] || os.status);
+    campo(tr('os_pdf_servico'), os.descricao);
+
+    doc.setFontSize(12);
+    doc.setTextColor(20);
+    doc.text(tr('os_pdf_anotacoes'), margin, y);
+    y += 16;
+    doc.setFontSize(10);
+    if (notas.length) {
+      notas.forEach(n => {
+        if (y > 760) { doc.addPage(); y = 50; }
+        const dataStr = new Date(n.criado_em || n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US');
+        const linhas = doc.splitTextToSize('- ' + n.texto + '  (' + (n.autor||'—') + ', ' + dataStr + ')', pageW - margin*2);
+        doc.text(linhas, margin, y);
+        y += linhas.length * 13 + 6;
+      });
+    } else {
+      doc.text(tr('os_pdf_sem_anotacoes'), margin, y);
+      y += 16;
+    }
+    y += 10;
+
+    if (y > 700) { doc.addPage(); y = 50; }
+    doc.setFontSize(12);
+    doc.text(tr('os_pdf_fotos') + ' (' + fotos.length + ')', margin, y);
+    y += 16;
+
+    if (!fotos.length) {
+      doc.setFontSize(10);
+      doc.text(tr('os_pdf_sem_fotos'), margin, y);
+    } else {
+      const temDrive = await garantirTokenDrive();
+      if (!temDrive) {
+        doc.setFontSize(10);
+        doc.text(tr('os_pdf_fotos_drive_offline'), margin, y);
+      } else {
+        const imgW = (pageW - margin*2 - 20) / 2;
+        const imgH = imgW * 0.75;
+        let col = 0;
+        for (const f of fotos) {
+          const fid = driveFileIdFromUrl(f.drive_url);
+          if (!fid) continue;
+          try {
+            const resp = await fetch('https://www.googleapis.com/drive/v3/files/' + fid + '?alt=media', { headers: { 'Authorization': 'Bearer ' + googleToken } });
+            if (!resp.ok) continue;
+            const blob = await resp.blob();
+            const dataUrl = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob); });
+            if (y + imgH > 780) { doc.addPage(); y = 50; col = 0; }
+            const x = margin + col * (imgW + 20);
+            const fmt = blob.type && blob.type.includes('png') ? 'PNG' : 'JPEG';
+            doc.addImage(dataUrl, fmt, x, y, imgW, imgH);
+            col++;
+            if (col >= 2) { col = 0; y += imgH + 14; }
+          } catch(e) { console.error('foto pdf falhou', e); }
+        }
+      }
+    }
+
+    doc.save('OS-' + (os.numero||osId) + '-resumo.pdf');
+    toast(tr('os_pdf_gerado'), 'ok');
+  } catch(e) {
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) { btn.textContent = tr('os_gerar_pdf'); btn.disabled = false; }
+  }
 }
 
 let statusPendente = {};
