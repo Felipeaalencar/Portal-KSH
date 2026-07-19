@@ -386,6 +386,16 @@ async function abrirOS(id) {
   content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">Carregando...</div>';
   abrirModal('m-det-os');
 
+  function driveFileId(url) {
+    const m = (url || '').match(/\/d\/([a-zA-Z0-9_-]+)/);
+    return m ? m[1] : null;
+  }
+  function fotoThumb(f) {
+    if (f.thumb_url) return f.thumb_url;
+    const fid = driveFileId(f.drive_url);
+    return fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w400') : '';
+  }
+
   let fotos = [], notas = [];
   try {
     [fotos, notas] = await Promise.all([
@@ -415,7 +425,7 @@ async function abrirOS(id) {
         <div style="font-size:13px;font-weight:600">${os.tecnico_nome||'—'}</div>
         <div style="font-size:11px;color:#888;margin-top:3px">Por ${os.criado_por||'—'}</div>
       </div>
-      ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Endereço</div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
+      ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">Endereço</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
       ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Serviço</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
     </div>
     <div style="margin-bottom:16px">
@@ -433,7 +443,7 @@ async function abrirOS(id) {
         </label>
       </div>
       <div id="fotos-${id}" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(f.thumb_url?'<img src="'+f.thumb_url+'" style="width:100%;height:100%;object-fit:cover">':'<span style="font-size:28px">🖼️</span>')+'</a>').join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar" para começar.</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); return '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar" para começar.</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">Enviando...</div>
     </div>
@@ -546,7 +556,7 @@ async function salvarNovaOS() {
   if (!osCliSel) { toast('Selecione um cliente do CRM', 'err'); document.getElementById('os-cli-busca')?.focus(); return; }
   try {
     // Próximo número
-    const nums = await sbGet('ordens_servico?select=numero&order=numero.desc&limit=1');
+    const nums = await sbGet('ordens_servico?select=numero&order=numero.desc.nullslast&limit=1');
     const numero = (nums[0]?.numero || 0) + 1;
     await sbPost('ordens_servico', {
       numero, titulo,
@@ -627,6 +637,8 @@ async function uploadFotos(event, osId) {
     if (folderId) {
       await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
       os.drive_folder_id = folderId;
+    } else {
+      toast('Não foi possível criar a pasta no Drive — verifique a conexão do Google Drive', 'err');
     }
   }
   for (let i = 0; i < files.length; i++) {
