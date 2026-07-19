@@ -4,6 +4,315 @@ const GID = '1088652003799-j35u5263s0qkn91e8fiqddb4i2j3l11i.apps.googleuserconte
 let ME = null, googleToken = sessionStorage.getItem('ksh_drive_token') || null;
 let googleTokenExpira = parseInt(sessionStorage.getItem('ksh_drive_token_exp') || '0', 10);
 
+// ── I18N ──────────────────────────────────────────────────────
+// Inglês é o padrão; português é opcional. tr('chave') devolve o texto no idioma atual.
+let LANG = localStorage.getItem('ksh_lang') || 'en';
+
+const I18N = {
+  // Login
+  login_brand_sub: { en: 'Management Portal · South Florida', pt: 'Portal de Gestão · South Florida' },
+  login_title: { en: 'Welcome', pt: 'Bem-vindo' },
+  login_subtitle: { en: 'Sign in to your account to continue', pt: 'Acesse sua conta para continuar' },
+  login_label_email: { en: 'Email', pt: 'Email' },
+  login_label_senha: { en: 'Password', pt: 'Senha' },
+  login_btn_entrar: { en: 'Sign in', pt: 'Entrar' },
+  login_btn_entrando: { en: 'Signing in...', pt: 'Entrando...' },
+  login_forgot: { en: 'Forgot my password / First access', pt: 'Esqueci minha senha / Primeiro acesso' },
+  login_footer: { en: 'Kilian Smart Homes © 2026', pt: 'Kilian Smart Homes © 2026' },
+  login_err_fill: { en: 'Enter your email and password', pt: 'Preencha email e senha' },
+  login_err_invalid: { en: 'Invalid email or password', pt: 'Email ou senha inválidos' },
+  login_err_conn: { en: 'Connection error: ', pt: 'Erro de conexão: ' },
+  login_err_forgot_email: { en: 'Enter your email first', pt: 'Digite seu email primeiro' },
+  login_email_sent: { en: '✓ Email sent!', pt: '✓ Email enviado!' },
+  logout_confirm: { en: 'Sign out of the portal?', pt: 'Sair do portal?' },
+  logout_title: { en: 'Sign out', pt: 'Sair' },
+  reset_min_chars: { en: 'Minimum 8 characters', pt: 'Mínimo 8 caracteres' },
+  reset_mismatch: { en: 'Passwords do not match', pt: 'As senhas não coincidem' },
+  reset_title: { en: 'Create your password', pt: 'Criar sua senha' },
+  reset_subtitle: { en: 'Choose a password to access the portal', pt: 'Escolha uma senha para acessar o portal' },
+  reset_new_pass: { en: 'New password', pt: 'Nova senha' },
+  reset_new_pass_ph: { en: 'Minimum 8 characters', pt: 'Mínimo 8 caracteres' },
+  reset_conf_pass: { en: 'Confirm password', pt: 'Confirmar senha' },
+  reset_conf_pass_ph: { en: 'Repeat the password', pt: 'Repita a senha' },
+  reset_save_btn: { en: 'Save and sign in', pt: 'Salvar e entrar' },
+
+  // Sidebar sections
+  sec_comercial: { en: 'SALES', pt: 'COMERCIAL' },
+  sec_financeiro: { en: 'FINANCE', pt: 'FINANCEIRO' },
+  sec_operacoes: { en: 'OPERATIONS', pt: 'OPERAÇÕES' },
+
+  // Sidebar nav items
+  nav_inicio: { en: 'Home', pt: 'Início' },
+  nav_acomp_vendas: { en: 'Sales Tracking', pt: 'Acomp. de Vendas' },
+  nav_contratos: { en: 'Contracts', pt: 'Contratos' },
+  nav_fat_consolidado: { en: 'Consolidated Billing', pt: 'Fat. Consolidado' },
+  nav_crm_group: { en: 'CRM', pt: 'CRM' },
+  nav_clientes: { en: 'Clients', pt: 'Clientes' },
+  nav_orcamentos: { en: 'Quotes', pt: 'Orçamentos' },
+  nav_followups: { en: 'Follow-ups', pt: 'Follow-ups' },
+  nav_comissoes: { en: 'Commissions', pt: 'Comissões' },
+  nav_consultores: { en: 'Consultants', pt: 'Consultores' },
+  nav_motivos_reprovacao: { en: 'Rejection Reasons', pt: 'Motivos Reprovação' },
+  nav_banco: { en: 'Bank', pt: 'Banco' },
+  nav_dre: { en: 'P&L', pt: 'DRE' },
+  nav_indicadores: { en: 'Indicators', pt: 'Indicadores' },
+  nav_analise_crcp: { en: 'AR/AP Analysis', pt: 'Análise CR/CP' },
+  nav_fluxo_caixa: { en: 'Cash Flow', pt: 'Fluxo de Caixa' },
+  nav_gestao_patrimonio: { en: 'Asset Management', pt: 'Gestão Patrimônio' },
+  nav_custeio: { en: 'Costing', pt: 'Custeio' },
+  nav_despesas_group: { en: 'Expenses', pt: 'Despesas' },
+  nav_lancar_despesa: { en: 'Log Expense', pt: 'Lançar Despesa' },
+  nav_aprovar_despesas: { en: 'Approve Expenses', pt: 'Aprovar Despesas' },
+  nav_controle_frota: { en: 'Fleet Control', pt: 'Controle de Frota' },
+  nav_cadastros: { en: 'Records', pt: 'Cadastros' },
+  nav_ordem_servico: { en: 'Work Order', pt: 'Ordem de Serviço' },
+  nav_tecnicos: { en: 'Technicians', pt: 'Técnicos' },
+  nav_tarefas: { en: 'Tasks', pt: 'Tarefas' },
+  nav_ferramentas: { en: 'Tools', pt: 'Ferramentas' },
+  nav_documentos: { en: 'Documents', pt: 'Documentos' },
+
+  // Home
+  home_wb_sub: { en: 'Management Portal · Kilian Smart Homes · South Florida', pt: 'Portal de Gestão · Kilian Smart Homes · South Florida' },
+  home_stat_os: { en: 'OPEN WORK ORDERS', pt: 'OS ABERTAS' },
+  home_stat_cli: { en: 'CLIENTS', pt: 'CLIENTES' },
+  home_stat_tar: { en: 'TASKS', pt: 'TAREFAS' },
+  home_welcome: { en: 'Welcome, ', pt: 'Bem-vindo, ' },
+
+  badge_ativo: { en: '● Active', pt: '● Ativo' },
+  badge_novo: { en: '● New', pt: '● Novo' },
+
+  card_clientes_title: { en: 'Clients', pt: 'Clientes' },
+  card_clientes_desc: { en: 'Client base with full history and details', pt: 'Base de clientes com histórico e dados completos' },
+  card_orcamentos_title: { en: 'Quotes', pt: 'Orçamentos' },
+  card_orcamentos_desc: { en: 'Proposal pipeline by status and consultant', pt: 'Pipeline de propostas por status e consultor' },
+  card_followups_title: { en: 'Follow-ups', pt: 'Follow-ups' },
+  card_followups_desc: { en: 'Lead tracking and pending alerts', pt: 'Acompanhamento de leads e alertas pendentes' },
+  card_dashboard_title: { en: 'Dashboard', pt: 'Dashboard' },
+  card_dashboard_desc: { en: 'Real-time financial KPIs via QuickBooks', pt: 'KPIs financeiros em tempo real via QuickBooks' },
+  card_fluxo_title: { en: 'Cash Flow', pt: 'Fluxo de Caixa' },
+  card_fluxo_desc: { en: '30/60/90 day projection with open invoices', pt: 'Projeção 30/60/90 dias com faturas em aberto' },
+  card_despesas_title: { en: 'Expenses', pt: 'Despesas' },
+  card_despesas_desc: { en: 'Logging and approval by category', pt: 'Lançamento e aprovação por categoria' },
+  card_os_title: { en: 'Work Order', pt: 'Ordem de Serviço' },
+  card_os_desc: { en: 'Work orders, field photos and reports', pt: 'Ordens de serviço, fotos em campo e relatórios' },
+  card_tecnicos_title: { en: 'Technicians', pt: 'Técnicos' },
+  card_tecnicos_desc: { en: 'Field team records and hourly rate', pt: 'Cadastro da equipe técnica e valor da hora trabalhada' },
+  card_tarefas_title: { en: 'Tasks', pt: 'Tarefas' },
+  card_tarefas_desc: { en: 'Team kanban synced with Google Calendar', pt: 'Kanban da equipe sincronizado com Google Calendar' },
+  card_ferramentas_title: { en: 'Tools', pt: 'Ferramentas' },
+  card_ferramentas_desc: { en: 'Equipment and toolkit inventory', pt: 'Inventário de equipamentos e maletas' },
+
+  // Generic buttons / words
+  btn_cancelar: { en: 'Cancel', pt: 'Cancelar' },
+  btn_salvar: { en: 'Save', pt: 'Salvar' },
+  btn_editar: { en: 'Edit', pt: 'Editar' },
+  btn_cadastrar: { en: 'Register', pt: 'Cadastrar' },
+  btn_atualizar: { en: '↻ Refresh', pt: '↻ Atualizar' },
+  btn_deletar: { en: 'Delete', pt: 'Deletar' },
+  btn_ver_detalhes: { en: 'View details', pt: 'Ver detalhes' },
+  btn_em_breve: { en: 'Coming soon', pt: 'Em breve' },
+  loading: { en: 'Loading...', pt: 'Carregando...' },
+  em_desenvolvimento: { en: 'Under development', pt: 'Em desenvolvimento' },
+  erro_prefix: { en: 'Error: ', pt: 'Erro: ' },
+
+  // Clientes module
+  clientes_search_ph: { en: 'Search by name, email or phone...', pt: 'Buscar por nome, email ou telefone...' },
+  clientes_th_nome: { en: 'Name', pt: 'Nome' },
+  clientes_th_email: { en: 'Email', pt: 'Email' },
+  clientes_th_tel: { en: 'Phone', pt: 'Telefone' },
+  clientes_th_end: { en: 'Address', pt: 'Endereço' },
+  clientes_th_acoes: { en: 'Actions', pt: 'Ações' },
+  clientes_none_found: { en: 'No clients found', pt: 'Nenhum cliente encontrado' },
+  btn_novo_cliente: { en: '+ New Client', pt: '+ Novo Cliente' },
+  clientes_subtitle: { en: 'Client base with full history and details', pt: 'Base de clientes com histórico e dados completos' },
+  cliente_required_fields: { en: 'Fill in all required fields', pt: 'Preencha todos os campos obrigatórios' },
+  cliente_cadastrado: { en: 'Client registered!', pt: 'Cliente cadastrado!' },
+  cliente_atualizado: { en: 'Client updated!', pt: 'Cliente atualizado!' },
+  modal_editar_cliente: { en: 'Edit Client', pt: 'Editar Cliente' },
+
+  // Técnicos module
+  tecnicos_subtitle: { en: 'Field team records and hourly rate', pt: 'Cadastro da equipe técnica e valor da hora trabalhada' },
+  btn_novo_tecnico: { en: '+ New Technician', pt: '+ Novo Técnico' },
+  tecnicos_search_ph: { en: 'Search by name, email or phone...', pt: 'Buscar por nome, email ou telefone...' },
+  tecnicos_th_valor: { en: 'Hourly rate', pt: 'Valor/hora' },
+  tecnicos_none: { en: 'No technicians registered', pt: 'Nenhum técnico cadastrado' },
+  tecnico_nome_obrigatorio: { en: 'Name is required', pt: 'Nome é obrigatório' },
+  tecnico_cadastrado: { en: 'Technician registered!', pt: 'Técnico cadastrado!' },
+  tecnico_atualizado: { en: 'Technician updated!', pt: 'Técnico atualizado!' },
+  modal_novo_tecnico: { en: 'New Technician', pt: 'Novo Técnico' },
+  modal_editar_tecnico: { en: 'Edit Technician', pt: 'Editar Técnico' },
+
+  // Ordem de Serviço / KSHCam
+  os_subtitle: { en: 'Work orders generated from approved quotes or created manually by technicians', pt: 'OS geradas por orçamentos aprovados ou criadas manualmente pelos técnicos' },
+  btn_nova_os: { en: '+ New Work Order', pt: '+ Nova OS' },
+  drive_nao_conectado: { en: '📁 Google Drive not connected — ', pt: '📁 Google Drive não conectado — ' },
+  drive_conectar_agora: { en: 'Connect now', pt: 'Conectar agora' },
+  drive_conectar_suffix: { en: ' to upload photos', pt: ' para fazer upload de fotos' },
+  drive_conectado: { en: '✅ Google Drive connected', pt: '✅ Google Drive conectado' },
+  kpi_total: { en: 'TOTAL', pt: 'TOTAL' },
+  kpi_abertas: { en: 'OPEN', pt: 'ABERTAS' },
+  kpi_em_campo: { en: 'IN FIELD', pt: 'EM CAMPO' },
+  kpi_concluidas: { en: 'COMPLETED', pt: 'CONCLUÍDAS' },
+  os_search_ph: { en: 'Search work order...', pt: 'Buscar OS...' },
+  os_filtro_todos: { en: 'All statuses', pt: 'Todos os status' },
+  status_aberta: { en: 'Open', pt: 'Aberta' },
+  status_agendada: { en: 'Scheduled', pt: 'Agendada' },
+  status_em_campo: { en: 'In field', pt: 'Em campo' },
+  status_concluida: { en: 'Completed', pt: 'Concluída' },
+  os_manual: { en: 'Manual', pt: 'Manual' },
+  os_de_orcamento: { en: 'From quote', pt: 'De orçamento' },
+  os_sem_titulo: { en: 'No title', pt: 'Sem título' },
+  os_none_found: { en: 'No work orders found', pt: 'Nenhuma OS encontrada' },
+  os_ver_no_drive: { en: '📁 View on Drive', pt: '📁 Ver no Drive' },
+  os_abrir_drive: { en: '📁 Open Drive folder', pt: '📁 Abrir pasta no Google Drive' },
+  os_cliente_label: { en: 'Client', pt: 'Cliente' },
+  os_tecnico_label: { en: 'Technician', pt: 'Técnico' },
+  os_por: { en: 'By ', pt: 'Por ' },
+  os_endereco_label: { en: 'Address', pt: 'Endereço' },
+  os_servico_label: { en: 'Service', pt: 'Serviço' },
+  os_status_label: { en: 'Status', pt: 'Status' },
+  os_salvar_alteracoes: { en: '💾 Save changes', pt: '💾 Salvar alterações' },
+  os_fotos_label: { en: 'Photos', pt: 'Fotos' },
+  os_adicionar_foto: { en: '📷 Add', pt: '📷 Adicionar' },
+  os_sem_fotos: { en: 'No photos yet. Tap "Add" to start.', pt: 'Nenhuma foto. Toque em "Adicionar" para começar.' },
+  os_enviando: { en: 'Uploading...', pt: 'Enviando...' },
+  os_enviando_progresso: { en: 'Uploading ', pt: 'Enviando ' },
+  cliente_selecione_um: { en: 'Select a client from the CRM', pt: 'Selecione um cliente do CRM' },
+  os_anotacoes_label: { en: 'Notes', pt: 'Anotações' },
+  os_sem_anotacoes: { en: 'No notes yet.', pt: 'Nenhuma anotação.' },
+  os_add_nota_ph: { en: 'Add a note...', pt: 'Adicionar anotação...' },
+  os_enviar: { en: 'Send', pt: 'Enviar' },
+  os_gerando: { en: 'Generating...', pt: 'Gerando...' },
+  os_resumo_ia: { en: 'AI suggested summary', pt: 'Resumo sugerido pela IA' },
+  os_confirmar: { en: '✓ Confirm', pt: '✓ Confirmar' },
+  os_editar_nota: { en: '✎ Edit', pt: '✎ Editar' },
+  os_concluir_edicao: { en: '✓ Done editing', pt: '✓ Concluir edição' },
+  os_titulo_obrigatorio: { en: 'Title is required', pt: 'Título obrigatório' },
+  os_selecione_cliente: { en: 'Select a client from the CRM', pt: 'Selecione um cliente do CRM' },
+  os_criada: { en: 'Work Order #', pt: 'OS #' },
+  os_prefix: { en: 'WO #', pt: 'OS #' },
+  os_criada_suffix: { en: ' created!', pt: ' criada!' },
+  os_atualizada: { en: 'Work order updated!', pt: 'OS atualizada!' },
+  os_status_atualizado: { en: 'Status updated!', pt: 'Status atualizado!' },
+  os_deletar_confirm: { en: 'Delete work order "', pt: 'Deletar OS "' },
+  os_deletar_confirm2: { en: '"?\nThis action cannot be undone.', pt: '"?\nEsta ação não pode ser desfeita.' },
+  os_drive_confirm: { en: 'This work order has a folder with photos on Google Drive.\n\nDelete that folder too? (it goes to Google trash, not deleted instantly)\n\nOK = delete folder too\nCancel = keep the folder on Drive', pt: 'Esta OS tem uma pasta com fotos no Google Drive.\n\nApagar essa pasta também? (ela vai para a lixeira do Google, não é apagada na hora)\n\nOK = apagar pasta também\nCancelar = manter a pasta no Drive' },
+  os_drive_nao_conectado_del: { en: 'Google Drive not connected — the folder was not deleted, only the work order', pt: 'Google Drive não conectado — a pasta não foi apagada, só a OS' },
+  os_drive_erro_del: { en: 'Could not delete the Drive folder', pt: 'Não foi possível apagar a pasta do Drive' },
+  os_deletada: { en: 'Work order deleted', pt: 'OS deletada' },
+  fotos_enviadas: { en: 'Photos uploaded!', pt: 'Fotos enviadas!' },
+  drive_erro_pasta: { en: 'Could not create the folder on Drive — check your Google Drive connection', pt: 'Não foi possível criar a pasta no Drive — verifique a conexão do Google Drive' },
+  drive_conecte_primeiro: { en: 'Connect Google Drive first', pt: 'Conecte o Google Drive primeiro' },
+  drive_expirou: { en: 'Google Drive connection expired — click "Connect now"', pt: 'Conexão com o Google Drive expirou — clique em "Conectar agora"' },
+  anotacao_salva: { en: 'Note saved!', pt: 'Anotação salva!' },
+
+  // Nova OS modal
+  modal_nova_os_title: { en: 'New Work Order', pt: 'Nova Ordem de Serviço' },
+  label_titulo: { en: 'Title *', pt: 'Título *' },
+  os_titulo_ph: { en: 'Ex: Crestron system installation', pt: 'Ex: Instalação sistema Crestron' },
+  label_cliente_buscar: { en: 'Client * <span style="color:#888;font-weight:400">(search in CRM)</span>', pt: 'Cliente * <span style="color:#888;font-weight:400">(buscar no CRM)</span>' },
+  os_cli_busca_ph: { en: 'Type the name...', pt: 'Digite o nome...' },
+  os_trocar: { en: 'Change', pt: 'Trocar' },
+  os_cli_nao_encontrado: { en: 'Not found. ', pt: 'Não encontrado. ' },
+  os_cadastrar_novo_cliente: { en: 'Register new client', pt: 'Cadastrar novo cliente' },
+  label_tecnico_resp: { en: 'Assigned technician', pt: 'Técnico responsável' },
+  os_tecnico_ph: { en: "Technician's name", pt: 'Nome do técnico' },
+  label_desc_servico: { en: 'Service description', pt: 'Descrição do serviço' },
+  os_desc_ph: { en: 'Describe the service...', pt: 'Descreva o serviço...' },
+  btn_criar_os: { en: 'Create Work Order', pt: 'Criar OS' },
+
+  // Cadastro cliente (from Nova OS flow)
+  modal_cadastrar_cliente: { en: 'Register New Client', pt: 'Cadastrar Novo Cliente' },
+  cliente_crm_notice: { en: 'It will be registered in the CRM before creating the work order.', pt: 'Será cadastrado no CRM antes de criar a OS.' },
+  label_nome_completo: { en: 'Full name *', pt: 'Nome completo *' },
+  nome_completo_ph: { en: 'Full name', pt: 'Nome completo' },
+  label_email_req: { en: 'Email *', pt: 'Email *' },
+  email_ph: { en: 'email@example.com', pt: 'email@exemplo.com' },
+  label_tel_req: { en: 'Phone *', pt: 'Telefone *' },
+  tel_ph: { en: 'Ex: +55 11 91234-5678 or (555) 000-0000', pt: 'Ex: +55 11 91234-5678 ou (555) 000-0000' },
+  label_end_req: { en: 'Address *', pt: 'Endereço *' },
+  end_ph: { en: 'Full address', pt: 'Endereço completo' },
+  label_contato_adicional: { en: 'Additional contact', pt: 'Contato adicional' },
+  contato_adicional_ph: { en: 'Ex: doorman...', pt: 'Ex: porteiro...' },
+  btn_cadastrar_e_usar: { en: 'Register and use', pt: 'Cadastrar e usar' },
+
+  // Editar OS modal
+  modal_editar_os: { en: 'Edit Work Order', pt: 'Editar OS' },
+  label_status: { en: 'Status', pt: 'Status' },
+  label_tecnico: { en: 'Technician', pt: 'Técnico' },
+  label_descricao: { en: 'Description', pt: 'Descrição' },
+  cliente_colon: { en: 'Client: ', pt: 'Cliente: ' },
+
+  // Novo Cliente (CRM tab)
+  modal_novo_cliente: { en: 'New Client', pt: 'Novo Cliente' },
+  label_equipamentos: { en: 'Equipment', pt: 'Equipamentos' },
+  equipamentos_ph: { en: 'Ex: Control4, Lutron...', pt: 'Ex: Control4, Lutron...' },
+  label_observacoes: { en: 'Notes', pt: 'Observações' },
+  observacoes_ph: { en: 'Notes...', pt: 'Observações...' },
+
+  // Novo Técnico
+  label_tel_opt: { en: 'Phone', pt: 'Telefone' },
+  label_email_opt: { en: 'Email', pt: 'Email' },
+  label_valor_hora: { en: 'Hourly rate (US$)', pt: 'Valor da hora trabalhada (US$)' },
+  valor_hora_ph: { en: 'Ex: 45.00', pt: 'Ex: 45.00' },
+
+  // Page titles (topbar breadcrumb / mod header)
+  pt_inicio: { en: 'Home', pt: 'Início' },
+  pt_acomp_vendas: { en: 'Sales Tracking', pt: 'Acomp. de Vendas' },
+  pt_contratos: { en: 'Contracts', pt: 'Contratos' },
+  pt_fat_consolidado: { en: 'Consolidated Billing', pt: 'Fat. Consolidado' },
+  pt_crm_clientes: { en: 'Clients', pt: 'Clientes' },
+  pt_crm_orcamentos: { en: 'Quotes', pt: 'Orçamentos' },
+  pt_crm_followups: { en: 'Follow-ups', pt: 'Follow-ups' },
+  pt_crm_comissoes: { en: 'Commissions', pt: 'Comissões' },
+  pt_crm_consultores: { en: 'Consultants', pt: 'Consultores' },
+  pt_crm_reprovacao: { en: 'Rejection Reasons', pt: 'Motivos Reprovação' },
+  pt_fin_banco: { en: 'Bank', pt: 'Banco' },
+  pt_fin_dre: { en: 'P&L', pt: 'DRE' },
+  pt_fin_indicadores: { en: 'Indicators', pt: 'Indicadores' },
+  pt_fin_analise: { en: 'AR/AP Analysis', pt: 'Análise CR/CP' },
+  pt_fin_fluxo: { en: 'Cash Flow', pt: 'Fluxo de Caixa' },
+  pt_fin_patrimonio: { en: 'Asset Management', pt: 'Gestão Patrimônio' },
+  pt_fin_custeio: { en: 'Costing', pt: 'Custeio' },
+  pt_desp_lancar: { en: 'Log Expense', pt: 'Lançar Despesa' },
+  pt_desp_aprovar: { en: 'Approve Expenses', pt: 'Aprovar Despesas' },
+  pt_fin_frota: { en: 'Fleet Control', pt: 'Controle de Frota' },
+  pt_fin_cadastros: { en: 'Records', pt: 'Cadastros' },
+  pt_kshcam: { en: 'Work Order', pt: 'Ordem de Serviço' },
+  pt_tecnicos: { en: 'Technicians', pt: 'Técnicos' },
+  pt_tarefas: { en: 'Tasks', pt: 'Tarefas' },
+  pt_ferramentas: { en: 'Tools', pt: 'Ferramentas' },
+  pt_documentos: { en: 'Documents', pt: 'Documentos' },
+  sub_tarefas: { en: 'Team schedule synced with Google Calendar', pt: 'Agenda da equipe sincronizada com Google Calendar' },
+  sub_ferramentas: { en: 'Equipment, toolkit and materials inventory', pt: 'Inventário de equipamentos, maletas e materiais' },
+  sub_documentos: { en: 'Licenses, insurance, permits and manuals', pt: 'Licenças, seguros, alvarás e manuais' },
+};
+
+function tr(key) {
+  const e = I18N[key];
+  if (!e) return key;
+  return e[LANG] || e.en || key;
+}
+
+function setLang(lang) {
+  if (lang !== 'en' && lang !== 'pt') return;
+  localStorage.setItem('ksh_lang', lang);
+  location.reload();
+}
+
+// Aplica as traduções em elementos marcados com data-i18n / data-i18n-html / data-i18n-placeholder / data-i18n-title
+function aplicarI18n() {
+  document.documentElement.lang = LANG === 'pt' ? 'pt-BR' : 'en';
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = tr(el.getAttribute('data-i18n-html')); });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.placeholder = tr(el.getAttribute('data-i18n-placeholder')); });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => { el.title = tr(el.getAttribute('data-i18n-title')); });
+  const lb = document.getElementById('lang-btn-en'); const lb2 = document.getElementById('lang-btn-pt');
+  if (lb) lb.classList.toggle('on', LANG === 'en');
+  if (lb2) lb2.classList.toggle('on', LANG === 'pt');
+}
+
+
 // ── HELPERS ──────────────────────────────────────────────────
 function toast(msg, type) {
   const t = document.getElementById('toast');
@@ -80,8 +389,8 @@ async function login() {
   const senha = document.getElementById('l-senha').value;
   const btn = document.getElementById('l-btn');
   const err = document.getElementById('l-err');
-  if (!email || !senha) { showErr('Preencha email e senha'); return; }
-  btn.textContent = 'Entrando...'; btn.disabled = true; err.style.display = 'none';
+  if (!email || !senha) { showErr(tr('login_err_fill')); return; }
+  btn.textContent = tr('login_btn_entrando'); btn.disabled = true; err.style.display = 'none';
   try {
     const r = await fetch(SB_URL + '/auth/v1/token?grant_type=password', {
       method: 'POST',
@@ -89,7 +398,7 @@ async function login() {
       body: JSON.stringify({ email, password: senha })
     });
     const d = await r.json();
-    if (!r.ok) { showErr(d.error_description || 'Email ou senha inválidos'); btn.textContent = 'Entrar'; btn.disabled = false; return; }
+    if (!r.ok) { showErr(d.error_description || tr('login_err_invalid')); btn.textContent = tr('login_btn_entrar'); btn.disabled = false; return; }
     const pr = await fetch(SB_URL + '/rest/v1/usuarios?email=eq.' + encodeURIComponent(email) + '&limit=1', {
       headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + d.access_token }
     });
@@ -103,37 +412,38 @@ async function login() {
     };
     sessionStorage.setItem('ksh_me', JSON.stringify(ME));
     iniciarApp();
-  } catch(e) { showErr('Erro de conexão: ' + e.message); btn.textContent = 'Entrar'; btn.disabled = false; }
+  } catch(e) { showErr(tr('login_err_conn') + e.message); btn.textContent = tr('login_btn_entrar'); btn.disabled = false; }
 }
 
 function showErr(msg) {
   const e = document.getElementById('l-err');
   e.textContent = msg; e.style.color = '#e74c3c'; e.style.display = 'block';
-  document.getElementById('l-btn').textContent = 'Entrar';
+  document.getElementById('l-btn').textContent = tr('login_btn_entrar');
   document.getElementById('l-btn').disabled = false;
 }
 
 async function resetSenha() {
   const email = document.getElementById('l-email').value.trim();
-  if (!email) { showErr('Digite seu email primeiro'); return; }
+  if (!email) { showErr(tr('login_err_forgot_email')); return; }
   await fetch(SB_URL + '/auth/v1/recover', {
     method: 'POST', headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
     body: JSON.stringify({ email })
   });
   const e = document.getElementById('l-err');
-  e.textContent = '✓ Email enviado!'; e.style.color = '#16a34a'; e.style.display = 'block';
+  e.textContent = tr('login_email_sent'); e.style.color = '#16a34a'; e.style.display = 'block';
 }
 
 // ── APP ───────────────────────────────────────────────────────
 function iniciarApp() {
+  aplicarI18n();
   document.getElementById('v-login').style.display = 'none';
   document.getElementById('v-app').style.display = 'flex';
   document.getElementById('sb-av').textContent = ME.ini;
   document.getElementById('sb-nome').textContent = ME.nome;
   document.getElementById('sb-role').textContent = ME.funcao;
-  document.getElementById('wb-nome').textContent = 'Bem-vindo, ' + ME.nome.split(' ')[0] + '! 👋';
+  document.getElementById('wb-nome').textContent = tr('home_welcome') + ME.nome.split(' ')[0] + '! 👋';
   carregarStats();
-  goPage(document.getElementById('nav-inicio'), 'inicio', 'Início', '');
+  goPage(document.getElementById('nav-inicio'), 'inicio', tr('nav_inicio'), '');
 }
 
 async function carregarStats() {
@@ -148,23 +458,26 @@ async function carregarStats() {
 }
 
 function logout() {
-  if (!confirm('Sair do portal?')) return;
+  if (!confirm(tr('logout_confirm'))) return;
   sessionStorage.clear(); ME = null;
   document.getElementById('v-app').style.display = 'none';
   document.getElementById('v-login').style.display = 'flex';
-  document.getElementById('l-btn').textContent = 'Entrar';
+  document.getElementById('l-btn').textContent = tr('login_btn_entrar');
   document.getElementById('l-btn').disabled = false;
   document.getElementById('l-err').style.display = 'none';
 }
 
 // ── NAVEGAÇÃO ─────────────────────────────────────────────────
-const PAGE_TITLES = {
-  'inicio':'Início','acomp-vendas':'Acomp. de Vendas','contratos':'Contratos','fat-consolidado':'Fat. Consolidado',
-  'crm-clientes':'Clientes','crm-orcamentos':'Orçamentos','crm-followups':'Follow-ups','crm-comissoes':'Comissões','crm-consultores':'Consultores','crm-reprovacao':'Motivos Reprovação',
-  'fin-banco':'Banco','fin-dre':'DRE','fin-indicadores':'Indicadores','fin-analise':'Análise CR/CP','fin-fluxo':'Fluxo de Caixa','fin-patrimonio':'Gestão Patrimônio','fin-custeio':'Custeio',
-  'desp-lancar':'Lançar Despesa','desp-aprovar':'Aprovar Despesas','fin-frota':'Controle de Frota','fin-cadastros':'Cadastros',
-  'kshcam':'Ordem de Serviço','tecnicos':'Técnicos','tarefas':'Tarefas','ferramentas':'Ferramentas','documentos':'Documentos'
-};
+function pageTitle(id) {
+  const m = {
+    'inicio':'pt_inicio','acomp-vendas':'pt_acomp_vendas','contratos':'pt_contratos','fat-consolidado':'pt_fat_consolidado',
+    'crm-clientes':'pt_crm_clientes','crm-orcamentos':'pt_crm_orcamentos','crm-followups':'pt_crm_followups','crm-comissoes':'pt_crm_comissoes','crm-consultores':'pt_crm_consultores','crm-reprovacao':'pt_crm_reprovacao',
+    'fin-banco':'pt_fin_banco','fin-dre':'pt_fin_dre','fin-indicadores':'pt_fin_indicadores','fin-analise':'pt_fin_analise','fin-fluxo':'pt_fin_fluxo','fin-patrimonio':'pt_fin_patrimonio','fin-custeio':'pt_fin_custeio',
+    'desp-lancar':'pt_desp_lancar','desp-aprovar':'pt_desp_aprovar','fin-frota':'pt_fin_frota','fin-cadastros':'pt_fin_cadastros',
+    'kshcam':'pt_kshcam','tecnicos':'pt_tecnicos','tarefas':'pt_tarefas','ferramentas':'pt_ferramentas','documentos':'pt_documentos'
+  };
+  return m[id] ? tr(m[id]) : null;
+}
 
 function goPage(btn, pageId, title, section) {
   if (window.innerWidth <= 860) {
@@ -177,7 +490,7 @@ function goPage(btn, pageId, title, section) {
     if (b.onclick && b.onclick.toString().includes("'" + pageId + "'")) b.classList.add('on');
   });
 
-  const t = PAGE_TITLES[pageId] || title;
+  const t = pageTitle(pageId) || title;
   document.getElementById('bc').innerHTML = section ? 'Portal › ' + section + ' › <b>' + t + '</b>' : 'Portal › <b>' + t + '</b>';
   document.getElementById('tb-act').innerHTML = getActions(pageId);
 
@@ -199,25 +512,25 @@ function goPage(btn, pageId, title, section) {
 
 function getActions(id) {
   const m = {
-    'kshcam': '<button class="btn-sec" onclick="loadModule(\'kshcam\')">↻ Atualizar</button><button class="btn-pri" onclick="abrirNovaOS()">+ Nova OS</button>',
-    'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">+ Novo Técnico</button>',
-    'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">+ Novo Cliente</button>',
-    'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">↻ Atualizar</button>',
-    'tarefas': '<button class="btn-pri" onclick="toast(\'Em breve\')">+ Nova Tarefa</button>',
-    'ferramentas': '<button class="btn-pri" onclick="toast(\'Em breve\')">+ Novo Item</button>',
+    'kshcam': '<button class="btn-sec" onclick="loadModule(\'kshcam\')">' + tr('btn_atualizar') + '</button><button class="btn-pri" onclick="abrirNovaOS()">' + tr('btn_nova_os') + '</button>',
+    'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">' + tr('btn_novo_tecnico') + '</button>',
+    'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">' + tr('btn_novo_cliente') + '</button>',
+    'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
+    'tarefas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Nova Tarefa':'New Task') + '</button>',
+    'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
   };
   return m[id] || '';
 }
 
 function getSubtitle(id) {
   const m = {
-    'crm-clientes': 'Base de clientes com histórico e dados completos',
-    'crm-orcamentos': 'Pipeline de propostas por status',
-    'kshcam': 'OS geradas por orçamentos aprovados ou criadas manualmente pelos técnicos',
-    'tecnicos': 'Cadastro da equipe técnica e valor da hora trabalhada',
-    'tarefas': 'Agenda da equipe sincronizada com Google Calendar',
-    'ferramentas': 'Inventário de equipamentos, maletas e materiais',
-    'documentos': 'Licenças, seguros, alvarás e manuais',
+    'crm-clientes': tr('clientes_subtitle'),
+    'crm-orcamentos': LANG==='pt' ? 'Pipeline de propostas por status' : 'Proposal pipeline by status',
+    'kshcam': tr('os_subtitle'),
+    'tecnicos': tr('tecnicos_subtitle'),
+    'tarefas': tr('sub_tarefas'),
+    'ferramentas': tr('sub_ferramentas'),
+    'documentos': tr('sub_documentos'),
   };
   return m[id] || '';
 }
@@ -230,7 +543,7 @@ function toggleSidebar() {
 
 function toggleSec(id, hd) {
   const body = document.getElementById('sec-' + id);
-  const span = hd.querySelector('span');
+  const span = hd.querySelector('.sb-sec-arr');
   const open = body.style.maxHeight !== '0px' && body.style.maxHeight !== '';
   body.style.maxHeight = open ? '0px' : '500px';
   span.textContent = open ? '+' : '−';
@@ -260,12 +573,12 @@ async function renderClientes() {
   const el = document.getElementById('mod-content');
   el.innerHTML = `
   <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar por nome, email ou telefone..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-busca" oninput="filtrarClientes()">
+    <input placeholder="${tr('clientes_search_ph')}" style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-busca" oninput="filtrarClientes()">
   </div>
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>Nome</th><th>Email</th><th>Telefone</th><th>Endereço</th><th>Ações</th></tr></thead>
-      <tbody id="cli-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Carregando...</td></tr></tbody>
+      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('clientes_th_end')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
+      <tbody id="cli-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">${tr('loading')}</td></tr></tbody>
     </table>
   </div>`;
   try {
@@ -284,13 +597,13 @@ function filtrarClientes() {
 function renderTabelaClientes(lista) {
   const tb = document.getElementById('cli-tbody');
   if (!tb) return;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Nenhum cliente encontrado</td></tr>'; return; }
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">' + tr('clientes_none_found') + '</td></tr>'; return; }
   tb.innerHTML = lista.map(c => `<tr>
     <td style="font-weight:500">${c.nome||'—'}</td>
     <td>${c.email||'—'}</td>
     <td>${c.telefone||'—'}</td>
     <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.endereco||'—'}</td>
-    <td><button onclick="editarCliente('${c.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">Editar</button></td>
+    <td><button onclick="editarCliente('${c.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button></td>
   </tr>`).join('');
 }
 
@@ -299,13 +612,13 @@ async function salvarClienteCRM() {
   const email = document.getElementById('crm-cli-email')?.value.trim();
   const telefone = document.getElementById('crm-cli-tel')?.value.trim();
   const endereco = document.getElementById('crm-cli-end')?.value.trim();
-  if (!nome||!email||!telefone||!endereco) { toast('Preencha todos os campos obrigatórios','err'); return; }
+  if (!nome||!email||!telefone||!endereco) { toast(tr('cliente_required_fields'),'err'); return; }
   try {
     await sbPost('clientes', { nome, email, telefone, endereco, equipamentos: document.getElementById('crm-cli-equip')?.value.trim()||null, observacoes: document.getElementById('crm-cli-obs')?.value.trim()||null, ativo: true });
     fecharModal('m-novo-cli-crm');
-    toast('Cliente cadastrado!', 'ok');
+    toast(tr('cliente_cadastrado'), 'ok');
     renderClientes();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 function editarCliente(id) {
@@ -317,7 +630,7 @@ function editarCliente(id) {
   document.getElementById('crm-cli-end').value = c.endereco||'';
   document.getElementById('crm-cli-equip').value = c.equipamentos||'';
   document.getElementById('crm-cli-obs').value = c.observacoes||'';
-  document.getElementById('m-novo-cli-crm').querySelector('.modal-hd-title').textContent = 'Editar Cliente';
+  document.getElementById('m-novo-cli-crm').querySelector('.modal-hd-title').textContent = tr('modal_editar_cliente');
   document.getElementById('m-novo-cli-crm').querySelector('.btn-pri').onclick = async () => {
     try {
       await sbPatch('clientes?id=eq.' + id, {
@@ -329,9 +642,9 @@ function editarCliente(id) {
         observacoes: document.getElementById('crm-cli-obs').value.trim()||null
       });
       fecharModal('m-novo-cli-crm');
-      toast('Cliente atualizado!','ok');
+      toast(tr('cliente_atualizado'),'ok');
       renderClientes();
-    } catch(e) { toast('Erro: '+e.message,'err'); }
+    } catch(e) { toast(tr('erro_prefix')+e.message,'err'); }
   };
   abrirModal('m-novo-cli-crm');
 }
@@ -343,12 +656,12 @@ async function renderTecnicos() {
   const el = document.getElementById('mod-content');
   el.innerHTML = `
   <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar por nome, email ou telefone..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="tec-busca" oninput="filtrarTecnicos()">
+    <input placeholder="${tr('tecnicos_search_ph')}" style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="tec-busca" oninput="filtrarTecnicos()">
   </div>
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>Nome</th><th>Email</th><th>Telefone</th><th>Valor/hora</th><th>Ações</th></tr></thead>
-      <tbody id="tec-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Carregando...</td></tr></tbody>
+      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('tecnicos_th_valor')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
+      <tbody id="tec-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">${tr('loading')}</td></tr></tbody>
     </table>
   </div>`;
   try {
@@ -367,27 +680,27 @@ function filtrarTecnicos() {
 function renderTabelaTecnicos(lista) {
   const tb = document.getElementById('tec-tbody');
   if (!tb) return;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Nenhum técnico cadastrado</td></tr>'; return; }
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">' + tr('tecnicos_none') + '</td></tr>'; return; }
   tb.innerHTML = lista.map(t => `<tr>
     <td style="font-weight:500">${t.nome||'—'}</td>
     <td>${t.email||'—'}</td>
     <td>${t.telefone||'—'}</td>
     <td>${t.valor_hora != null ? '$' + Number(t.valor_hora).toFixed(2) : '—'}</td>
-    <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">Editar</button></td>
+    <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button></td>
   </tr>`).join('');
 }
 
 function abrirNovoTecnico() {
   ['tec-nome','tec-email','tec-tel','tec-valor'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = 'Novo Técnico';
-  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = 'Cadastrar';
+  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = tr('modal_novo_tecnico');
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = tr('btn_cadastrar');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = salvarTecnico;
   abrirModal('m-novo-tec');
 }
 
 async function salvarTecnico() {
   const nome = document.getElementById('tec-nome')?.value.trim();
-  if (!nome) { toast('Nome é obrigatório', 'err'); return; }
+  if (!nome) { toast(tr('tecnico_nome_obrigatorio'), 'err'); return; }
   try {
     await sbPost('tecnicos', {
       nome,
@@ -397,9 +710,9 @@ async function salvarTecnico() {
       ativo: true
     });
     fecharModal('m-novo-tec');
-    toast('Técnico cadastrado!', 'ok');
+    toast(tr('tecnico_cadastrado'), 'ok');
     renderTecnicos();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 function editarTecnico(id) {
@@ -409,8 +722,8 @@ function editarTecnico(id) {
   document.getElementById('tec-email').value = t.email || '';
   document.getElementById('tec-tel').value = t.telefone || '';
   document.getElementById('tec-valor').value = t.valor_hora != null ? t.valor_hora : '';
-  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = 'Editar Técnico';
-  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = 'Salvar';
+  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = tr('modal_editar_tecnico');
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = tr('btn_salvar');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = async () => {
     try {
       await sbPatch('tecnicos?id=eq.' + id, {
@@ -420,16 +733,16 @@ function editarTecnico(id) {
         valor_hora: document.getElementById('tec-valor').value ? parseFloat(document.getElementById('tec-valor').value) : null
       });
       fecharModal('m-novo-tec');
-      toast('Técnico atualizado!', 'ok');
+      toast(tr('tecnico_atualizado'), 'ok');
       renderTecnicos();
-    } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
   };
   abrirModal('m-novo-tec');
 }
 
 // ── KSHCAM ────────────────────────────────────────────────────
 let osData = [];
-const S_LABEL = { aberta:'Aberta', agendada:'Agendada', em_campo:'Em campo', concluida:'Concluída' };
+const S_LABEL = { aberta: tr('status_aberta'), agendada: tr('status_agendada'), em_campo: tr('status_em_campo'), concluida: tr('status_concluida') };
 const S_COLOR = { aberta:'#d97706', agendada:'#7c3aed', em_campo:'#2563eb', concluida:'#16a34a' };
 const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
 
@@ -437,22 +750,22 @@ async function renderKSHCam() {
   const el = document.getElementById('mod-content');
   el.innerHTML = `
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e" id="g-drive-status">
-    📁 Google Drive não conectado — <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">Conectar agora</span> para fazer upload de fotos
+    ${tr('drive_nao_conectado')}<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">${tr('drive_conectar_agora')}</span>${tr('drive_conectar_suffix')}
   </div>
   <div class="kpis kpis-4" style="margin-bottom:14px">
-    <div class="kpi"><div class="kpi-l">TOTAL</div><div class="kpi-v" id="kpi-tot">—</div></div>
-    <div class="kpi"><div class="kpi-l">ABERTAS</div><div class="kpi-v" id="kpi-ab" style="color:#d97706">—</div></div>
-    <div class="kpi"><div class="kpi-l">EM CAMPO</div><div class="kpi-v" id="kpi-ec" style="color:#2563eb">—</div></div>
-    <div class="kpi"><div class="kpi-l">CONCLUÍDAS</div><div class="kpi-v" id="kpi-co" style="color:#16a34a">—</div></div>
+    <div class="kpi"><div class="kpi-l">${tr('kpi_total')}</div><div class="kpi-v" id="kpi-tot">—</div></div>
+    <div class="kpi"><div class="kpi-l">${tr('kpi_abertas')}</div><div class="kpi-v" id="kpi-ab" style="color:#d97706">—</div></div>
+    <div class="kpi"><div class="kpi-l">${tr('kpi_em_campo')}</div><div class="kpi-v" id="kpi-ec" style="color:#2563eb">—</div></div>
+    <div class="kpi"><div class="kpi-l">${tr('kpi_concluidas')}</div><div class="kpi-v" id="kpi-co" style="color:#16a34a">—</div></div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="Buscar OS..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="os-busca" oninput="filtrarOS()">
+    <input placeholder="${tr('os_search_ph')}" style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="os-busca" oninput="filtrarOS()">
     <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none" id="os-filtro" onchange="filtrarOS()">
-      <option value="">Todos os status</option>
-      <option value="aberta">Aberta</option>
-      <option value="agendada">Agendada</option>
-      <option value="em_campo">Em campo</option>
-      <option value="concluida">Concluída</option>
+      <option value="">${tr('os_filtro_todos')}</option>
+      <option value="aberta">${tr('status_aberta')}</option>
+      <option value="agendada">${tr('status_agendada')}</option>
+      <option value="em_campo">${tr('status_em_campo')}</option>
+      <option value="concluida">${tr('status_concluida')}</option>
     </select>
   </div>
   <div id="os-lista"></div>`;
@@ -474,7 +787,7 @@ async function carregarOS() {
       document.getElementById('kpi-co').textContent = osData.filter(o=>o.status==='concluida').length;
     }
   } catch(e) {
-    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">Erro: ' + e.message + '</div>';
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c;font-size:12px">' + tr('erro_prefix') + e.message + '</div>';
   }
 }
 
@@ -487,29 +800,29 @@ function filtrarOS() {
 function renderOSLista(lista) {
   const el = document.getElementById('os-lista');
   if (!el) return;
-  if (!lista.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">Nenhuma OS encontrada</div>'; return; }
+  if (!lista.length) { el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb;font-size:13px">' + tr('os_none_found') + '</div>'; return; }
   el.innerHTML = lista.map(o => `
   <div style="background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:14px 16px;margin-bottom:8px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
       <div style="display:flex;align-items:center;gap:8px">
-        <span style="font-size:11px;color:#888">OS #${o.numero||'—'}</span>
+        <span style="font-size:11px;color:#888">${tr('os_prefix')}${o.numero||'—'}</span>
         <span style="font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px;background:${S_BG[o.status]||'#f5f5f3'};color:${S_COLOR[o.status]||'#888'}">${S_LABEL[o.status]||o.status}</span>
-        ${o.origem==='manual'?'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f5f5f3;color:#888;border:1px solid #e8e8e5">Manual</span>':'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">De orçamento</span>'}
+        ${o.origem==='manual'?'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#f5f5f3;color:#888;border:1px solid #e8e8e5">'+tr('os_manual')+'</span>':'<span style="font-size:10px;padding:2px 7px;border-radius:99px;background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe">'+tr('os_de_orcamento')+'</span>'}
       </div>
-      <span style="font-size:11px;color:#bbb">${new Date(o.created_at).toLocaleDateString('pt-BR')}</span>
+      <span style="font-size:11px;color:#bbb">${new Date(o.created_at).toLocaleDateString(LANG==='pt'?'pt-BR':'en-US')}</span>
     </div>
-    <div style="font-size:14px;font-weight:600;margin-bottom:6px;cursor:pointer" onclick="abrirOS('${o.id}')">${o.titulo||'Sem título'}</div>
+    <div style="font-size:14px;font-weight:600;margin-bottom:6px;cursor:pointer" onclick="abrirOS('${o.id}')">${o.titulo||tr('os_sem_titulo')}</div>
     <div style="display:flex;align-items:center;gap:16px;font-size:12px;color:#888;margin-bottom:10px">
       ${(o.cliente||o.cliente_nome)?'<span>👤 '+(o.cliente||o.cliente_nome)+'</span>':''}
       ${o.tecnico_nome?'<span>🔧 '+o.tecnico_nome+'</span>':''}
       ${o.endereco?'<span>📍 '+o.endereco+'</span>':''}
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between">
-      <div>${o.drive_folder_url?'<a href="'+o.drive_folder_url+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none">📁 Ver no Drive</a>':''}</div>
+      <div>${o.drive_folder_url?'<a href="'+o.drive_folder_url+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none">'+tr('os_ver_no_drive')+'</a>':''}</div>
       <div style="display:flex;gap:6px">
-        <button onclick="abrirOS('${o.id}')" style="padding:4px 12px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#1a1a1a;font-weight:500">Ver detalhes</button>
-        <button onclick="editarOS('${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#555">Editar</button>
-        <button onclick="deletarOS('${o.id}','${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#e74c3c">Deletar</button>
+        <button onclick="abrirOS('${o.id}')" style="padding:4px 12px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#1a1a1a;font-weight:500">${tr('btn_ver_detalhes')}</button>
+        <button onclick="editarOS('${o.id}')" style="padding:4px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#555">${tr('btn_editar')}</button>
+        <button onclick="deletarOS('${o.id}','${(o.titulo||'').replace(/'/g,'')}')" style="padding:4px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit;color:#e74c3c">${tr('btn_deletar')}</button>
       </div>
     </div>
   </div>`).join('');
@@ -520,7 +833,7 @@ async function abrirOS(id) {
   const os = osData.find(o => o.id === id);
   if (!os) return;
   const content = document.getElementById('m-det-os-content');
-  content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">Carregando...</div>';
+  content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">' + tr('loading') + '</div>';
   abrirModal('m-det-os');
 
   function driveFileId(url) {
@@ -544,59 +857,59 @@ async function abrirOS(id) {
   content.innerHTML = `
   <div style="padding:16px 20px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
     <div>
-      <div style="font-size:11px;color:#888;margin-bottom:1px">OS #${os.numero||'—'} · <span id="os-status-header-${id}" style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
-      <div style="font-size:16px;font-weight:700">${os.titulo||'Sem título'}</div>
+      <div style="font-size:11px;color:#888;margin-bottom:1px">${tr('os_prefix')}${os.numero||'—'} · <span id="os-status-header-${id}" style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
+      <div style="font-size:16px;font-weight:700">${os.titulo||tr('os_sem_titulo')}</div>
     </div>
     <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
   </div>
   <div style="padding:18px 20px">
     <div class="os-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
-        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Cliente</div>
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${tr('os_cliente_label')}</div>
         <div style="font-size:13px;font-weight:600">${os.cliente_nome||os.cliente||'—'}</div>
         ${os.cliente_tel?'<div style="font-size:12px;color:#555;margin-top:2px">📞 '+os.cliente_tel+'</div>':''}
         ${os.cliente_email?'<div style="font-size:12px;color:#555;margin-top:1px">✉️ '+os.cliente_email+'</div>':''}
       </div>
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
-        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Técnico</div>
+        <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${tr('os_tecnico_label')}</div>
         <div style="font-size:13px;font-weight:600">${os.tecnico_nome||'—'}</div>
-        <div style="font-size:11px;color:#888;margin-top:3px">Por ${os.criado_por||'—'}</div>
+        <div style="font-size:11px;color:#888;margin-top:3px">${tr('os_por')}${os.criado_por||'—'}</div>
       </div>
-      ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">Endereço</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
-      ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">Serviço</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
+      ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">'+tr('os_endereco_label')+'</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
+      ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">'+tr('os_servico_label')+'</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
     </div>
     <div style="margin-bottom:16px">
-      <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">Status</div>
+      <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">${tr('os_status_label')}</div>
       <div id="status-pills-${id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
         ${Object.entries(S_LABEL).map(([s,l]) => '<button data-status="'+s+'" onclick="selecionarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
       </div>
-      <button id="status-save-${id}" onclick="salvarStatusOS('${id}')" style="display:none;padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">💾 Salvar alterações</button>
+      <button id="status-save-${id}" onclick="salvarStatusOS('${id}')" style="display:none;padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_salvar_alteracoes')}</button>
     </div>
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:13px;font-weight:600">Fotos (${fotos.length})</div>
+        <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
         <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
-          📷 Adicionar
+          ${tr('os_adicionar_foto')}
           <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); return '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">Nenhuma foto. Toque em "Adicionar" para começar.</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); return '<a href="'+f.drive_url+'" target="_blank" style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:#f5f5f3;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</a>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
       </div>
-      <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">Enviando...</div>
+      <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
     <div>
-      <div style="font-size:13px;font-weight:600;margin-bottom:10px">Anotações (${notas.length})</div>
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('os_anotacoes_label')} (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>'}
+        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">'+tr('os_sem_anotacoes')+'</div>'}
       </div>
       <div id="nota-previa-${id}" style="display:none"></div>
       <div id="nota-form-${id}" style="display:flex;gap:8px">
-        <input id="nota-input-${id}" placeholder="Adicionar anotação..." style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')gerarResumoNota('${id}')">
-        <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">Enviar</button>
+        <input id="nota-input-${id}" placeholder="${tr('os_add_nota_ph')}" style="flex:1;padding:8px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" onkeydown="if(event.key==='Enter')gerarResumoNota('${id}')">
+        <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_enviar')}</button>
       </div>
     </div>
-    ${os.drive_folder_url?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5"><a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">📁 Abrir pasta no Google Drive</a></div>':''}
+    ${os.drive_folder_url?'<div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5"><a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">'+tr('os_abrir_drive')+'</a></div>':''}
   </div>`;
 }
 
@@ -629,9 +942,9 @@ async function salvarStatusOS(id) {
     if (saveBtn) saveBtn.style.display = 'none';
     const headerEl = document.getElementById('os-status-header-' + id);
     if (headerEl) { headerEl.textContent = S_LABEL[status] || status; headerEl.style.color = S_COLOR[status] || '#888'; }
-    toast('Status atualizado!', 'ok');
+    toast(tr('os_status_atualizado'), 'ok');
     carregarOS();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function salvarNota(osId) {
@@ -643,8 +956,8 @@ async function salvarNota(osId) {
     inp.value = '';
     const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=created_at.asc');
     const el = document.getElementById('notas-' + osId);
-    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('');
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // Anotações com resumo aprimorado por IA (revisão do técnico antes de salvar)
@@ -653,7 +966,7 @@ async function gerarResumoNota(osId) {
   const texto = inp?.value.trim();
   if (!texto) return;
   const btn = document.getElementById('nota-btn-' + osId);
-  if (btn) { btn.textContent = 'Gerando...'; btn.disabled = true; }
+  if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
   try {
     const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
       method: 'POST',
@@ -667,7 +980,7 @@ async function gerarResumoNota(osId) {
     // IA ainda não publicada/disponível: não trava o técnico, salva a anotação direto
     await salvarNotaDireta(osId, texto);
   } finally {
-    if (btn) { btn.textContent = 'Enviar'; btn.disabled = false; }
+    if (btn) { btn.textContent = tr('os_enviar'); btn.disabled = false; }
   }
 }
 
@@ -678,9 +991,9 @@ async function salvarNotaDireta(osId, texto) {
     if (inp) inp.value = '';
     const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
     const listEl = document.getElementById('notas-' + osId);
-    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString('pt-BR')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">Nenhuma anotação.</div>';
-    toast('Anotação salva!', 'ok');
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">'+tr('os_sem_anotacoes')+'</div>';
+    toast(tr('anotacao_salva'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 function mostrarPreviaNota(osId, resumo) {
@@ -689,12 +1002,12 @@ function mostrarPreviaNota(osId, resumo) {
   wrap.style.display = 'block';
   wrap.innerHTML = `
     <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:10px">
-      <div style="font-size:10px;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600">Resumo sugerido pela IA</div>
+      <div style="font-size:10px;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600">${tr('os_resumo_ia')}</div>
       <div id="nota-texto-ia-${osId}" contenteditable="false" style="font-size:13px;background:#fff;border:1.5px solid #e8e8e5;border-radius:7px;padding:9px 11px;margin-bottom:8px;outline:none">${resumo}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button onclick="cancelarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">Cancelar</button>
-        <button id="nota-editbtn-${osId}" onclick="toggleEditarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">✎ Editar</button>
-        <button onclick="confirmarNota('${osId}')" style="padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">✓ Confirmar</button>
+        <button onclick="cancelarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">${tr('btn_cancelar')}</button>
+        <button id="nota-editbtn-${osId}" onclick="toggleEditarPreviaNota('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">${tr('os_editar_nota')}</button>
+        <button onclick="confirmarNota('${osId}')" style="padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_confirmar')}</button>
       </div>
     </div>`;
 }
@@ -705,7 +1018,7 @@ function toggleEditarPreviaNota(osId) {
   const editing = el.getAttribute('contenteditable') === 'true';
   el.setAttribute('contenteditable', editing ? 'false' : 'true');
   el.style.borderColor = editing ? '#e8e8e5' : '#1a1a1a';
-  btn.textContent = editing ? '✎ Editar' : '✓ Concluir edição';
+  btn.textContent = editing ? tr('os_editar_nota') : tr('os_concluir_edicao');
   if (!editing) el.focus();
 }
 
@@ -781,20 +1094,20 @@ async function salvarNovoCliente() {
   const email = document.getElementById('nc-email')?.value.trim();
   const telefone = document.getElementById('nc-tel')?.value.trim();
   const endereco = document.getElementById('nc-end')?.value.trim();
-  if (!nome||!email||!telefone||!endereco) { toast('Preencha todos os campos','err'); return; }
+  if (!nome||!email||!telefone||!endereco) { toast(tr('cliente_required_fields'),'err'); return; }
   try {
     const [c] = await sbPost('clientes', { nome, email, telefone, endereco, contato: document.getElementById('nc-contato')?.value.trim()||null, ativo: true });
     fecharModal('m-novo-cli');
     selecionarCliente(c);
     abrirModal('m-nova-os');
-    toast('Cliente cadastrado!', 'ok');
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+    toast(tr('cliente_cadastrado'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function salvarNovaOS() {
   const titulo = document.getElementById('os-titulo')?.value.trim();
-  if (!titulo) { toast('Título obrigatório', 'err'); return; }
-  if (!osCliSel) { toast('Selecione um cliente do CRM', 'err'); document.getElementById('os-cli-busca')?.focus(); return; }
+  if (!titulo) { toast(tr('os_titulo_obrigatorio'), 'err'); return; }
+  if (!osCliSel) { toast(tr('cliente_selecione_um'), 'err'); document.getElementById('os-cli-busca')?.focus(); return; }
   try {
     // Próximo número
     const nums = await sbGet('ordens_servico?select=numero&order=numero.desc.nullslast&limit=1');
@@ -809,11 +1122,11 @@ async function salvarNovaOS() {
       status: 'aberta', origem: 'manual', criado_por: ME.nome
     });
     fecharModal('m-nova-os');
-    toast('OS #' + numero + ' criada!', 'ok');
+    toast(tr('os_criada') + numero + tr('os_criada_suffix'), 'ok');
     // Cria lead no CRM
     try { await sbPost('crm_leads', { nome: osCliSel.nome, origem: 'os_manual', status: 'lead', criado_por: ME.nome }); } catch(e) {}
     carregarOS();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 function editarOS(id) {
@@ -824,14 +1137,14 @@ function editarOS(id) {
   document.getElementById('edit-os-status').value = os.status||'aberta';
   document.getElementById('edit-os-tecnico').value = os.tecnico_nome||'';
   document.getElementById('edit-os-desc').value = os.descricao||'';
-  document.getElementById('edit-os-cli-info').textContent = 'Cliente: ' + (os.cliente_nome||os.cliente||'—');
+  document.getElementById('edit-os-cli-info').textContent = tr('cliente_colon') + (os.cliente_nome||os.cliente||'—');
   abrirModal('m-edit-os');
 }
 
 async function salvarEditOS() {
   const id = document.getElementById('edit-os-id').value;
   const titulo = document.getElementById('edit-os-titulo').value.trim();
-  if (!titulo) { toast('Título obrigatório','err'); return; }
+  if (!titulo) { toast(tr('os_titulo_obrigatorio'),'err'); return; }
   try {
     await sbPatch('ordens_servico?id=eq.' + id, {
       titulo, status: document.getElementById('edit-os-status').value,
@@ -839,22 +1152,22 @@ async function salvarEditOS() {
       descricao: document.getElementById('edit-os-desc').value.trim()||null
     });
     fecharModal('m-edit-os');
-    toast('OS atualizada!', 'ok');
+    toast(tr('os_atualizada'), 'ok');
     carregarOS();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function deletarOS(id, titulo) {
-  if (!confirm('Deletar OS "' + titulo + '"?\nEsta ação não pode ser desfeita.')) return;
+  if (!confirm(tr('os_deletar_confirm') + titulo + tr('os_deletar_confirm2'))) return;
   const os = osData.find(o => o.id === id);
   let apagarDrive = false;
   if (os?.drive_folder_id) {
-    apagarDrive = confirm('Esta OS tem uma pasta com fotos no Google Drive.\n\nApagar essa pasta também? (ela vai para a lixeira do Google, não é apagada na hora)\n\nOK = apagar pasta também\nCancelar = manter a pasta no Drive');
+    apagarDrive = confirm(tr('os_drive_confirm'));
   }
   try {
     if (apagarDrive) {
       if (!googleToken) {
-        toast('Google Drive não conectado — a pasta não foi apagada, só a OS', 'err');
+        toast(tr('os_drive_nao_conectado_del'), 'err');
       } else {
         try {
           await fetch('https://www.googleapis.com/drive/v3/files/' + os.drive_folder_id, {
@@ -862,20 +1175,20 @@ async function deletarOS(id, titulo) {
             headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
             body: JSON.stringify({ trashed: true })
           });
-        } catch(e) { console.error(e); toast('Não foi possível apagar a pasta do Drive', 'err'); }
+        } catch(e) { console.error(e); toast(tr('os_drive_erro_del'), 'err'); }
       }
     }
     await sbDelete('ordens_servico?id=eq.' + id);
-    toast('OS deletada', 'ok');
+    toast(tr('os_deletada'), 'ok');
     carregarOS();
-  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // ── GOOGLE DRIVE ──────────────────────────────────────────────
 function atualizarDriveStatus(ok) {
   const el = document.getElementById('g-drive-status');
   if (!el) return;
-  if (ok) { el.style.background='#f0fdf4'; el.style.borderColor='#bbf7d0'; el.style.color='#166534'; el.innerHTML='✅ Google Drive conectado'; }
+  if (ok) { el.style.background='#f0fdf4'; el.style.borderColor='#bbf7d0'; el.style.color='#166534'; el.innerHTML=tr('drive_conectado'); }
 }
 
 function conectarGoogle() {
@@ -894,15 +1207,15 @@ async function trocarCodigoGoogle(code) {
       body: JSON.stringify({ code })
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Erro ao conectar Google Drive');
+    if (!r.ok) throw new Error(d.error || tr('erro_prefix') + 'Google Drive');
     googleToken = d.access_token;
     googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
     sessionStorage.setItem('ksh_drive_token', googleToken);
     sessionStorage.setItem('ksh_drive_token_exp', String(googleTokenExpira));
     atualizarDriveStatus(true);
-    toast(d.has_refresh ? 'Google Drive conectado! Vai continuar conectado automaticamente.' : 'Google Drive conectado!', 'ok');
+    toast(d.has_refresh ? (LANG==='pt'?'Google Drive conectado! Vai continuar conectado automaticamente.':'Google Drive connected! It will stay connected automatically.') : tr('drive_conectado'), 'ok');
   } catch(e) {
-    toast('Erro ao conectar Google Drive: ' + e.message, 'err');
+    toast(tr('erro_prefix') + e.message, 'err');
   }
 }
 
@@ -913,7 +1226,7 @@ async function renovarTokenDrive() {
       headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Erro ao renovar Google Drive');
+    if (!r.ok) throw new Error(d.error || tr('erro_prefix') + 'Google Drive');
     googleToken = d.access_token;
     googleTokenExpira = Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000;
     sessionStorage.setItem('ksh_drive_token', googleToken);
@@ -938,7 +1251,7 @@ async function uploadFotos(event, osId) {
   const files = Array.from(event.target.files);
   if (!files.length) return;
   const conectado = await garantirTokenDrive();
-  if (!conectado) { toast('Conecte o Google Drive primeiro','err'); return; }
+  if (!conectado) { toast(tr('drive_conecte_primeiro'),'err'); return; }
   const prog = document.getElementById('upload-prog');
   if (prog) prog.style.display = 'block';
   const os = osData.find(o => o.id === osId);
@@ -952,11 +1265,11 @@ async function uploadFotos(event, osId) {
       await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
       os.drive_folder_id = folderId;
     } else {
-      toast('Não foi possível criar a pasta no Drive — verifique a conexão do Google Drive', 'err');
+      toast(tr('drive_erro_pasta'), 'err');
     }
   }
   for (let i = 0; i < files.length; i++) {
-    if (prog) prog.textContent = 'Enviando ' + (i+1) + '/' + files.length + '...';
+    if (prog) prog.textContent = tr('os_enviando_progresso') + (i+1) + '/' + files.length + '...';
     try {
       const d = await uploadDrive(files[i], folderId);
       if (d?.id) {
@@ -965,7 +1278,7 @@ async function uploadFotos(event, osId) {
     } catch(e) { console.error(e); }
   }
   if (prog) prog.style.display = 'none';
-  toast('Fotos enviadas!', 'ok');
+  toast(tr('fotos_enviadas'), 'ok');
   abrirOS(osId);
 }
 
@@ -975,7 +1288,7 @@ function limparTokenDrive() {
   sessionStorage.removeItem('ksh_drive_token');
   sessionStorage.removeItem('ksh_drive_token_exp');
   const el = document.getElementById('g-drive-status');
-  if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML='📁 Google Drive não conectado — <span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">Conectar agora</span> para fazer upload de fotos'; }
+  if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML=tr('drive_nao_conectado')+'<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">'+tr('drive_conectar_agora')+'</span>'+tr('drive_conectar_suffix'); }
 }
 
 async function criarPastaDrive(nome, parentId) {
@@ -1020,6 +1333,7 @@ async function uploadDrive(file, folderId) {
 
 // ── INIT ──────────────────────────────────────────────────────
 window.addEventListener('load', function() {
+  aplicarI18n();
   // Verifica retorno do OAuth do Google (authorization code flow)
   const qs = new URLSearchParams(window.location.search);
   const gcode = qs.get('code');
