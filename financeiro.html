@@ -6,7 +6,23 @@
 <title>KSH · Financeiro</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
-:root{--bg:#0f1117;--bg2:#1a1d27;--bg3:#22263a;--bg4:#2a2f45;--border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.15);--text:#f0f2f8;--text2:#b0b8d0;--text3:#6b7599;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;--amber-bg:rgba(245,158,11,.1);--green-bg:rgba(34,197,94,.1);--red-bg:rgba(231,76,60,.1);--blue:#3b82f6;--blue-bg:rgba(59,130,246,.1);--purple:#a855f7;--purple-bg:rgba(168,85,247,.1)}
+:root{
+  --bg:#f5f5f3;
+  --bg2:#ffffff;
+  --bg3:#f0f0ed;
+  --bg4:#e8e8e5;
+  --border:rgba(0,0,0,.08);
+  --border2:rgba(0,0,0,.14);
+  --text:#1a1a1a;
+  --text2:#444444;
+  --text3:#888888;
+  --text4:#bbbbbb;
+  --red:#e74c3c;--red-bg:rgba(231,76,60,.08);
+  --green:#16a34a;--green-bg:rgba(22,163,74,.08);
+  --amber:#d97706;--amber-bg:rgba(217,119,6,.08);
+  --blue:#2563eb;--blue-bg:rgba(37,99,235,.08);
+  --purple:#7c3aed;--purple-bg:rgba(124,58,237,.08);
+}
 *{box-sizing:border-box;margin:0;padding:0;font-family:'DM Sans',system-ui,sans-serif}
 body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
 .topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 28px;border-bottom:1px solid var(--border);background:var(--bg2)}
@@ -71,7 +87,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .aviso-pendings-text{flex:1;font-size:13px;color:var(--text2);line-height:1.5;min-width:240px}
 .aviso-pendings-text .titulo{color:var(--amber);font-weight:700;font-size:13px;display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
 .aviso-pendings-text .destaque{color:var(--text);font-weight:600}
-.aviso-pendings-link{background:var(--amber);color:#0f1117;font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:transform .15s}
+.aviso-pendings-link{background:var(--amber);color:var(--bg);font-size:12px;font-weight:700;padding:9px 16px;border-radius:8px;text-decoration:none;white-space:nowrap;transition:transform .15s}
 .aviso-pendings-link:hover{transform:translateY(-1px)}
 .saldo-card .saldo-sub.warn{color:var(--amber);font-weight:600}
 
@@ -172,7 +188,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .pd-title{font-size:26px;font-weight:700;letter-spacing:-0.4px;display:flex;align-items:center;gap:10px}
 .pd-status-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:5px}
 .pd-status-pill.ativo{background:rgba(34,197,94,.12);color:var(--green)}
-.pd-status-pill.inativo{background:rgba(255,255,255,.06);color:var(--text3)}
+.pd-status-pill.inativo{background:rgba(0,0,0,0.09);color:var(--text3)}
 .pd-meta{color:var(--text3);font-size:13px;margin-top:8px;display:flex;gap:14px;flex-wrap:wrap}
 .pd-meta-item{display:flex;align-items:center;gap:4px}
 .pd-qbo-link{background:linear-gradient(135deg,#2ca01c,#1c7a13);color:#fff;border:none;padding:9px 14px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
@@ -199,7 +215,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .pd-section-body{display:none;border-top:1px solid var(--border);padding:8px 0}
 .pd-section.open .pd-section-body{display:block}
 .pd-row{display:flex;justify-content:space-between;align-items:center;padding:9px 18px 9px 38px;font-size:13px;color:var(--text2);transition:background .1s}
-.pd-row:hover{background:rgba(255,255,255,.02);color:var(--text)}
+.pd-row:hover{background:rgba(0,0,0,0.03);color:var(--text)}
 .pd-row-name{display:flex;align-items:center;gap:8px}
 .pd-row-sub{font-size:10px;color:var(--text3);margin-left:6px}
 .pd-row-val{font-family:'DM Mono',monospace;font-weight:600;color:var(--text)}
@@ -265,7 +281,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .pa-tab-content{padding:18px;display:none}
 .pa-tab-content.active{display:block}
 
-.pa-insight{padding:14px 16px;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--text3);background:rgba(255,255,255,.02)}
+.pa-insight{padding:14px 16px;border-radius:8px;margin-bottom:10px;border-left:3px solid var(--text3);background:rgba(0,0,0,0.03)}
 .pa-insight:last-child{margin-bottom:0}
 .pa-insight.sev-critico{border-left-color:var(--red);background:rgba(239,68,68,.07)}
 .pa-insight.sev-atencao{border-left-color:var(--amber);background:rgba(245,158,11,.06)}
@@ -285,7 +301,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .pa-ai-regen{background:transparent;border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit}
 .pa-ai-regen:hover{background:var(--bg3);color:var(--text)}
 
-.pa-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:pa-spin .8s linear infinite;margin-right:6px;vertical-align:-2px}
+.pa-spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,0.45);border-top-color:#fff;border-radius:50%;animation:pa-spin .8s linear infinite;margin-right:6px;vertical-align:-2px}
 @keyframes pa-spin{to{transform:rotate(360deg)}}
 
 /* === ASSINATURAS === */
@@ -337,7 +353,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 .rec-tbl-head{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:10px 14px;background:rgba(0,0,0,.2);font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;font-weight:600;border-bottom:1px solid var(--border)}
 .rec-row{display:grid;grid-template-columns:2.4fr .9fr .9fr 1.1fr .9fr 70px;padding:13px 14px;align-items:center;border-bottom:1px solid var(--border);font-size:12px;transition:background .15s ease}
 .rec-row:last-child{border-bottom:none}
-.rec-row:hover{background:rgba(255,255,255,.02)}
+.rec-row:hover{background:rgba(0,0,0,0.03)}
 .rec-row.warn{background:rgba(245,158,11,.04)}
 .rec-row.red{background:rgba(239,68,68,.04)}
 .rec-vendor-name{font-weight:600;color:var(--text)}
@@ -360,7 +376,7 @@ body{background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-d
 
 .rec-empty{padding:48px 24px;text-align:center;color:var(--text3);font-size:13px}
 
-.ksh-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100}
+.ksh-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:#ffffff;border-bottom:1px solid #e8e8e5;position:sticky;top:0;z-index:100}
 .ksh-header-left{display:flex;align-items:center;gap:10px}
 .ksh-back{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px}
 .ksh-back:hover{background:var(--bg3);color:var(--text)}
@@ -1139,9 +1155,9 @@ async function carregarGraficoLP(){
           },
           tooltip: {
             backgroundColor: 'rgba(15,17,23,.95)',
-            titleColor: '#f0f2f8',
+            titleColor: 'var(--text)',
             bodyColor: '#b0b8d0',
-            borderColor: 'rgba(255,255,255,.15)',
+            borderColor: 'rgba(0,0,0,0.22)',
             borderWidth: 1,
             padding: 12,
             callbacks: {
@@ -1155,7 +1171,7 @@ async function carregarGraficoLP(){
         scales: {
           x: {
             ticks: { color: '#6b7599', font: { size: 11 } },
-            grid: { color: 'rgba(255,255,255,.04)' }
+            grid: { color: 'rgba(0,0,0,0.06)' }
           },
           y: {
             ticks: {
@@ -1163,7 +1179,7 @@ async function carregarGraficoLP(){
               font: { size: 11 },
               callback: function(v){ return '$' + (Math.abs(v)>=1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0)); }
             },
-            grid: { color: 'rgba(255,255,255,.04)' }
+            grid: { color: 'rgba(0,0,0,0.06)' }
           }
         }
       }
@@ -1293,7 +1309,7 @@ function renderFluxo(){
                 <span style="font-size:12px;color:var(--text2)">Lucro proj.</span>
                 <span style="font-size:15px;font-weight:700;color:${semaforo(p.lucro)}">${sinal(p.lucro)}${fmtMoney(p.lucro)}</span>
               </div>
-              <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px;margin-top:4px">
+              <div style="display:flex;justify-content:space-between;align-items:center;background:rgba(0,0,0,0.04);border-radius:8px;padding:8px 10px;margin-top:4px">
                 <span style="font-size:11px;color:var(--text3)">Caixa estimado</span>
                 <span style="font-size:14px;font-weight:700;color:${semaforo(p.caixa)}">${fmtMoney(p.caixa)}</span>
               </div>
