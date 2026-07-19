@@ -741,7 +741,7 @@ async function uploadFotos(event, osId) {
   if (!folderId) {
     const parentId = await getPastaPortal();
     const nomeCliente = (os?.cliente_nome || os?.cliente || 'Cliente').trim();
-    const nomePasta = 'KSH ' + (os?.numero || osId) + ' - ' + nomeCliente;
+    const nomePasta = 'OS ' + (os?.numero || osId) + ' - ' + nomeCliente;
     folderId = await criarPastaDrive(nomePasta, parentId);
     if (folderId) {
       await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
