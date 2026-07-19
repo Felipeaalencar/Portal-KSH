@@ -148,6 +148,7 @@ const I18N = {
   drive_nao_conectado: { en: '📁 Google Drive not connected — ', pt: '📁 Google Drive não conectado — ' },
   drive_conectar_agora: { en: 'Connect now', pt: 'Conectar agora' },
   drive_conectar_suffix: { en: ' to upload photos', pt: ' para fazer upload de fotos' },
+  drive_nao_conectado_tecnico: { en: '📁 Google Drive not connected. Photos will sync automatically once the manager reconnects it.', pt: '📁 Google Drive não conectado. As fotos vão sincronizar automaticamente assim que o gestor reconectar.' },
   drive_conectado: { en: '✅ Google Drive connected', pt: '✅ Google Drive conectado' },
   drive_reconectar: { en: 'Reconnect', pt: 'Reconectar' },
   kpi_total: { en: 'TOTAL', pt: 'TOTAL' },
@@ -821,11 +822,19 @@ const S_LABEL = { aberta: tr('status_aberta'), agendada: tr('status_agendada'), 
 const S_COLOR = { aberta:'#d97706', agendada:'#7c3aed', em_campo:'#2563eb', concluida:'#16a34a' };
 const S_BG    = { aberta:'#fffbeb', agendada:'#f5f3ff', em_campo:'#eff6ff', concluida:'#f0fdf4' };
 
+function bannerDriveDesconectadoHTML() {
+  const podeReconectar = ME && ME.funcao === 'Gestor';
+  if (podeReconectar) {
+    return tr('drive_nao_conectado') + '<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">' + tr('drive_conectar_agora') + '</span>' + tr('drive_conectar_suffix');
+  }
+  return tr('drive_nao_conectado_tecnico');
+}
+
 async function renderKSHCam() {
   const el = document.getElementById('mod-content');
   el.innerHTML = `
   <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#92400e" id="g-drive-status">
-    ${tr('drive_nao_conectado')}<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">${tr('drive_conectar_agora')}</span>${tr('drive_conectar_suffix')}
+    ${bannerDriveDesconectadoHTML()}
   </div>
   <div class="kpis kpis-4" style="margin-bottom:14px">
     <div class="kpi"><div class="kpi-l">${tr('kpi_total')}</div><div class="kpi-v" id="kpi-tot">—</div></div>
@@ -1966,7 +1975,7 @@ function limparTokenDrive() {
   sessionStorage.removeItem('ksh_drive_token');
   sessionStorage.removeItem('ksh_drive_token_exp');
   const el = document.getElementById('g-drive-status');
-  if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML=tr('drive_nao_conectado')+'<span style="cursor:pointer;text-decoration:underline" onclick="conectarGoogle()">'+tr('drive_conectar_agora')+'</span>'+tr('drive_conectar_suffix'); }
+  if (el) { el.style.background='#fffbeb'; el.style.borderColor='#fde68a'; el.style.color='#92400e'; el.innerHTML=bannerDriveDesconectadoHTML(); }
 }
 
 async function criarPastaDrive(nome, parentId) {
