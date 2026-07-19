@@ -740,16 +740,116 @@ function abrirModalNovaOS() {
 }
 function fecharModalOS() {
   document.getElementById('modal-os-bg').style.display = 'none';
+  osClienteSelecionado = null;
+}
+
+// ── BUSCA CLIENTE NO CRM ─────────────────────────────────────
+let osClienteSelecionado = null;
+let buscaClienteTimer = null;
+
+async function buscarClienteOS(termo) {
+  clearTimeout(buscaClienteTimer);
+  const resultados = document.getElementById('os-cliente-resultados');
+  const naoEncontrado = document.getElementById('os-cliente-nao-encontrado');
+  
+  if (!termo || termo.length < 2) {
+    resultados.style.display = 'none';
+    naoEncontrado.style.display = 'none';
+    return;
+  }
+
+  buscaClienteTimer = setTimeout(async () => {
+    try {
+      const r = await fetch(SB_URL + '/rest/v1/clientes?nome=ilike.*' + encodeURIComponent(termo) + '*&ativo=eq.true&limit=8', {
+        headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token }
+      });
+      const clientes = await r.json() || [];
+      
+      if (!clientes.length) {
+        resultados.style.display = 'none';
+        naoEncontrado.style.display = 'block';
+        return;
+      }
+      
+      naoEncontrado.style.display = 'none';
+      resultados.style.display = 'block';
+      resultados.innerHTML = clientes.map(cl => `
+        <div onclick="selecionarClienteOS(${JSON.stringify(cl).replace(/"/g,'&quot;')})" 
+             style="padding:10px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3;transition:background .1s"
+             onmouseover="this.style.background='#f9f9f7'" onmouseout="this.style.background='#fff'">
+          <div style="font-size:13px;font-weight:500">${cl.nome}</div>
+          <div style="font-size:11px;color:#888;margin-top:1px">${[cl.email,cl.telefone,cl.endereco].filter(Boolean).join(' · ')}</div>
+        </div>`).join('');
+    } catch(e) {
+      resultados.style.display = 'none';
+    }
+  }, 300);
+}
+
+function selecionarClienteOS(cliente) {
+  osClienteSelecionado = cliente;
+  document.getElementById('os-cliente-busca').value = '';
+  document.getElementById('os-cliente-resultados').style.display = 'none';
+  document.getElementById('os-cliente-nao-encontrado').style.display = 'none';
+  document.getElementById('os-cliente-selecionado').style.display = 'block';
+  document.getElementById('os-cliente-nome-exibido').textContent = cliente.nome;
+  const dados = [cliente.email, cliente.telefone, cliente.endereco].filter(Boolean).join(' · ');
+  document.getElementById('os-cliente-dados-exibidos').textContent = dados;
+}
+
+function limparClienteOS() {
+  osClienteSelecionado = null;
+  document.getElementById('os-cliente-selecionado').style.display = 'none';
+  document.getElementById('os-cliente-busca').value = '';
+  document.getElementById('os-cliente-busca').focus();
+}
+
+function abrirCadastroCliente() {
+  document.getElementById('modal-cliente-bg').style.display = 'flex';
+  setTimeout(() => document.getElementById('nc-nome')?.focus(), 100);
+}
+
+function fecharCadastroCliente() {
+  document.getElementById('modal-cliente-bg').style.display = 'none';
+}
+
+async function salvarNovoCliente() {
+  const nome = document.getElementById('nc-nome')?.value.trim();
+  const email = document.getElementById('nc-email')?.value.trim();
+  const telefone = document.getElementById('nc-tel')?.value.trim();
+  const endereco = document.getElementById('nc-endereco')?.value.trim();
+  
+  if (!nome || !email || !telefone || !endereco) {
+    toast_show('Preencha todos os campos obrigatórios', 'err');
+    return;
+  }
+  
+  try {
+    const r = await fetch(SB_URL + '/rest/v1/clientes', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + ME.token, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+      body: JSON.stringify({ nome, email, telefone, endereco, contato: document.getElementById('nc-contato')?.value.trim()||null, ativo: true })
+    });
+    if (!r.ok) throw new Error(await r.text());
+    const [cliente] = await r.json();
+    fecharCadastroCliente();
+    selecionarClienteOS(cliente);
+    toast_show('Cliente cadastrado no CRM!', 'ok');
+  } catch(e) {
+    toast_show('Erro ao cadastrar: ' + e.message, 'err');
+  }
 }
 
 async function salvarOS() {
   const titulo = document.getElementById('os-titulo')?.value.trim();
-  if (!titulo) { alert('Título é obrigatório'); return; }
+  if (!titulo) { toast_show('Título é obrigatório', 'err'); return; }
+  if (!osClienteSelecionado) { toast_show('Selecione um cliente do CRM', 'err'); document.getElementById('os-cliente-busca')?.focus(); return; }
   const nova = {
     titulo,
-    cliente_nome: document.getElementById('os-cliente')?.value.trim()||null,
-    cliente_tel: document.getElementById('os-tel')?.value.trim()||null,
-    endereco: document.getElementById('os-endereco')?.value.trim()||null,
+    cliente_nome: osClienteSelecionado.nome,
+    cliente_tel: osClienteSelecionado.telefone||null,
+    cliente_email: osClienteSelecionado.email||null,
+    endereco: osClienteSelecionado.endereco||null,
     tecnico_nome: document.getElementById('os-tecnico')?.value.trim()||null,
     descricao: document.getElementById('os-desc')?.value.trim()||null,
     status: 'aberta',
