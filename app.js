@@ -846,7 +846,7 @@ function conectarGoogle() {
 
 async function trocarCodigoGoogle(code) {
   try {
-    const r = await fetch(SB_URL + '/functions/v1/google-token-exchange', {
+    const r = await fetch(SB_URL + '/functions/v1/swift-function', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
       body: JSON.stringify({ code })
@@ -866,7 +866,7 @@ async function trocarCodigoGoogle(code) {
 
 async function renovarTokenDrive() {
   try {
-    const r = await fetch(SB_URL + '/functions/v1/google-token-refresh', {
+    const r = await fetch(SB_URL + '/functions/v1/swift-worker', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
