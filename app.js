@@ -129,7 +129,7 @@ const PAGE_TITLES = {
   'crm-clientes':'Clientes','crm-orcamentos':'Orçamentos','crm-followups':'Follow-ups','crm-comissoes':'Comissões','crm-consultores':'Consultores','crm-reprovacao':'Motivos Reprovação',
   'fin-banco':'Banco','fin-dre':'DRE','fin-indicadores':'Indicadores','fin-analise':'Análise CR/CP','fin-fluxo':'Fluxo de Caixa','fin-patrimonio':'Gestão Patrimônio','fin-custeio':'Custeio',
   'desp-lancar':'Lançar Despesa','desp-aprovar':'Aprovar Despesas','fin-frota':'Controle de Frota','fin-cadastros':'Cadastros',
-  'kshcam':'KSHCam — OS','tarefas':'Tarefas','ferramentas':'Ferramentas','documentos':'Documentos'
+  'kshcam':'Ordem de Serviço','tecnicos':'Técnicos','tarefas':'Tarefas','ferramentas':'Ferramentas','documentos':'Documentos'
 };
 
 function goPage(btn, pageId, title, section) {
@@ -162,6 +162,7 @@ function goPage(btn, pageId, title, section) {
 function getActions(id) {
   const m = {
     'kshcam': '<button class="btn-sec" onclick="loadModule(\'kshcam\')">↻ Atualizar</button><button class="btn-pri" onclick="abrirNovaOS()">+ Nova OS</button>',
+    'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">+ Novo Técnico</button>',
     'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">+ Novo Cliente</button>',
     'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">↻ Atualizar</button>',
     'tarefas': '<button class="btn-pri" onclick="toast(\'Em breve\')">+ Nova Tarefa</button>',
@@ -175,6 +176,7 @@ function getSubtitle(id) {
     'crm-clientes': 'Base de clientes com histórico e dados completos',
     'crm-orcamentos': 'Pipeline de propostas por status',
     'kshcam': 'OS geradas por orçamentos aprovados ou criadas manualmente pelos técnicos',
+    'tecnicos': 'Cadastro da equipe técnica e valor da hora trabalhada',
     'tarefas': 'Agenda da equipe sincronizada com Google Calendar',
     'ferramentas': 'Inventário de equipamentos, maletas e materiais',
     'documentos': 'Licenças, seguros, alvarás e manuais',
@@ -204,6 +206,7 @@ function loadModule(id) {
   if (!el) return;
   if (id === 'crm-clientes') renderClientes();
   else if (id === 'kshcam') renderKSHCam();
+  else if (id === 'tecnicos') renderTecnicos();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -288,6 +291,97 @@ function editarCliente(id) {
     } catch(e) { toast('Erro: '+e.message,'err'); }
   };
   abrirModal('m-novo-cli-crm');
+}
+
+// ── TÉCNICOS ──────────────────────────────────────────────────
+let tecnicosData = [];
+
+async function renderTecnicos() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = `
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <input placeholder="Buscar por nome, email ou telefone..." style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="tec-busca" oninput="filtrarTecnicos()">
+  </div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>Nome</th><th>Email</th><th>Telefone</th><th>Valor/hora</th><th>Ações</th></tr></thead>
+      <tbody id="tec-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Carregando...</td></tr></tbody>
+    </table>
+  </div>`;
+  try {
+    tecnicosData = await sbGet('tecnicos?ativo=eq.true&order=nome');
+    renderTabelaTecnicos(tecnicosData);
+  } catch(e) {
+    document.getElementById('tec-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</td></tr>';
+  }
+}
+
+function filtrarTecnicos() {
+  const q = (document.getElementById('tec-busca')?.value || '').toLowerCase();
+  renderTabelaTecnicos(q ? tecnicosData.filter(t => (t.nome||'').toLowerCase().includes(q) || (t.email||'').toLowerCase().includes(q) || (t.telefone||'').toLowerCase().includes(q)) : tecnicosData);
+}
+
+function renderTabelaTecnicos(lista) {
+  const tb = document.getElementById('tec-tbody');
+  if (!tb) return;
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">Nenhum técnico cadastrado</td></tr>'; return; }
+  tb.innerHTML = lista.map(t => `<tr>
+    <td style="font-weight:500">${t.nome||'—'}</td>
+    <td>${t.email||'—'}</td>
+    <td>${t.telefone||'—'}</td>
+    <td>${t.valor_hora != null ? 'R$ ' + Number(t.valor_hora).toFixed(2).replace('.', ',') : '—'}</td>
+    <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">Editar</button></td>
+  </tr>`).join('');
+}
+
+function abrirNovoTecnico() {
+  ['tec-nome','tec-email','tec-tel','tec-valor'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = 'Novo Técnico';
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = 'Cadastrar';
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = salvarTecnico;
+  abrirModal('m-novo-tec');
+}
+
+async function salvarTecnico() {
+  const nome = document.getElementById('tec-nome')?.value.trim();
+  if (!nome) { toast('Nome é obrigatório', 'err'); return; }
+  try {
+    await sbPost('tecnicos', {
+      nome,
+      email: document.getElementById('tec-email')?.value.trim() || null,
+      telefone: document.getElementById('tec-tel')?.value.trim() || null,
+      valor_hora: document.getElementById('tec-valor')?.value ? parseFloat(document.getElementById('tec-valor').value) : null,
+      ativo: true
+    });
+    fecharModal('m-novo-tec');
+    toast('Técnico cadastrado!', 'ok');
+    renderTecnicos();
+  } catch(e) { toast('Erro: ' + e.message, 'err'); }
+}
+
+function editarTecnico(id) {
+  const t = tecnicosData.find(x => x.id === id);
+  if (!t) return;
+  document.getElementById('tec-nome').value = t.nome || '';
+  document.getElementById('tec-email').value = t.email || '';
+  document.getElementById('tec-tel').value = t.telefone || '';
+  document.getElementById('tec-valor').value = t.valor_hora != null ? t.valor_hora : '';
+  document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = 'Editar Técnico';
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = 'Salvar';
+  document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = async () => {
+    try {
+      await sbPatch('tecnicos?id=eq.' + id, {
+        nome: document.getElementById('tec-nome').value.trim(),
+        email: document.getElementById('tec-email').value.trim() || null,
+        telefone: document.getElementById('tec-tel').value.trim() || null,
+        valor_hora: document.getElementById('tec-valor').value ? parseFloat(document.getElementById('tec-valor').value) : null
+      });
+      fecharModal('m-novo-tec');
+      toast('Técnico atualizado!', 'ok');
+      renderTecnicos();
+    } catch(e) { toast('Erro: ' + e.message, 'err'); }
+  };
+  abrirModal('m-novo-tec');
 }
 
 // ── KSHCAM ────────────────────────────────────────────────────
@@ -709,7 +803,25 @@ async function salvarEditOS() {
 
 async function deletarOS(id, titulo) {
   if (!confirm('Deletar OS "' + titulo + '"?\nEsta ação não pode ser desfeita.')) return;
+  const os = osData.find(o => o.id === id);
+  let apagarDrive = false;
+  if (os?.drive_folder_id) {
+    apagarDrive = confirm('Esta OS tem uma pasta com fotos no Google Drive.\n\nApagar essa pasta também? (ela vai para a lixeira do Google, não é apagada na hora)\n\nOK = apagar pasta também\nCancelar = manter a pasta no Drive');
+  }
   try {
+    if (apagarDrive) {
+      if (!googleToken) {
+        toast('Google Drive não conectado — a pasta não foi apagada, só a OS', 'err');
+      } else {
+        try {
+          await fetch('https://www.googleapis.com/drive/v3/files/' + os.drive_folder_id, {
+            method: 'PATCH',
+            headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trashed: true })
+          });
+        } catch(e) { console.error(e); toast('Não foi possível apagar a pasta do Drive', 'err'); }
+      }
+    }
     await sbDelete('ordens_servico?id=eq.' + id);
     toast('OS deletada', 'ok');
     carregarOS();
