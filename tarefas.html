@@ -9,15 +9,21 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0d1117;--bg2:#161c26;--bg3:#1c2333;--bg4:#232d40;
-  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
-  --text:#dde3ee;--text2:#7a8799;--text3:#4a5568;
+  --bg:#f5f5f3;
+  --bg2:#ffffff;
+  --bg3:#f0f0ed;
+  --bg4:#e8e8e5;
+  --border:rgba(0,0,0,0.08);
+  --border2:rgba(0,0,0,0.14);
+  --text:#1a1a1a;
+  --text2:#444444;
+  --text3:#888888;
   --red:#e74c3c;--red-bg:rgba(231,76,60,0.1);
-  --green:#22c55e;--green-bg:rgba(34,197,94,0.1);
-  --amber:#f59e0b;--amber-bg:rgba(245,158,11,0.1);
-  --blue:#3b82f6;--blue-bg:rgba(59,130,246,0.1);
-  --purple:#a855f7;--purple-bg:rgba(168,85,247,0.1);
-  --r:10px;--rl:14px;
+  --green:#16a34a;--green-bg:rgba(22,163,74,0.1);
+  --amber:#d97706;--amber-bg:rgba(217,119,6,0.1);
+  --blue:#2563eb;--blue-bg:rgba(37,99,235,0.1);
+  --purple:#7c3aed;--purple-bg:rgba(124,58,237,0.1);
+  --r:8px;--rl:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
@@ -158,7 +164,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min
 
 /* ── RECORRÊNCIA ── */
 .recur-pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;padding:2px 7px;border-radius:99px;background:var(--purple-bg);color:var(--purple);border:1px solid rgba(168,85,247,.25);margin-top:4px}
-.ksh-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:100}
+.ksh-header{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border);background:#ffffff;border-bottom:1px solid #e8e8e5;position:sticky;top:0;z-index:100}
 .ksh-header-left{display:flex;align-items:center;gap:10px}
 .ksh-back{background:none;border:1px solid var(--border);border-radius:8px;color:var(--text2);font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit;transition:all .15s;display:flex;align-items:center;gap:5px}
 .ksh-back:hover{background:var(--bg3);color:var(--text)}
@@ -772,14 +778,14 @@ function gerarPDF(idParam){
 <title>KSH · Tarefa · ${escHtml(t.titulo)}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;background:#f4f4f4;padding:32px}
+body{font-family:Arial,sans-serif;background:var(--bg);padding:32px}
 .page{background:#fff;max-width:720px;margin:0 auto;border-radius:8px;overflow:hidden}
-.ph{background:#0d1117;padding:22px 28px;display:flex;align-items:center;justify-content:space-between}
+.ph{background:var(--bg);padding:22px 28px;display:flex;align-items:center;justify-content:space-between}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-k{width:36px;height:36px;border-radius:8px;overflow:hidden}
-.logo-txt{color:#dde3ee;font-size:14px;font-weight:600}
+.logo-txt{color:var(--text);font-size:14px;font-weight:600}
 .logo-sub{color:#7a8799;font-size:11px;margin-top:2px}
-.badge-done{background:#1c2333;border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:4px 12px;color:#22c55e;font-size:11px;display:flex;align-items:center;gap:5px}
+.badge-done{background:var(--bg3);border:1px solid rgba(34,197,94,.3);border-radius:99px;padding:4px 12px;color:#22c55e;font-size:11px;display:flex;align-items:center;gap:5px}
 .dot{width:6px;height:6px;border-radius:50%;background:#22c55e}
 .body{padding:26px 28px}
 .task-title{font-size:22px;font-weight:700;color:#111;margin-bottom:4px}
@@ -811,7 +817,7 @@ body{font-family:Arial,sans-serif;background:#f4f4f4;padding:32px}
 .sig-role{font-size:10px;color:#999;margin-top:2px}
 .footer{background:#f5f5f5;border-top:1px solid #eee;padding:10px 28px;display:flex;justify-content:space-between}
 .ft{font-size:10px;color:#aaa}
-@media print{body{background:#fff;padding:0}.page{border-radius:0}}
+@media print{body{background:var(--bg);padding:0}.page{border-radius:0}}
 </style></head><body>
 <div class="page">
   <div class="ph">
