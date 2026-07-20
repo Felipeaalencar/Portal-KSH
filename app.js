@@ -347,6 +347,8 @@ const I18N = {
   tarefa_titulo_ph: { en: 'Ex: Call the Aqua Vista client', pt: 'Ex: Ligar pro cliente da Aqua Vista' },
   tarefa_titulo_obrigatorio: { en: 'Enter a title', pt: 'Preencha o título' },
   label_cliente_opcional: { en: 'Client (optional)', pt: 'Cliente (opcional)' },
+  label_descricao_tarefa: { en: 'Activity description (optional)', pt: 'Descrição da atividade (opcional)' },
+  tarefa_descricao_ph: { en: 'Details that help whoever does the task...', pt: 'Detalhes que ajudam quem for executar a tarefa...' },
   label_data: { en: 'Date', pt: 'Data' },
   tarefa_add_agenda: { en: 'Also add to the technician\'s Google Calendar', pt: 'Adicionar também na agenda (Google Calendar) do técnico' },
   tarefa_agenda_sucesso: { en: 'Added to Google Calendar', pt: 'Adicionado na agenda (Google Calendar)' },
@@ -1996,6 +1998,7 @@ function tarefaCardHTML(t) {
     + (t.os_gerada_numero ? '<div style="font-size:10px;color:#166534;margin-top:4px">' + tr('tarefa_os_gerada_badge').replace('NUM', t.os_gerada_numero) + '</div>' : '')
     + (t.prazo ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.prazo + (t.hora ? ' ' + String(t.hora).slice(0,5) + (t.hora_fim ? '-' + String(t.hora_fim).slice(0,5) : '') : '') + (t.calendar_event_id ? ' ✓' : '') + '</div>' : '')
     + (t.cliente_nome ? '<div style="font-size:11px;color:#888;margin-top:2px">' + t.cliente_nome + '</div>' : '')
+    + (t.descricao ? '<div style="font-size:11px;color:#555;margin-top:6px;padding:6px 8px;background:#f7f7f5;border-radius:6px;white-space:pre-wrap;line-height:1.4">' + t.descricao + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0">'
     + '<button onclick="toggleTarefaNotas(\'' + t.id + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">📝 ' + notasCount + '</button>'
     + (!t.os_gerada_numero ? '<button onclick="abrirNovaOSDeTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;cursor:pointer">' + tr('tarefa_gerar_os') + '</button>' : '')
@@ -2137,6 +2140,7 @@ async function abrirNovaTarefa() {
   document.getElementById('nt-data').value = '';
   document.getElementById('nt-hora').value = '';
   document.getElementById('nt-hora-fim').value = '';
+  document.getElementById('nt-descricao').value = '';
   document.getElementById('nt-agenda').checked = false;
   ntTecnicosSelecionados = [];
   if (!tarefasTecnicosLista.length) {
@@ -2158,6 +2162,7 @@ async function abrirEditarTarefa(id) {
   document.getElementById('nt-data').value = t.prazo || '';
   document.getElementById('nt-hora').value = t.hora ? String(t.hora).slice(0,5) : '';
   document.getElementById('nt-hora-fim').value = t.hora_fim ? String(t.hora_fim).slice(0,5) : '';
+  document.getElementById('nt-descricao').value = t.descricao || '';
   document.getElementById('nt-agenda').checked = false;
   ntTecnicosSelecionados = (t.tecnicos || []).slice();
   if (!tarefasTecnicosLista.length) {
@@ -2176,19 +2181,20 @@ async function salvarNovaTarefa() {
   const prazo = document.getElementById('nt-data')?.value || null;
   const hora = document.getElementById('nt-hora')?.value || null;
   const hora_fim = document.getElementById('nt-hora-fim')?.value || null;
+  const descricao = document.getElementById('nt-descricao')?.value.trim() || '';
   const querAgenda = document.getElementById('nt-agenda')?.checked;
 
   if (tarefaEditandoId) {
     const id = tarefaEditandoId;
     try {
       await sbPatch('tarefas?id=eq.' + id, {
-        titulo, tecnicos, responsavel: tecnicos.join(', ') || '', cliente_nome, prazo, hora, hora_fim
+        titulo, tecnicos, responsavel: tecnicos.join(', ') || '', cliente_nome, prazo, hora, hora_fim, descricao
       });
       fecharModal('m-nova-tarefa');
       toast(tr('tarefa_atualizada'), 'ok');
       const t = tarefasData.find(x => x.id === id);
       const jaTinhaAgenda = t && t.calendar_event_id;
-      if (t) { t.titulo = titulo; t.tecnicos = tecnicos; t.cliente_nome = cliente_nome; t.prazo = prazo; t.hora = hora; t.hora_fim = hora_fim; }
+      if (t) { t.titulo = titulo; t.tecnicos = tecnicos; t.cliente_nome = cliente_nome; t.prazo = prazo; t.hora = hora; t.hora_fim = hora_fim; t.descricao = descricao; }
       renderTarefasBoard();
       if (document.getElementById('agenda-grade')) renderAgendaGrade();
       if (jaTinhaAgenda && prazo) {
@@ -2204,7 +2210,7 @@ async function salvarNovaTarefa() {
     const ordem = tarefasData.filter(t => tarefaColuna(t) === 'media').length;
     const [nova] = await sbPost('tarefas', {
       titulo, tecnicos, responsavel: tecnicos.join(', ') || '',
-      cliente_nome, prazo, hora, hora_fim, status: 'pendente', prioridade: 'media', ordem,
+      cliente_nome, prazo, hora, hora_fim, descricao, status: 'pendente', prioridade: 'media', ordem,
       origem: 'manual', criado_por: ME.nome
     });
     fecharModal('m-nova-tarefa');
@@ -2276,6 +2282,7 @@ async function abrirNovaOSDeTarefa(tarefaId) {
   await abrirNovaOS();
   tarefaOrigemOS = tarefaId;
   document.getElementById('os-titulo').value = t.titulo;
+  if (t.descricao) document.getElementById('os-desc').value = t.descricao;
   if (t.tecnicos && t.tecnicos.length) {
     osTecnicosSelecionados = t.tecnicos.slice();
     renderOsTecnicoChips();
