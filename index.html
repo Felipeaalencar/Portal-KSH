@@ -597,14 +597,25 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 
 <!-- Modal Novo Cliente (aba Clientes) -->
 <div class="modal-bg" id="m-novo-cli-crm">
-  <div class="modal-box" style="width:460px">
+  <div class="modal-box" style="width:520px">
     <div class="modal-hd"><span class="modal-hd-title" data-i18n="modal_novo_cliente">Novo Cliente</span><button class="modal-close" onclick="fecharModal('m-novo-cli-crm')">×</button></div>
     <label class="f-lbl" data-i18n="label_nome_completo">Nome completo *</label><input class="f-inp" id="crm-cli-nome" placeholder="Nome completo" data-i18n-placeholder="nome_completo_ph">
+    <label class="f-lbl" data-i18n="label_cnpj_cpf">CNPJ/CPF</label><input class="f-inp" id="crm-cli-cnpj" placeholder="CNPJ/CPF" data-i18n-placeholder="label_cnpj_cpf">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_cidade">Cidade</label><input class="f-inp" id="crm-cli-cidade" placeholder="Cidade" data-i18n-placeholder="label_cidade"></div>
+      <div style="width:90px"><label class="f-lbl" data-i18n="label_uf">UF</label><input class="f-inp" id="crm-cli-uf" placeholder="UF" maxlength="2" style="text-transform:uppercase"></div>
+    </div>
     <label class="f-lbl" data-i18n="label_email_req">Email *</label><input class="f-inp" id="crm-cli-email" type="email" placeholder="email@exemplo.com" data-i18n-placeholder="email_ph">
     <label class="f-lbl" data-i18n="label_tel_req">Telefone *</label><input class="f-inp" id="crm-cli-tel" placeholder="Ex: +55 11 91234-5678 ou (555) 000-0000" data-i18n-placeholder="tel_ph">
     <label class="f-lbl" data-i18n="label_end_req">Endereço *</label><input class="f-inp" id="crm-cli-end" placeholder="Endereço completo" data-i18n-placeholder="end_ph">
     <label class="f-lbl" data-i18n="label_equipamentos">Equipamentos</label><input class="f-inp" id="crm-cli-equip" placeholder="Ex: Control4, Lutron..." data-i18n-placeholder="equipamentos_ph">
     <label class="f-lbl" data-i18n="label_observacoes">Observações</label><textarea class="f-ta" id="crm-cli-obs" placeholder="Observações..." data-i18n-placeholder="observacoes_ph"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:10px;cursor:pointer">
+      <input type="checkbox" id="crm-cli-contrato"><span data-i18n="label_tem_contrato">Possui contrato ativo</span>
+    </label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="crm-cli-ativo" checked><span data-i18n="label_cliente_ativo">Cliente ativo</span>
+    </label>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-novo-cli-crm')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarClienteCRM()" data-i18n="btn_cadastrar">Cadastrar</button>

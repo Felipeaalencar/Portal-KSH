@@ -124,6 +124,33 @@ const I18N = {
   clientes_th_tel: { en: 'Phone', pt: 'Telefone' },
   clientes_th_end: { en: 'Address', pt: 'Endereço' },
   clientes_th_acoes: { en: 'Actions', pt: 'Ações' },
+  clientes_th_cnpj: { en: 'CNPJ/CPF', pt: 'CNPJ/CPF' },
+  clientes_th_cidade: { en: 'City/State', pt: 'Cidade/UF' },
+  clientes_th_ultima_os: { en: 'Last service', pt: 'Última OS' },
+  clientes_th_contrato: { en: 'Contract', pt: 'Contrato' },
+  clientes_th_status: { en: 'Status', pt: 'Status' },
+  clientes_filtro_ativos: { en: 'Active', pt: 'Ativos' },
+  clientes_filtro_inativos: { en: 'Inactive', pt: 'Inativos' },
+  clientes_filtro_todos: { en: 'All', pt: 'Todos' },
+  clientes_filtro_contrato_todos: { en: 'With or without contract', pt: 'Com ou sem contrato' },
+  clientes_filtro_com_contrato: { en: 'With contract', pt: 'Com contrato' },
+  clientes_filtro_sem_contrato: { en: 'Without contract', pt: 'Sem contrato' },
+  clientes_kpi_total: { en: 'Total clients', pt: 'Total de clientes' },
+  clientes_kpi_ativos: { en: 'Active', pt: 'Ativos' },
+  clientes_kpi_contrato: { en: 'With contract', pt: 'Com contrato' },
+  clientes_kpi_risco: { en: 'No service 90+ days (at risk)', pt: 'Sem OS há +90d (risco de perda)' },
+  clientes_sem_os: { en: 'No service yet', pt: 'Sem OS' },
+  clientes_recente: { en: 'Recent', pt: 'Recente' },
+  cliente_status_ativo: { en: 'Active', pt: 'Ativo' },
+  cliente_status_inativo: { en: 'Inactive', pt: 'Inativo' },
+  label_cnpj_cpf: { en: 'CNPJ/CPF', pt: 'CNPJ/CPF' },
+  label_cidade: { en: 'City', pt: 'Cidade' },
+  label_uf: { en: 'State (UF)', pt: 'UF' },
+  label_tem_contrato: { en: 'Has an active contract', pt: 'Possui contrato ativo' },
+  label_cliente_ativo: { en: 'Active client', pt: 'Cliente ativo' },
+  sim: { en: 'Yes', pt: 'Sim' },
+
+
   clientes_none_found: { en: 'No clients found', pt: 'Nenhum cliente encontrado' },
   btn_novo_cliente: { en: '+ New Client', pt: '+ Novo Cliente' },
   clientes_subtitle: { en: 'Client base with full history and details', pt: 'Base de clientes com histórico e dados completos' },
@@ -804,7 +831,7 @@ function getActions(id) {
   const m = {
     'kshcam': '<button class="btn-sec" onclick="loadModule(\'kshcam\')">' + tr('btn_atualizar') + '</button><button class="btn-pri" onclick="abrirNovaOS()">' + tr('btn_nova_os') + '</button>',
     'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">' + tr('btn_novo_tecnico') + '</button>',
-    'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">' + tr('btn_novo_cliente') + '</button>',
+    'crm-clientes': '<button class="btn-pri" onclick="abrirNovoClienteCRM()">' + tr('btn_novo_cliente') + '</button>',
     'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
     'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
@@ -867,43 +894,129 @@ function loadModule(id) {
 
 // ── CLIENTES ──────────────────────────────────────────────────
 let clientesData = [];
+let clientesUltimaOSMap = {};
 
 async function renderClientes() {
   const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    const [clientes, osConcluidas] = await Promise.all([
+      sbGet('clientes?order=nome'),
+      sbGet('ordens_servico?status=eq.concluida&select=cliente_nome,cliente,concluida_em,created_at')
+    ]);
+    clientesData = clientes;
+    clientesUltimaOSMap = {};
+    osConcluidas.forEach(o => {
+      const nome = (o.cliente_nome || o.cliente || '').trim().toLowerCase();
+      const data = o.concluida_em || o.created_at;
+      if (!nome || !data) return;
+      if (!clientesUltimaOSMap[nome] || new Date(data) > new Date(clientesUltimaOSMap[nome])) {
+        clientesUltimaOSMap[nome] = data;
+      }
+    });
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+
   el.innerHTML = `
-  <div style="display:flex;gap:8px;margin-bottom:14px">
-    <input placeholder="${tr('clientes_search_ph')}" style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-busca" oninput="filtrarClientes()">
+  <div class="kpis kpis-4" style="margin-bottom:14px" id="cli-kpis"></div>
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <input placeholder="${tr('clientes_search_ph')}" style="flex:1;min-width:180px;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="cli-busca" oninput="filtrarClientes()">
+    <select id="cli-filtro-status" onchange="filtrarClientes()" style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none">
+      <option value="ativos">${tr('clientes_filtro_ativos')}</option>
+      <option value="inativos">${tr('clientes_filtro_inativos')}</option>
+      <option value="todos">${tr('clientes_filtro_todos')}</option>
+    </select>
+    <select id="cli-filtro-contrato" onchange="filtrarClientes()" style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none">
+      <option value="todos">${tr('clientes_filtro_contrato_todos')}</option>
+      <option value="com">${tr('clientes_filtro_com_contrato')}</option>
+      <option value="sem">${tr('clientes_filtro_sem_contrato')}</option>
+    </select>
   </div>
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('clientes_th_end')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
-      <tbody id="cli-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">${tr('loading')}</td></tr></tbody>
+      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('clientes_th_cnpj')}</th><th>${tr('clientes_th_cidade')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_ultima_os')}</th><th>${tr('clientes_th_contrato')}</th><th>${tr('clientes_th_status')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
+      <tbody id="cli-tbody"></tbody>
     </table>
   </div>`;
-  try {
-    clientesData = await sbGet('clientes?ativo=eq.true&order=nome');
-    renderTabelaClientes(clientesData);
-  } catch(e) {
-    document.getElementById('cli-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</td></tr>';
-  }
+  renderKpisClientes();
+  filtrarClientes();
+}
+
+function renderKpisClientes() {
+  const el = document.getElementById('cli-kpis');
+  if (!el) return;
+  const total = clientesData.length;
+  const ativos = clientesData.filter(c => c.ativo).length;
+  const comContrato = clientesData.filter(c => c.tem_contrato).length;
+  const agora = Date.now();
+  const risco = clientesData.filter(c => {
+    if (!c.ativo) return false;
+    const ultima = clientesUltimaOSMap[(c.nome||'').trim().toLowerCase()];
+    if (!ultima) return true;
+    return (agora - new Date(ultima).getTime()) / 86400000 > 90;
+  }).length;
+  el.innerHTML = '<div class="kpi"><div class="kpi-l">' + tr('clientes_kpi_total') + '</div><div class="kpi-v">' + total + '</div></div>'
+    + '<div class="kpi"><div class="kpi-l">' + tr('clientes_kpi_ativos') + '</div><div class="kpi-v" style="color:#16a34a">' + ativos + '</div></div>'
+    + '<div class="kpi"><div class="kpi-l">' + tr('clientes_kpi_contrato') + '</div><div class="kpi-v">' + comContrato + '</div></div>'
+    + '<div class="kpi"><div class="kpi-l">' + tr('clientes_kpi_risco') + '</div><div class="kpi-v" style="color:#e74c3c">' + risco + '</div></div>';
 }
 
 function filtrarClientes() {
   const q = (document.getElementById('cli-busca')?.value || '').toLowerCase();
-  renderTabelaClientes(q ? clientesData.filter(c => (c.nome||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.telefone||'').toLowerCase().includes(q)) : clientesData);
+  const fStatus = document.getElementById('cli-filtro-status')?.value || 'ativos';
+  const fContrato = document.getElementById('cli-filtro-contrato')?.value || 'todos';
+  const lista = clientesData.filter(c => {
+    if (fStatus === 'ativos' && !c.ativo) return false;
+    if (fStatus === 'inativos' && c.ativo) return false;
+    if (fContrato === 'com' && !c.tem_contrato) return false;
+    if (fContrato === 'sem' && c.tem_contrato) return false;
+    if (q && !((c.nome||'').toLowerCase().includes(q) || (c.cnpj_cpf||'').toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.telefone||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  renderTabelaClientes(lista);
 }
 
 function renderTabelaClientes(lista) {
   const tb = document.getElementById('cli-tbody');
   if (!tb) return;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">' + tr('clientes_none_found') + '</td></tr>'; return; }
-  tb.innerHTML = lista.map(c => `<tr>
-    <td style="font-weight:500">${c.nome||'—'}</td>
-    <td>${c.email||'—'}</td>
-    <td>${c.telefone||'—'}</td>
-    <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.endereco||'—'}</td>
-    <td><button onclick="editarCliente('${c.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button></td>
-  </tr>`).join('');
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:#bbb">' + tr('clientes_none_found') + '</td></tr>'; return; }
+  const agora = Date.now();
+  tb.innerHTML = lista.map(c => {
+    const ultima = clientesUltimaOSMap[(c.nome||'').trim().toLowerCase()];
+    let ultimaHTML;
+    if (!ultima) {
+      ultimaHTML = '<span style="color:#bbb;font-style:italic">' + tr('clientes_sem_os') + '</span>';
+    } else {
+      const dias = Math.floor((agora - new Date(ultima).getTime()) / 86400000);
+      const meses = Math.round(dias / 30);
+      const risco = dias > 90;
+      ultimaHTML = '<span style="' + (risco ? 'color:#e74c3c;font-weight:600' : 'color:#555') + '">' + (meses <= 0 ? tr('clientes_recente') : meses + 'm') + '</span>';
+    }
+    return '<tr>'
+      + '<td style="font-weight:500">' + (c.nome||'—') + '</td>'
+      + '<td>' + (c.cnpj_cpf||'—') + '</td>'
+      + '<td>' + ([c.cidade, c.uf].filter(Boolean).join('/') || '—') + '</td>'
+      + '<td>' + (c.telefone||'—') + '</td>'
+      + '<td>' + (c.email||'—') + '</td>'
+      + '<td>' + ultimaHTML + '</td>'
+      + '<td>' + (c.tem_contrato ? '<span style="font-size:10px;padding:2px 8px;border-radius:99px;background:#f0fdf4;color:#166534">' + tr('sim') + '</span>' : '—') + '</td>'
+      + '<td><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:' + (c.ativo?'#f0fdf4':'#f5f5f3') + ';color:' + (c.ativo?'#166534':'#888') + '">' + (c.ativo?tr('cliente_status_ativo'):tr('cliente_status_inativo')) + '</span></td>'
+      + '<td><button onclick="editarCliente(\'' + c.id + '\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">' + tr('btn_editar') + '</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function abrirNovoClienteCRM() {
+  ['crm-cli-nome','crm-cli-cnpj','crm-cli-cidade','crm-cli-uf','crm-cli-email','crm-cli-tel','crm-cli-end','crm-cli-equip','crm-cli-obs'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('crm-cli-contrato').checked = false;
+  document.getElementById('crm-cli-ativo').checked = true;
+  document.getElementById('m-novo-cli-crm').querySelector('.modal-hd-title').textContent = tr('modal_novo_cliente');
+  const btn = document.getElementById('m-novo-cli-crm').querySelector('.btn-pri');
+  btn.textContent = tr('btn_cadastrar');
+  btn.onclick = salvarClienteCRM;
+  abrirModal('m-novo-cli-crm');
 }
 
 async function salvarClienteCRM() {
@@ -913,7 +1026,16 @@ async function salvarClienteCRM() {
   const endereco = document.getElementById('crm-cli-end')?.value.trim();
   if (!nome||!email||!telefone||!endereco) { toast(tr('cliente_required_fields'),'err'); return; }
   try {
-    await sbPost('clientes', { nome, email, telefone, endereco, equipamentos: document.getElementById('crm-cli-equip')?.value.trim()||null, observacoes: document.getElementById('crm-cli-obs')?.value.trim()||null, ativo: true });
+    await sbPost('clientes', {
+      nome, email, telefone, endereco,
+      cnpj_cpf: document.getElementById('crm-cli-cnpj')?.value.trim()||null,
+      cidade: document.getElementById('crm-cli-cidade')?.value.trim()||null,
+      uf: document.getElementById('crm-cli-uf')?.value.trim().toUpperCase()||null,
+      equipamentos: document.getElementById('crm-cli-equip')?.value.trim()||null,
+      observacoes: document.getElementById('crm-cli-obs')?.value.trim()||null,
+      tem_contrato: !!document.getElementById('crm-cli-contrato')?.checked,
+      ativo: document.getElementById('crm-cli-ativo')?.checked !== false
+    });
     fecharModal('m-novo-cli-crm');
     toast(tr('cliente_cadastrado'), 'ok');
     renderClientes();
@@ -924,21 +1046,33 @@ function editarCliente(id) {
   const c = clientesData.find(x => x.id === id);
   if (!c) return;
   document.getElementById('crm-cli-nome').value = c.nome||'';
+  document.getElementById('crm-cli-cnpj').value = c.cnpj_cpf||'';
+  document.getElementById('crm-cli-cidade').value = c.cidade||'';
+  document.getElementById('crm-cli-uf').value = c.uf||'';
   document.getElementById('crm-cli-email').value = c.email||'';
   document.getElementById('crm-cli-tel').value = c.telefone||'';
   document.getElementById('crm-cli-end').value = c.endereco||'';
   document.getElementById('crm-cli-equip').value = c.equipamentos||'';
   document.getElementById('crm-cli-obs').value = c.observacoes||'';
+  document.getElementById('crm-cli-contrato').checked = !!c.tem_contrato;
+  document.getElementById('crm-cli-ativo').checked = c.ativo !== false;
   document.getElementById('m-novo-cli-crm').querySelector('.modal-hd-title').textContent = tr('modal_editar_cliente');
-  document.getElementById('m-novo-cli-crm').querySelector('.btn-pri').onclick = async () => {
+  const btn = document.getElementById('m-novo-cli-crm').querySelector('.btn-pri');
+  btn.textContent = tr('btn_salvar');
+  btn.onclick = async () => {
     try {
       await sbPatch('clientes?id=eq.' + id, {
         nome: document.getElementById('crm-cli-nome').value.trim(),
+        cnpj_cpf: document.getElementById('crm-cli-cnpj').value.trim()||null,
+        cidade: document.getElementById('crm-cli-cidade').value.trim()||null,
+        uf: document.getElementById('crm-cli-uf').value.trim().toUpperCase()||null,
         email: document.getElementById('crm-cli-email').value.trim(),
         telefone: document.getElementById('crm-cli-tel').value.trim(),
         endereco: document.getElementById('crm-cli-end').value.trim(),
         equipamentos: document.getElementById('crm-cli-equip').value.trim()||null,
-        observacoes: document.getElementById('crm-cli-obs').value.trim()||null
+        observacoes: document.getElementById('crm-cli-obs').value.trim()||null,
+        tem_contrato: !!document.getElementById('crm-cli-contrato').checked,
+        ativo: document.getElementById('crm-cli-ativo').checked
       });
       fecharModal('m-novo-cli-crm');
       toast(tr('cliente_atualizado'),'ok');
@@ -1739,10 +1873,11 @@ async function concluirOS(osId) {
 
 async function finalizarStatusConcluido(osId) {
   try {
-    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'concluida' });
+    const agora = new Date().toISOString();
+    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'concluida', concluida_em: agora });
     try { await sbPatch('tarefas?os_gerada_id=eq.' + osId, { status: 'concluida' }); } catch(e2) {}
     const os = osData.find(o => o.id === osId);
-    if (os) os.status = 'concluida';
+    if (os) { os.status = 'concluida'; os.concluida_em = agora; }
     toast(tr('os_concluida_sucesso'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
@@ -1751,10 +1886,10 @@ async function finalizarStatusConcluido(osId) {
 async function reabrirOS(osId) {
   if (!confirm(tr('os_reabrir_confirm'))) return;
   try {
-    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'em_campo' });
+    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'em_campo', concluida_em: null });
     try { await sbPatch('tarefas?os_gerada_id=eq.' + osId, { status: 'pendente' }); } catch(e2) {}
     const os = osData.find(o => o.id === osId);
-    if (os) os.status = 'em_campo';
+    if (os) { os.status = 'em_campo'; os.concluida_em = null; }
     toast(tr('os_reaberta_sucesso'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
