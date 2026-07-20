@@ -186,6 +186,13 @@ const I18N = {
   resumo_cobranca_label: { en: 'Billing:', pt: 'Cobrança:' },
   resumo_a_cobrar: { en: 'To bill', pt: 'A cobrar' },
   resumo_cobrado: { en: 'Billed', pt: 'Cobrado' },
+  resumo_todos: { en: 'All', pt: 'Todos' },
+  nav_rentabilidade: { en: 'Profitability by OS', pt: 'Rentabilidade por OS' },
+  rentabilidade_subtitle: { en: 'Quoted value vs real cost, by work order', pt: 'Valor orçado x custo real, por ordem de serviço' },
+  rentabilidade_vazio: { en: 'No completed work order found for this filter', pt: 'Nenhuma OS concluída encontrada para esse filtro' },
+  rent_th_os: { en: 'OS', pt: 'OS' },
+  rent_th_cliente: { en: 'Client', pt: 'Cliente' },
+  rent_total_periodo: { en: 'Period total', pt: 'Total do período' },
   resumo_mao_obra: { en: 'Labor', pt: 'Mão de obra' },
   resumo_sem_valor_hora: { en: 'no hourly rate set', pt: 'sem valor/hora cadastrado' },
   resumo_sem_dias: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
@@ -719,6 +726,7 @@ function getActions(id) {
     'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
     'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
+    'fin-rentabilidade': '<button class="btn-sec" onclick="loadModule(\'fin-rentabilidade\')">' + tr('btn_atualizar') + '</button>',
   };
   return m[id] || '';
 }
@@ -733,6 +741,7 @@ function getSubtitle(id) {
     'agenda': tr('agenda_subtitle'),
     'ferramentas': tr('sub_ferramentas'),
     'documentos': tr('sub_documentos'),
+    'fin-rentabilidade': tr('rentabilidade_subtitle'),
   };
   return m[id] || '';
 }
@@ -767,6 +776,7 @@ function loadModule(id) {
   else if (id === 'tecnicos') renderTecnicos();
   else if (id === 'tarefas') renderTarefas();
   else if (id === 'agenda') renderAgenda();
+  else if (id === 'fin-rentabilidade') renderRentabilidadeOS();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -3265,6 +3275,116 @@ function renderAgendaGrade() {
 }
 
 
+
+// FINANCEIRO: Rentabilidade por OS
+let rentabilidadeData = { os: [], dias: [], gastos: [], tecnicos: [] };
+let rentFiltroCobranca = 'todos';
+let rentFiltroTecnico = 'todos';
+
+async function renderRentabilidadeOS() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    const [os, dias, gastos, tecnicos] = await Promise.all([
+      sbGet('ordens_servico?order=numero.desc'),
+      sbGet('os_dias?order=data.asc'),
+      sbGet('os_gastos?order=criado_em.desc'),
+      sbGet('tecnicos?order=nome')
+    ]);
+    rentabilidadeData = { os, dias, gastos, tecnicos };
+    osData = os;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+
+  rentFiltroCobranca = 'todos';
+  rentFiltroTecnico = 'todos';
+
+  el.innerHTML = '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;align-items:center">'
+    + '<div id="rent-filtro-cobranca" style="display:flex;gap:6px"></div>'
+    + '<div id="rent-filtro-tecnico" style="display:flex;gap:6px;flex-wrap:wrap"></div>'
+    + '</div>'
+    + '<div id="rent-tabela"></div>';
+
+  renderRentabilidadeTabela();
+}
+
+function rentToggleCobranca(v) { rentFiltroCobranca = v; renderRentabilidadeTabela(); }
+function rentToggleTecnico(nome) { rentFiltroTecnico = (rentFiltroTecnico === nome) ? 'todos' : nome; renderRentabilidadeTabela(); }
+
+function renderRentabilidadeTabela() {
+  const { os, dias, gastos, tecnicos } = rentabilidadeData;
+
+  const filtroEl = document.getElementById('rent-filtro-cobranca');
+  if (filtroEl) filtroEl.innerHTML = ['todos','a_cobrar','cobrado'].map(v =>
+    chipTecnicoHTML(v, v==='todos'?tr('resumo_todos'):(v==='a_cobrar'?tr('resumo_a_cobrar'):tr('resumo_cobrado')), rentFiltroCobranca===v, 'rentToggleCobranca')
+  ).join('');
+  const filtroTecEl = document.getElementById('rent-filtro-tecnico');
+  if (filtroTecEl) filtroTecEl.innerHTML = tecnicos.map(t =>
+    chipTecnicoHTML(t.nome, t.nome, rentFiltroTecnico===t.nome, 'rentToggleTecnico')
+  ).join('');
+
+  let linhasOS = os.filter(o => o.status === 'concluida');
+  if (rentFiltroCobranca !== 'todos') linhasOS = linhasOS.filter(o => (o.status_cobranca||'a_cobrar') === rentFiltroCobranca);
+
+  let linhas = linhasOS.map(o => {
+    const diasOS = dias.filter(d => d.os_id === o.id);
+    const gastosOS = gastos.filter(g => g.os_id === o.id);
+    const r = calcularResumoValores(diasOS, gastosOS, tecnicos);
+    const tecsDaOS = new Set();
+    diasOS.forEach(d => (d.tecnicos||[]).forEach(n => tecsDaOS.add(n)));
+    return { os: o, resumo: r, tecnicos: Array.from(tecsDaOS) };
+  });
+  if (rentFiltroTecnico !== 'todos') linhas = linhas.filter(l => l.tecnicos.includes(rentFiltroTecnico));
+
+  const tabela = document.getElementById('rent-tabela');
+  if (!tabela) return;
+  if (!linhas.length) { tabela.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:30px">' + tr('rentabilidade_vazio') + '</div>'; return; }
+
+  let totalOrcado = 0, totalCusto = 0;
+
+  let html = '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px">';
+  html += '<tr style="background:#f5f5f3;text-align:left">'
+    + '<th style="padding:8px 10px">' + tr('rent_th_os') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('rent_th_cliente') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('label_valor_orcado') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('resumo_custo_real') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('resumo_margem') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('resumo_cobranca_label') + '</th>'
+    + '</tr>';
+
+  linhas.forEach(l => {
+    const orcado = l.os.valor_orcado != null ? Number(l.os.valor_orcado) : null;
+    const custo = l.resumo.totalGeral;
+    totalCusto += custo;
+    if (orcado != null) totalOrcado += orcado;
+    const margem = orcado != null ? (orcado - custo) : null;
+    const margemPct = (orcado != null && orcado > 0) ? (margem / orcado * 100) : null;
+    const corMargem = margem == null ? '#888' : (margem >= 0 ? '#166534' : '#991b1b');
+    const cobranca = l.os.status_cobranca || 'a_cobrar';
+    html += '<tr style="border-top:1px solid #f0f0ee;cursor:pointer" onclick="abrirOS(\''+l.os.id+'\')">'
+      + '<td style="padding:8px 10px">#' + (l.os.numero||'—') + '</td>'
+      + '<td style="padding:8px 10px">' + (l.os.cliente_nome||l.os.cliente||'—') + '</td>'
+      + '<td style="padding:8px 10px">' + (orcado != null ? '$'+orcado.toFixed(2) : '—') + '</td>'
+      + '<td style="padding:8px 10px">$' + custo.toFixed(2) + '</td>'
+      + '<td style="padding:8px 10px;color:'+corMargem+';font-weight:600">' + (margem != null ? '$'+margem.toFixed(2) + (margemPct!=null?' ('+margemPct.toFixed(0)+'%)':'') : '—') + '</td>'
+      + '<td style="padding:8px 10px"><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:'+(cobranca==='cobrado'?'#f0fdf4':'#fffbeb')+';color:'+(cobranca==='cobrado'?'#166534':'#92400e')+'">'+(cobranca==='cobrado'?tr('resumo_cobrado'):tr('resumo_a_cobrar'))+'</span></td>'
+      + '</tr>';
+  });
+
+  const totalMargem = totalOrcado - totalCusto;
+  const totalMargemPct = totalOrcado > 0 ? (totalMargem / totalOrcado * 100) : null;
+  html += '<tr style="border-top:2px solid #e8e8e5;font-weight:700;background:#f9f9f7">'
+    + '<td style="padding:8px 10px" colspan="2">' + tr('rent_total_periodo') + '</td>'
+    + '<td style="padding:8px 10px">$' + totalOrcado.toFixed(2) + '</td>'
+    + '<td style="padding:8px 10px">$' + totalCusto.toFixed(2) + '</td>'
+    + '<td style="padding:8px 10px;color:' + (totalMargem>=0?'#166534':'#991b1b') + '">$' + totalMargem.toFixed(2) + (totalMargemPct!=null?' ('+totalMargemPct.toFixed(0)+'%)':'') + '</td>'
+    + '<td></td></tr>';
+
+  html += '</table></div>';
+  tabela.innerHTML = html;
+}
 
 // Nova OS
 let osCliSel = null;
