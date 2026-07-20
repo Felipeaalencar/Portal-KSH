@@ -164,7 +164,17 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784552330" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="app.js?v=1784553359" defer></script>
+<style>
+@media print {
+  body * { visibility: hidden !important; }
+  #m-relatorio-os, #m-relatorio-os *, #m-relatorio-os-content, #m-relatorio-os-content * { visibility: visible !important; }
+  #m-relatorio-os { position: absolute !important; inset: 0 !important; background: #fff !important; display: block !important; padding: 0 !important; }
+  #m-relatorio-os-content { box-shadow: none !important; max-height: none !important; overflow: visible !important; width: 100% !important; max-width: 100% !important; }
+  #relatorio-print-hide { display: none !important; }
+}
+</style>
 </head>
 <body>
 
@@ -552,6 +562,11 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- Modal Relatorio Financeiro da OS -->
+<div class="modal-bg" id="m-relatorio-os">
+  <div style="background:#fff;border-radius:12px;width:820px;max-width:96vw;max-height:92vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)" id="m-relatorio-os-content"></div>
+</div>
 
 </body>
 </html>

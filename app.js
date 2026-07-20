@@ -193,6 +193,9 @@ const I18N = {
   rent_th_os: { en: 'OS', pt: 'OS' },
   rent_th_cliente: { en: 'Client', pt: 'Cliente' },
   rent_total_periodo: { en: 'Period total', pt: 'Total do período' },
+  rel_imprimir: { en: 'Print / Export PDF', pt: 'Imprimir / Exportar PDF' },
+  rel_grafico_orcado_custo: { en: 'Quoted x Real cost', pt: 'Orçado x Custo real' },
+  rel_grafico_composicao: { en: 'Cost breakdown', pt: 'Composição do custo' },
   resumo_mao_obra: { en: 'Labor', pt: 'Mão de obra' },
   resumo_sem_valor_hora: { en: 'no hourly rate set', pt: 'sem valor/hora cadastrado' },
   resumo_sem_dias: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
@@ -3363,7 +3366,7 @@ function renderRentabilidadeTabela() {
     const margemPct = (orcado != null && orcado > 0) ? (margem / orcado * 100) : null;
     const corMargem = margem == null ? '#888' : (margem >= 0 ? '#166534' : '#991b1b');
     const cobranca = l.os.status_cobranca || 'a_cobrar';
-    html += '<tr style="border-top:1px solid #f0f0ee;cursor:pointer" onclick="abrirOS(\''+l.os.id+'\')">'
+    html += '<tr style="border-top:1px solid #f0f0ee;cursor:pointer" onclick="abrirRelatorioFinanceiroOS(\''+l.os.id+'\')">'
       + '<td style="padding:8px 10px">#' + (l.os.numero||'—') + '</td>'
       + '<td style="padding:8px 10px">' + (l.os.cliente_nome||l.os.cliente||'—') + '</td>'
       + '<td style="padding:8px 10px">' + (orcado != null ? '$'+orcado.toFixed(2) : '—') + '</td>'
@@ -3384,6 +3387,120 @@ function renderRentabilidadeTabela() {
 
   html += '</table></div>';
   tabela.innerHTML = html;
+}
+
+let relatorioChartBarras = null;
+let relatorioChartDonut = null;
+
+function abrirRelatorioFinanceiroOS(osId) {
+  const os = rentabilidadeData.os.find(o => o.id === osId) || (typeof osData !== 'undefined' ? osData.find(o => o.id === osId) : null);
+  if (!os) return;
+  const dias = rentabilidadeData.dias.filter(d => d.os_id === osId);
+  const gastos = rentabilidadeData.gastos.filter(g => g.os_id === osId);
+  const tecnicos = rentabilidadeData.tecnicos.length ? rentabilidadeData.tecnicos : tecnicosAtivosCache;
+  const r = calcularResumoValores(dias, gastos, tecnicos);
+
+  const orcado = os.valor_orcado != null ? Number(os.valor_orcado) : null;
+  const margem = orcado != null ? (orcado - r.totalGeral) : null;
+  const margemPct = (orcado != null && orcado > 0) ? (margem / orcado * 100) : null;
+  const corMargem = margem != null ? (margem >= 0 ? '#166534' : '#991b1b') : '#333';
+
+  const datasOrdenadas = dias.map(d => d.data).filter(Boolean).sort();
+  const periodo = datasOrdenadas.length ? (datasOrdenadas[0] + (datasOrdenadas.length > 1 ? ' – ' + datasOrdenadas[datasOrdenadas.length - 1] : '')) : '';
+  const tecsEnvolvidos = Array.from(new Set(dias.flatMap(d => d.tecnicos || [])));
+
+  const content = document.getElementById('m-relatorio-os-content');
+  content.innerHTML = '<div style="padding:20px 24px">'
+    + '<div id="relatorio-print-hide" style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">'
+      + '<button onclick="window.print()" style="font-size:12px;padding:7px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer">🖨️ ' + tr('rel_imprimir') + '</button>'
+      + '<button onclick="fecharModal(\'m-relatorio-os\')" style="background:none;border:none;cursor:pointer;font-size:20px;color:#bbb">×</button>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">'
+      + '<div>'
+        + '<div style="font-size:11px;color:#888">' + tr('os_prefix') + (os.numero||'—') + ' · ' + (S_LABEL[os.status]||os.status) + '</div>'
+        + '<div style="font-size:18px;font-weight:700">' + (os.cliente_nome||os.cliente||'—') + '</div>'
+        + '<div style="font-size:12px;color:#888;margin-top:2px">' + periodo + (tecsEnvolvidos.length ? ' · ' + tecsEnvolvidos.join(', ') : '') + '</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">'
+      + '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:12px 14px">'
+        + '<div style="font-size:11px;color:#888">' + tr('label_valor_orcado') + '</div>'
+        + '<div style="font-size:20px;font-weight:700;margin-top:2px">' + (orcado != null ? '$'+orcado.toFixed(2) : '—') + '</div>'
+      + '</div>'
+      + '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:12px 14px">'
+        + '<div style="font-size:11px;color:#888">' + tr('resumo_custo_real') + '</div>'
+        + '<div style="font-size:20px;font-weight:700;margin-top:2px">$' + r.totalGeral.toFixed(2) + '</div>'
+      + '</div>'
+      + '<div style="border:1px solid ' + (margem!=null ? (margem>=0?'#bbf7d0':'#fecaca') : '#e8e8e5') + ';background:' + (margem!=null ? (margem>=0?'#f0fdf4':'#fef2f2') : '#f5f5f3') + ';border-radius:10px;padding:12px 14px">'
+        + '<div style="font-size:11px;color:' + corMargem + '">' + tr('resumo_margem') + '</div>'
+        + '<div style="font-size:20px;font-weight:700;margin-top:2px;color:' + corMargem + '">' + (margem != null ? '$'+margem.toFixed(2) + (margemPct!=null?' ('+margemPct.toFixed(0)+'%)':'') : '—') + '</div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:' + (orcado != null ? '1.3fr 1fr' : '1fr') + ';gap:16px;margin-bottom:20px">'
+      + (orcado != null
+        ? '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:14px">'
+          + '<div style="font-size:12px;font-weight:600;margin-bottom:8px">' + tr('rel_grafico_orcado_custo') + '</div>'
+          + '<div style="height:160px"><canvas id="relatorio-chart-barras-' + osId + '"></canvas></div>'
+          + '</div>'
+        : '')
+      + '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:14px">'
+        + '<div style="font-size:12px;font-weight:600;margin-bottom:8px">' + tr('rel_grafico_composicao') + '</div>'
+        + '<div style="height:160px"><canvas id="relatorio-chart-donut-' + osId + '"></canvas></div>'
+      + '</div>'
+    + '</div>'
+    + '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:14px;margin-bottom:20px">'
+      + '<div style="font-size:12px;font-weight:600;margin-bottom:10px">' + tr('os_dias_label') + '</div>'
+      + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + (dias.length ? dias.map(d => {
+          const horaTxt = d.hora_inicio ? String(d.hora_inicio).slice(0,5) + (d.hora_fim ? ' - ' + String(d.hora_fim).slice(0,5) : '') : '';
+          const tecs = Array.isArray(d.tecnicos) ? d.tecnicos.join(', ') : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;gap:10px"><span>' + (d.data||'') + (tecs?' · '+tecs:'') + (horaTxt?' · '+horaTxt:'') + '</span><span style="color:#888;text-align:right">' + (d.observacao ? '"'+d.observacao+'"' : '') + '</span></div>';
+        }).join('') : '<div style="font-size:12px;color:#bbb">'+tr('dia_sem_registro')+'</div>')
+      + '</div>'
+    + '</div>'
+    + (os.resumo_ia
+        ? '<div style="border:1px solid #e8e8e5;border-radius:10px;padding:14px">'
+          + '<div style="font-size:12px;font-weight:600;margin-bottom:6px">' + tr('resumo_trabalho_label') + '</div>'
+          + '<div style="font-size:12px;color:#555;line-height:1.5;white-space:pre-wrap">' + os.resumo_ia + '</div>'
+          + '</div>'
+        : '')
+    + '</div>';
+
+  abrirModal('m-relatorio-os');
+
+  setTimeout(() => {
+    if (relatorioChartBarras) { relatorioChartBarras.destroy(); relatorioChartBarras = null; }
+    if (relatorioChartDonut) { relatorioChartDonut.destroy(); relatorioChartDonut = null; }
+
+    if (orcado != null) {
+      const elB = document.getElementById('relatorio-chart-barras-' + osId);
+      if (elB && window.Chart) {
+        relatorioChartBarras = new Chart(elB, {
+          type: 'bar',
+          data: {
+            labels: [tr('label_valor_orcado'), tr('resumo_custo_real')],
+            datasets: [{ data: [orcado, r.totalGeral], backgroundColor: ['#94a3b8', margem != null && margem >= 0 ? '#166534' : '#991b1b'], borderRadius: 6, barThickness: 46 }]
+          },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { callback: v => '$' + v } } } }
+        });
+      }
+    }
+
+    const elD = document.getElementById('relatorio-chart-donut-' + osId);
+    if (elD && window.Chart) {
+      const paleta = ['#3b82f6','#a855f7','#14b8a6','#f59e0b','#ef4444','#6366f1','#ec4899','#84cc16'];
+      const labels = r.porTecnico.filter(t => t.valorHora != null).map(t => t.nome + ' (' + tr('resumo_mao_obra').toLowerCase() + ')');
+      const dados = r.porTecnico.filter(t => t.valorHora != null).map(t => t.subtotal);
+      if (r.totalGastos > 0) { labels.push(tr('os_gastos_label')); dados.push(r.totalGastos); }
+      if (dados.length) {
+        relatorioChartDonut = new Chart(elD, {
+          type: 'doughnut',
+          data: { labels, datasets: [{ data: dados, backgroundColor: paleta, borderWidth: 0 }] },
+          options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10 } } } } }
+        });
+      }
+    }
+  }, 50);
 }
 
 // Nova OS
