@@ -1081,7 +1081,7 @@ function renderTabelaTecnicos(lista) {
     <td>${t.email||'—'}</td>
     <td>${t.telefone||'—'}</td>
     <td>${t.valor_hora != null ? '$' + Number(t.valor_hora).toFixed(2) : '—'}</td>
-    <td style="display:flex;gap:6px"><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button><button onclick="abrirPermissoesFuncionario('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_permissoes')}</button></td>
+    <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button></td>
   </tr>`).join('');
 }
 
@@ -4403,9 +4403,6 @@ const PERMISSOES_ESTRUTURA = [
   { label: 'Registros', itens: [ { id: 'documentos', label: 'Documentos' } ] }
 ];
 
-let permEditandoEmail = null;
-let permEditandoEstado = {};
-
 function temPermissao(pageId) {
   if (pageId === 'inicio') return true;
   if (!ME) return true;
@@ -4422,87 +4419,6 @@ function aplicarPermissoesSidebar() {
     if (pageId === 'inicio' || temPermissao(pageId)) return;
     el.style.display = 'none';
   });
-}
-
-async function abrirPermissoesFuncionario(tecId) {
-  const t = tecnicosData.find(x => x.id === tecId);
-  if (!t) return;
-  document.getElementById('perm-nome').textContent = t.nome;
-  const container = document.getElementById('perm-content');
-  const salvarBtn = document.getElementById('perm-salvar-btn');
-  container.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb">' + tr('loading') + '</div>';
-  salvarBtn.style.display = 'none';
-  permEditandoEmail = null;
-  abrirModal('m-permissoes');
-
-  if (!t.email) {
-    container.innerHTML = '<div style="padding:16px 4px;color:#888;font-size:13px">' + tr('perm_sem_email') + '</div>';
-    return;
-  }
-  try {
-    const rows = await sbGet('usuarios?email=eq.' + encodeURIComponent(t.email) + '&limit=1');
-    const u = rows[0];
-    if (!u) {
-      container.innerHTML = '<div style="padding:16px 4px;color:#888;font-size:13px">' + tr('perm_sem_login') + '</div>';
-      return;
-    }
-    if (u.funcao === 'Gestor') {
-      container.innerHTML = '<div style="padding:12px 14px;background:#eff6ff;border-radius:8px;color:#1d4ed8;font-size:13px">🔒 ' + tr('perm_acesso_total') + '</div>';
-      return;
-    }
-    permEditandoEmail = t.email;
-    permEditandoEstado = {};
-    const permitidas = Array.isArray(u.paginas_permitidas) ? u.paginas_permitidas : [];
-    PERMISSOES_ESTRUTURA.forEach(sec => sec.itens.forEach(it => { permEditandoEstado[it.id] = permitidas.includes(it.id); }));
-    salvarBtn.style.display = 'inline-block';
-    renderArvorePermissoes();
-  } catch(e) {
-    container.innerHTML = '<div style="padding:16px 4px;color:#e74c3c;font-size:13px">' + e.message + '</div>';
-  }
-}
-
-function renderArvorePermissoes() {
-  const container = document.getElementById('perm-content');
-  container.innerHTML = PERMISSOES_ESTRUTURA.map(sec => {
-    const ligados = sec.itens.filter(it => permEditandoEstado[it.id]).length;
-    const total = sec.itens.length;
-    return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
-      + '<div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="togglePermSecao(\'' + sec.label + '\')">'
-      + '<input type="checkbox" ' + (ligados === total ? 'checked' : '') + ' onclick="event.stopPropagation();togglePermSecao(\'' + sec.label + '\')">'
-      + '<span style="font-size:12px;font-weight:600;flex:1">' + sec.label + '</span>'
-      + '<span style="font-size:11px;color:#999">' + ligados + '/' + total + '</span>'
-      + '</div>'
-      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2px 10px;margin-top:8px;padding-left:2px">'
-      + sec.itens.map(it => '<label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#555;padding:2px 0;cursor:pointer">'
-          + '<input type="checkbox" ' + (permEditandoEstado[it.id] ? 'checked' : '') + ' onchange="togglePermItem(\'' + it.id + '\')">' + it.label + '</label>').join('')
-      + '</div></div>';
-  }).join('');
-}
-
-function togglePermItem(id) {
-  permEditandoEstado[id] = !permEditandoEstado[id];
-  renderArvorePermissoes();
-}
-
-function togglePermSecao(label) {
-  const sec = PERMISSOES_ESTRUTURA.find(s => s.label === label);
-  if (!sec) return;
-  const todosOn = sec.itens.every(it => permEditandoEstado[it.id]);
-  sec.itens.forEach(it => { permEditandoEstado[it.id] = !todosOn; });
-  renderArvorePermissoes();
-}
-
-async function salvarPermissoes() {
-  if (!permEditandoEmail) return;
-  const paginas = Object.keys(permEditandoEstado).filter(id => permEditandoEstado[id]);
-  const btn = document.getElementById('perm-salvar-btn');
-  if (btn) { btn.disabled = true; btn.textContent = tr('os_gerando'); }
-  try {
-    await sbPatch('usuarios?email=eq.' + encodeURIComponent(permEditandoEmail), { paginas_permitidas: paginas });
-    toast(tr('perm_salvo'), 'ok');
-    fecharModal('m-permissoes');
-  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = tr('btn_salvar'); } }
 }
 
 // ── INIT ──────────────────────────────────────────────────────
