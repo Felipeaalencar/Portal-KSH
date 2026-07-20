@@ -2829,7 +2829,18 @@ async function salvarGasto() {
 async function excluirGasto(gastoId, osId) {
   if (!confirm(tr('gasto_excluir_confirm'))) return;
   try {
+    let fotoDriveId = null;
+    try { const rows = await sbGet('os_gastos?id=eq.' + gastoId + '&select=foto_drive_id'); fotoDriveId = rows[0]?.foto_drive_id || null; } catch(e2) {}
     await sbDelete('os_gastos?id=eq.' + gastoId);
+    if (fotoDriveId && googleToken) {
+      try {
+        await fetch('https://www.googleapis.com/drive/v3/files/' + fotoDriveId, {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trashed: true })
+        });
+      } catch(e3) {}
+    }
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
@@ -5308,7 +5319,18 @@ async function salvarDocumento() {
 async function excluirDocumento(id) {
   if (!confirm(tr('doc_excluir_confirm'))) return;
   try {
+    const doc = documentosData.find(d => d.id === id);
+    const driveId = doc?.arquivo_drive_id || null;
     await sbDelete('documentos?id=eq.' + id);
+    if (driveId && googleToken) {
+      try {
+        await fetch('https://www.googleapis.com/drive/v3/files/' + driveId, {
+          method: 'PATCH',
+          headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ trashed: true })
+        });
+      } catch(e2) {}
+    }
     toast(tr('doc_excluido'), 'ok');
     renderDocumentos();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
