@@ -173,6 +173,8 @@ const I18N = {
   nota_atualizada: { en: 'Note updated', pt: 'Anotação atualizada' },
   nota_excluir_confirm: { en: 'Delete this note?', pt: 'Excluir essa anotação?' },
   nota_excluida: { en: 'Note deleted', pt: 'Anotação excluída' },
+  label_horario_dia: { en: 'Start time / End time', pt: 'Hora início / Hora fim' },
+
 
 
 
