@@ -150,6 +150,52 @@ const I18N = {
   label_cliente_ativo: { en: 'Active client', pt: 'Cliente ativo' },
   sim: { en: 'Yes', pt: 'Sim' },
 
+  // Orçamentos module
+  orc_subtitle: { en: 'Proposal pipeline by status', pt: 'Pipeline de propostas por status' },
+  orc_col_lead: { en: 'Lead', pt: 'Lead' },
+  orc_col_rascunho: { en: 'Draft', pt: 'Rascunho' },
+  orc_col_enviado: { en: 'Sent', pt: 'Enviado' },
+  orc_col_negociacao: { en: 'In negotiation', pt: 'Em negociação' },
+  orc_col_aprovado: { en: 'Approved', pt: 'Aprovado' },
+  orc_col_convertido: { en: 'Converted', pt: 'Convertido' },
+  orc_col_perdido: { en: 'Lost', pt: 'Perdido' },
+  orc_kpi_total: { en: 'Total proposals', pt: 'Total de orçamentos' },
+  orc_kpi_negociacao: { en: 'In negotiation ($)', pt: 'Em negociação ($)' },
+  orc_kpi_aprovados: { en: 'Approved', pt: 'Aprovados' },
+  orc_kpi_convertidos: { en: 'Converted', pt: 'Convertidos' },
+  orc_kpi_parados: { en: 'Stalled 7+ days', pt: 'Parados +7d' },
+  orc_vazio_coluna: { en: 'No proposals', pt: 'Nenhum orçamento' },
+  orc_novo_title: { en: 'New Proposal', pt: 'Novo Orçamento' },
+  orc_editar_title: { en: 'Edit Proposal', pt: 'Editar Orçamento' },
+  btn_novo_orcamento: { en: '+ New Proposal', pt: '+ Novo Orçamento' },
+  label_titulo_orcamento: { en: 'Title', pt: 'Título' },
+  titulo_orcamento_ph: { en: 'Ex: Automation project - Alphaville residence', pt: 'Ex: Projeto de automação - Residência Alphaville' },
+  label_cliente_orcamento: { en: 'Client', pt: 'Cliente' },
+  cliente_busca_ph: { en: 'Search registered client...', pt: 'Buscar cliente cadastrado...' },
+  label_valor_orcamento: { en: 'Estimated value ($)', pt: 'Valor estimado ($)' },
+  label_descricao_orcamento: { en: 'Description', pt: 'Descrição' },
+  descricao_orcamento_ph: { en: 'Scope, equipment, notes...', pt: 'Escopo, equipamentos, observações...' },
+  orc_titulo_obrigatorio: { en: 'Enter a title for the proposal', pt: 'Informe um título para o orçamento' },
+  orc_salvo: { en: 'Proposal saved!', pt: 'Orçamento salvo!' },
+  orc_excluir_confirm: { en: 'Delete this proposal?', pt: 'Excluir este orçamento?' },
+  orc_excluido: { en: 'Proposal deleted', pt: 'Orçamento excluído' },
+  orc_editar: { en: 'Edit', pt: 'Editar' },
+  orc_excluir: { en: 'Delete', pt: 'Excluir' },
+  orc_dias_parado: { en: 'd stalled', pt: 'd parado' },
+  orc_perdido_title: { en: 'Mark as Lost', pt: 'Marcar como Perdido' },
+  orc_perdido_desc: { en: 'Select the reason this proposal was lost.', pt: 'Selecione o motivo pelo qual este orçamento foi perdido.' },
+  label_motivo_perda: { en: 'Reason', pt: 'Motivo' },
+  motivo_adicionar_novo: { en: '+ Add new reason', pt: '+ Adicionar novo motivo' },
+  motivo_prompt_nome: { en: 'Name of the new reason:', pt: 'Nome do novo motivo:' },
+  motivo_criado: { en: 'Reason added!', pt: 'Motivo adicionado!' },
+  orc_perdido_motivo_obrigatorio: { en: 'Select a reason', pt: 'Selecione um motivo' },
+  orc_marcado_perdido: { en: 'Proposal marked as lost', pt: 'Orçamento marcado como perdido' },
+  orc_convertido_confirm: { en: 'Converting will create/link the client and automatically generate a new service order with the estimated value. Continue?', pt: 'Ao converter, o cliente será criado/vinculado e uma nova OS será gerada automaticamente com o valor orçado. Continuar?' },
+  orc_convertido_sucesso: { en: 'Proposal converted! Service order NUM created.', pt: 'Orçamento convertido! OS NUM criada.' },
+  orc_os_criada_automatica: { en: 'This column moves automatically when a proposal is converted or lost', pt: 'Esta coluna se move automaticamente ao converter ou perder um orçamento' },
+  orc_sem_cliente: { en: 'No client linked', pt: 'Sem cliente vinculado' },
+  btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
+
 
   clientes_none_found: { en: 'No clients found', pt: 'Nenhum cliente encontrado' },
   btn_novo_cliente: { en: '+ New Client', pt: '+ Novo Cliente' },
@@ -832,7 +878,7 @@ function getActions(id) {
     'kshcam': '<button class="btn-sec" onclick="loadModule(\'kshcam\')">' + tr('btn_atualizar') + '</button><button class="btn-pri" onclick="abrirNovaOS()">' + tr('btn_nova_os') + '</button>',
     'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">' + tr('btn_novo_tecnico') + '</button>',
     'crm-clientes': '<button class="btn-pri" onclick="abrirNovoClienteCRM()">' + tr('btn_novo_cliente') + '</button>',
-    'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
+    'crm-orcamentos': '<button class="btn-pri" onclick="abrirNovoOrcamento()">' + tr('btn_novo_orcamento') + '</button>',
     'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
     'fin-rentabilidade': '<button class="btn-sec" onclick="loadModule(\'fin-rentabilidade\')">' + tr('btn_atualizar') + '</button>',
@@ -844,7 +890,7 @@ function getActions(id) {
 function getSubtitle(id) {
   const m = {
     'crm-clientes': tr('clientes_subtitle'),
-    'crm-orcamentos': LANG==='pt' ? 'Pipeline de propostas por status' : 'Proposal pipeline by status',
+    'crm-orcamentos': tr('orc_subtitle'),
     'kshcam': tr('os_subtitle'),
     'tecnicos': tr('tecnicos_subtitle'),
     'tarefas': tr('sub_tarefas'),
@@ -883,6 +929,7 @@ function loadModule(id) {
   const el = document.getElementById('mod-content');
   if (!el) return;
   if (id === 'crm-clientes') renderClientes();
+  else if (id === 'crm-orcamentos') renderOrcamentos();
   else if (id === 'kshcam') renderKSHCam();
   else if (id === 'tecnicos') renderTecnicos();
   else if (id === 'tarefas') renderTarefas();
@@ -1080,6 +1127,377 @@ function editarCliente(id) {
     } catch(e) { toast(tr('erro_prefix')+e.message,'err'); }
   };
   abrirModal('m-novo-cli-crm');
+}
+
+// ── ORÇAMENTOS (CRM) ────────────────────────────────────────
+let orcamentosData = [];
+let motivosReprovacaoData = [];
+let orcArrastando = null;
+let orcPerdidoAlvo = null;
+let orcClienteSel = null;
+let orcBuscaTimer = null;
+
+const ORC_COLS = [
+  { id: 'lead', key: 'orc_col_lead', color: '#666', bg: '#f1f1ee' },
+  { id: 'rascunho', key: 'orc_col_rascunho', color: '#555', bg: '#f5f5f3' },
+  { id: 'enviado', key: 'orc_col_enviado', color: '#1d4ed8', bg: '#eff6ff' },
+  { id: 'negociacao', key: 'orc_col_negociacao', color: '#92400e', bg: '#fffbeb' },
+  { id: 'aprovado', key: 'orc_col_aprovado', color: '#166534', bg: '#f0fdf4' },
+  { id: 'convertido', key: 'orc_col_convertido', color: '#166534', bg: '#dcfce7' },
+  { id: 'perdido', key: 'orc_col_perdido', color: '#991b1b', bg: '#fef2f2' },
+];
+
+function orcamentoColuna(o) { return o.status || 'lead'; }
+
+async function renderOrcamentos() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    const [orcs, motivos] = await Promise.all([
+      sbGet('crm_orcamentos?order=ordem.asc'),
+      sbGet('motivos_reprovacao?order=nome')
+    ]);
+    orcamentosData = orcs;
+    motivosReprovacaoData = motivos;
+    if (!clientesData.length) { try { clientesData = await sbGet('clientes?order=nome'); } catch(e) {} }
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  el.innerHTML = '<div id="orc-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px"></div>'
+    + '<div style="overflow-x:auto"><div id="orc-board" style="display:grid;grid-template-columns:repeat(7,minmax(150px,1fr));gap:10px;min-width:1150px"></div></div>';
+  renderKpisOrcamentos();
+  renderOrcamentosBoard();
+}
+
+function orcKpiHTML(label, val, color) {
+  return '<div class="kpi"><div class="kpi-l">' + label + '</div><div class="kpi-v"' + (color ? ' style="color:' + color + '"' : '') + '>' + val + '</div></div>';
+}
+
+function renderKpisOrcamentos() {
+  const el = document.getElementById('orc-kpis');
+  if (!el) return;
+  const total = orcamentosData.length;
+  const valorNegociacao = orcamentosData.filter(o => o.status === 'negociacao').reduce((s,o) => s + (parseFloat(o.valor) || 0), 0);
+  const aprovados = orcamentosData.filter(o => o.status === 'aprovado').length;
+  const convertidos = orcamentosData.filter(o => o.status === 'convertido').length;
+  const agora = Date.now();
+  const parados = orcamentosData.filter(o => !['convertido','perdido'].includes(o.status) && (agora - new Date(o.atualizado_em || o.criado_em).getTime()) > 7 * 86400000).length;
+  el.innerHTML = orcKpiHTML(tr('orc_kpi_total'), total)
+    + orcKpiHTML(tr('orc_kpi_negociacao'), '$' + valorNegociacao.toFixed(2))
+    + orcKpiHTML(tr('orc_kpi_aprovados'), aprovados, '#166534')
+    + orcKpiHTML(tr('orc_kpi_convertidos'), convertidos, '#166534')
+    + orcKpiHTML(tr('orc_kpi_parados'), parados, parados ? '#e74c3c' : null);
+}
+
+function renderOrcamentosBoard() {
+  const board = document.getElementById('orc-board');
+  if (!board) return;
+  board.innerHTML = ORC_COLS.map(col => {
+    const itens = orcamentosData.filter(o => orcamentoColuna(o) === col.id).sort((a,b) => (a.ordem||0) - (b.ordem||0));
+    return '<div style="min-width:0">'
+      + '<div style="background:' + col.bg + ';color:' + col.color + ';border-radius:8px 8px 0 0;padding:8px 10px;font-size:12px;font-weight:600;display:flex;justify-content:space-between">'
+      + '<span>' + tr(col.key) + '</span><span>' + itens.length + '</span></div>'
+      + '<div ondragover="event.preventDefault()" ondrop="orcDropColuna(event,\'' + col.id + '\')" style="background:#f9f9f7;border-radius:0 0 8px 8px;padding:8px;min-height:120px;display:flex;flex-direction:column;gap:8px">'
+      + (itens.length ? itens.map(o => orcamentoCardHTML(o)).join('') : '<div style="text-align:center;color:#bbb;font-size:11px;padding:14px">' + tr('orc_vazio_coluna') + '</div>')
+      + '</div></div>';
+  }).join('');
+}
+
+function orcamentoCardHTML(o) {
+  const dias = Math.floor((Date.now() - new Date(o.atualizado_em || o.criado_em).getTime()) / 86400000);
+  const parado = !['convertido','perdido'].includes(o.status) && dias >= 7;
+  return '<div draggable="true" ondragstart="orcDragStart(event,\'' + o.id + '\')" ondragover="event.preventDefault();event.stopPropagation()" ondrop="event.stopPropagation();orcDropCard(event,\'' + o.id + '\')" style="background:#fff;border:1px solid #e8e8e5;border-radius:8px;padding:9px 11px;cursor:grab">'
+    + '<div style="display:flex;justify-content:space-between;gap:6px">'
+    + '<div style="font-size:12px;line-height:1.4;font-weight:500">' + (o.titulo || '—') + '</div>'
+    + '<span style="display:flex;gap:6px;flex-shrink:0">'
+    + '<button onclick="abrirEditarOrcamento(\'' + o.id + '\')" title="' + tr('orc_editar') + '" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;padding:8px">✎</button>'
+    + '<button onclick="excluirOrcamento(\'' + o.id + '\')" title="' + tr('orc_excluir') + '" style="background:none;border:none;cursor:pointer;color:#888;font-size:19px;line-height:1;padding:8px">×</button>'
+    + '</span></div>'
+    + '<div style="font-size:11px;color:#888;margin-top:2px">' + (o.cliente_nome || tr('orc_sem_cliente')) + '</div>'
+    + (o.valor != null ? '<div style="font-size:13px;font-weight:700;margin-top:6px">$' + Number(o.valor).toFixed(2) + '</div>' : '')
+    + (o.status === 'perdido' && o.motivo_perda ? '<div style="font-size:10px;color:#991b1b;margin-top:4px">' + o.motivo_perda + '</div>' : '')
+    + (o.status === 'convertido' && o.os_gerada_id ? '<div style="font-size:10px;color:#166534;margin-top:4px">✓ OS</div>' : '')
+    + '<div style="font-size:10px;color:' + (parado ? '#e74c3c' : '#bbb') + ';margin-top:6px">' + dias + tr('orc_dias_parado') + '</div>'
+    + '</div>';
+}
+
+function orcDragStart(ev, id) { orcArrastando = id; }
+
+function reordenarOrcamentoLocal(item, posAfterId) {
+  const semItem = orcamentosData.filter(o => o.id !== item.id);
+  if (posAfterId) {
+    const idx = semItem.findIndex(o => o.id === posAfterId);
+    semItem.splice(idx === -1 ? semItem.length : idx, 0, item);
+  } else {
+    semItem.push(item);
+  }
+  orcamentosData = semItem;
+}
+
+async function persistirOrdemColunaOrc(colId) {
+  const itens = orcamentosData.filter(o => orcamentoColuna(o) === colId);
+  await Promise.all(itens.map((o, i) => {
+    o.ordem = i;
+    return sbPatch('crm_orcamentos?id=eq.' + o.id, { ordem: i }).catch(() => {});
+  }));
+}
+
+async function moverOrcamento(orcId, destColId, posAfterId) {
+  const origem = orcamentosData.find(o => o.id === orcId);
+  if (!origem) return;
+  if (destColId === 'perdido') {
+    orcPerdidoAlvo = { orcId, posAfterId };
+    abrirModalPerdaOrcamento();
+    return;
+  }
+  if (destColId === 'convertido') {
+    if (!confirm(tr('orc_convertido_confirm'))) return;
+    await converterOrcamento(orcId, posAfterId);
+    return;
+  }
+  origem.status = destColId;
+  origem.motivo_perda = null;
+  reordenarOrcamentoLocal(origem, posAfterId);
+  renderOrcamentosBoard();
+  try {
+    await sbPatch('crm_orcamentos?id=eq.' + orcId, { status: destColId, motivo_perda: null, atualizado_em: new Date().toISOString() });
+    await persistirOrdemColunaOrc(destColId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function orcDropCard(ev, destId) {
+  if (!orcArrastando || orcArrastando === destId) return;
+  const idOrigem = orcArrastando;
+  const destino = orcamentosData.find(o => o.id === destId);
+  orcArrastando = null;
+  if (!destino) return;
+  await moverOrcamento(idOrigem, orcamentoColuna(destino), destId);
+}
+
+async function orcDropColuna(ev, destColId) {
+  if (!orcArrastando) return;
+  const idOrigem = orcArrastando;
+  orcArrastando = null;
+  await moverOrcamento(idOrigem, destColId, null);
+}
+
+// ── Motivo de perda ──
+function abrirModalPerdaOrcamento() {
+  popularSelectMotivo(null);
+  abrirModal('m-orc-perdido');
+}
+
+function popularSelectMotivo(selecionado) {
+  const sel = document.getElementById('orc-motivo-sel');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">--</option>'
+    + motivosReprovacaoData.map(m => '<option value="' + String(m.nome).replace(/"/g,'&quot;') + '"' + (m.nome === selecionado ? ' selected' : '') + '>' + m.nome + '</option>').join('')
+    + '<option value="__novo__">' + tr('motivo_adicionar_novo') + '</option>';
+}
+
+async function tratarSelecaoMotivo(selectEl) {
+  if (selectEl.value !== '__novo__') return;
+  const nome = prompt(tr('motivo_prompt_nome'));
+  if (!nome || !nome.trim()) { popularSelectMotivo(null); return; }
+  try {
+    await sbPost('motivos_reprovacao', { nome: nome.trim() });
+    motivosReprovacaoData = await sbGet('motivos_reprovacao?order=nome');
+    popularSelectMotivo(nome.trim());
+    toast(tr('motivo_criado'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); popularSelectMotivo(null); }
+}
+
+function cancelarPerdaOrcamento() {
+  orcPerdidoAlvo = null;
+  fecharModal('m-orc-perdido');
+}
+
+async function confirmarPerdaOrcamento() {
+  const motivo = document.getElementById('orc-motivo-sel')?.value;
+  if (!motivo || motivo === '__novo__') { toast(tr('orc_perdido_motivo_obrigatorio'), 'err'); return; }
+  if (!orcPerdidoAlvo) { fecharModal('m-orc-perdido'); return; }
+  const { orcId, posAfterId } = orcPerdidoAlvo;
+  const origem = orcamentosData.find(o => o.id === orcId);
+  if (!origem) { fecharModal('m-orc-perdido'); orcPerdidoAlvo = null; return; }
+  origem.status = 'perdido';
+  origem.motivo_perda = motivo;
+  reordenarOrcamentoLocal(origem, posAfterId);
+  fecharModal('m-orc-perdido');
+  orcPerdidoAlvo = null;
+  renderOrcamentosBoard();
+  try {
+    await sbPatch('crm_orcamentos?id=eq.' + orcId, { status: 'perdido', motivo_perda: motivo, atualizado_em: new Date().toISOString() });
+    await persistirOrdemColunaOrc('perdido');
+    toast(tr('orc_marcado_perdido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// ── Conversão automática (Cliente + OS) ──
+async function converterOrcamento(orcId, posAfterId) {
+  const origem = orcamentosData.find(o => o.id === orcId);
+  if (!origem) return;
+  try {
+    let clienteObj = null;
+    if (origem.cliente_id) clienteObj = clientesData.find(c => c.id === origem.cliente_id) || null;
+    if (!clienteObj && origem.cliente_nome) {
+      const nomeBusca = origem.cliente_nome.trim().toLowerCase();
+      clienteObj = clientesData.find(c => (c.nome||'').trim().toLowerCase() === nomeBusca) || null;
+    }
+    if (!clienteObj && origem.cliente_nome) {
+      const [novoCliente] = await sbPost('clientes', {
+        nome: origem.cliente_nome,
+        email: origem.cliente_email || '',
+        telefone: origem.cliente_tel || '',
+        endereco: '',
+        ativo: true
+      });
+      clienteObj = novoCliente;
+      clientesData = [...clientesData, clienteObj];
+    }
+    const clienteId = clienteObj?.id || null;
+
+    const nums = await sbGet('ordens_servico?select=numero&order=numero.desc.nullslast&limit=1');
+    const numero = (nums[0]?.numero || 0) + 1;
+    const [novaOS] = await sbPost('ordens_servico', {
+      numero,
+      titulo: origem.titulo || (LANG === 'pt' ? 'OS gerada de orçamento' : 'Service order from proposal'),
+      cliente: clienteObj?.nome || origem.cliente_nome || '',
+      cliente_nome: clienteObj?.nome || origem.cliente_nome || '',
+      cliente_tel: clienteObj?.telefone || origem.cliente_tel || null,
+      cliente_email: clienteObj?.email || origem.cliente_email || null,
+      endereco: clienteObj?.endereco || null,
+      descricao: origem.descricao || null,
+      valor_orcado: origem.valor != null ? parseFloat(origem.valor) : null,
+      status: 'aberta', origem: 'orcamento_convertido', criado_por: ME.nome
+    });
+
+    origem.status = 'convertido';
+    origem.cliente_id = clienteId;
+    origem.os_gerada_id = novaOS?.id || null;
+    reordenarOrcamentoLocal(origem, posAfterId);
+    renderOrcamentosBoard();
+
+    await sbPatch('crm_orcamentos?id=eq.' + orcId, {
+      status: 'convertido', cliente_id: clienteId, os_gerada_id: novaOS?.id || null, atualizado_em: new Date().toISOString()
+    });
+    await persistirOrdemColunaOrc('convertido');
+    toast(tr('orc_convertido_sucesso').replace('NUM', numero), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// ── Modal Novo/Editar Orçamento ──
+function abrirNovoOrcamento() {
+  ['orc-titulo','orc-descricao','orc-valor','orc-cliente-busca'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  orcClienteSel = null;
+  const selBox = document.getElementById('orc-cliente-sel');
+  if (selBox) selBox.style.display = 'none';
+  const resBox = document.getElementById('orc-cliente-res');
+  if (resBox) resBox.style.display = 'none';
+  document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_novo_title');
+  const btn = document.getElementById('m-novo-orc').querySelector('.btn-pri');
+  btn.textContent = tr('btn_cadastrar');
+  btn.onclick = salvarOrcamento;
+  abrirModal('m-novo-orc');
+}
+
+function buscarClienteOrcamento(q) {
+  clearTimeout(orcBuscaTimer);
+  const res = document.getElementById('orc-cliente-res');
+  if (!res) return;
+  if (!q || q.length < 2) { res.style.display = 'none'; return; }
+  orcBuscaTimer = setTimeout(() => {
+    const ql = q.toLowerCase();
+    const lista = clientesData.filter(c => (c.nome||'').toLowerCase().includes(ql)).slice(0, 6);
+    if (!lista.length) { res.style.display = 'none'; return; }
+    res.style.display = 'block';
+    res.innerHTML = lista.map(c => '<div onclick="selecionarClienteOrcamento(' + JSON.stringify(c).replace(/"/g,"'") + ')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3"><div style="font-size:13px;font-weight:500">' + c.nome + '</div><div style="font-size:11px;color:#888">' + [c.email,c.telefone].filter(Boolean).join(' · ') + '</div></div>').join('');
+  }, 250);
+}
+
+function selecionarClienteOrcamento(c) {
+  orcClienteSel = c;
+  document.getElementById('orc-cliente-busca').value = '';
+  document.getElementById('orc-cliente-res').style.display = 'none';
+  document.getElementById('orc-cliente-sel').style.display = 'flex';
+  document.getElementById('orc-cliente-nome').textContent = c.nome;
+}
+
+function limparClienteOrcamento() {
+  orcClienteSel = null;
+  document.getElementById('orc-cliente-sel').style.display = 'none';
+  document.getElementById('orc-cliente-busca')?.focus();
+}
+
+async function salvarOrcamento() {
+  const titulo = document.getElementById('orc-titulo')?.value.trim();
+  if (!titulo) { toast(tr('orc_titulo_obrigatorio'), 'err'); return; }
+  try {
+    await sbPost('crm_orcamentos', {
+      titulo,
+      cliente_id: orcClienteSel?.id || null,
+      cliente_nome: orcClienteSel?.nome || document.getElementById('orc-cliente-busca')?.value.trim() || '',
+      cliente_tel: orcClienteSel?.telefone || null,
+      cliente_email: orcClienteSel?.email || null,
+      descricao: document.getElementById('orc-descricao')?.value.trim() || null,
+      valor: document.getElementById('orc-valor')?.value ? parseFloat(document.getElementById('orc-valor').value) : null,
+      status: 'lead', criado_por: ME.nome
+    });
+    fecharModal('m-novo-orc');
+    toast(tr('orc_salvo'), 'ok');
+    renderOrcamentos();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function abrirEditarOrcamento(id) {
+  const o = orcamentosData.find(x => x.id === id);
+  if (!o) return;
+  document.getElementById('orc-titulo').value = o.titulo || '';
+  document.getElementById('orc-descricao').value = o.descricao || '';
+  document.getElementById('orc-valor').value = o.valor != null ? o.valor : '';
+  document.getElementById('orc-cliente-busca').value = '';
+  document.getElementById('orc-cliente-res').style.display = 'none';
+  if (o.cliente_nome) {
+    orcClienteSel = clientesData.find(c => c.id === o.cliente_id) || { id: o.cliente_id, nome: o.cliente_nome, telefone: o.cliente_tel, email: o.cliente_email };
+    document.getElementById('orc-cliente-sel').style.display = 'flex';
+    document.getElementById('orc-cliente-nome').textContent = o.cliente_nome;
+  } else {
+    orcClienteSel = null;
+    document.getElementById('orc-cliente-sel').style.display = 'none';
+  }
+  document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_editar_title');
+  const btn = document.getElementById('m-novo-orc').querySelector('.btn-pri');
+  btn.textContent = tr('btn_salvar');
+  btn.onclick = async () => {
+    const tituloNovo = document.getElementById('orc-titulo')?.value.trim();
+    if (!tituloNovo) { toast(tr('orc_titulo_obrigatorio'), 'err'); return; }
+    try {
+      await sbPatch('crm_orcamentos?id=eq.' + id, {
+        titulo: tituloNovo,
+        cliente_id: orcClienteSel?.id || null,
+        cliente_nome: orcClienteSel?.nome || document.getElementById('orc-cliente-busca')?.value.trim() || o.cliente_nome || '',
+        cliente_tel: orcClienteSel?.telefone || null,
+        cliente_email: orcClienteSel?.email || null,
+        descricao: document.getElementById('orc-descricao')?.value.trim() || null,
+        valor: document.getElementById('orc-valor')?.value ? parseFloat(document.getElementById('orc-valor').value) : null
+      });
+      fecharModal('m-novo-orc');
+      toast(tr('orc_salvo'), 'ok');
+      renderOrcamentos();
+    } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  };
+  abrirModal('m-novo-orc');
+}
+
+async function excluirOrcamento(id) {
+  if (!confirm(tr('orc_excluir_confirm'))) return;
+  try {
+    await sbDelete('crm_orcamentos?id=eq.' + id);
+    orcamentosData = orcamentosData.filter(o => o.id !== id);
+    renderOrcamentosBoard();
+    renderKpisOrcamentos();
+    toast(tr('orc_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // ── TÉCNICOS ──────────────────────────────────────────────────
