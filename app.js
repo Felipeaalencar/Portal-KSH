@@ -2077,13 +2077,26 @@ async function toggleTecnicoTarefa(id, nome) {
 
 async function excluirTarefa(id) {
   if (!confirm(tr('tarefa_confirma_excluir'))) return;
+  const t = tarefasData.find(x => x.id === id);
   try {
     await sbDelete('tarefas?id=eq.' + id);
-    tarefasData = tarefasData.filter(t => t.id !== id);
+    tarefasData = tarefasData.filter(x => x.id !== id);
     delete tarefaNotasCache[id];
     delete tarefaNotasAbertas[id];
     renderTarefasBoard();
+    if (t && t.calendar_event_id) excluirEventoAgenda(t.calendar_event_id);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirEventoAgenda(eventId) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/criar-evento-agenda', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ acao: 'excluir', event_id: eventId })
+    });
+    if (!r.ok) { const d = await r.json().catch(()=>({})); throw new Error(d.error || 'Erro'); }
+  } catch(e) { console.error('excluir evento da agenda falhou:', e); }
 }
 
 function renderNtTecnicosChips() {
@@ -2163,7 +2176,9 @@ async function salvarNovaTarefa() {
       const jaTinhaAgenda = t && t.calendar_event_id;
       if (t) { t.titulo = titulo; t.tecnicos = tecnicos; t.cliente_nome = cliente_nome; t.prazo = prazo; t.hora = hora; t.hora_fim = hora_fim; }
       renderTarefasBoard();
-      if (querAgenda && prazo && !jaTinhaAgenda) {
+      if (jaTinhaAgenda && prazo) {
+        atualizarEventoAgenda(t.calendar_event_id, titulo, cliente_nome, prazo, tecnicos.join(', '), hora, hora_fim);
+      } else if (querAgenda && prazo && !jaTinhaAgenda) {
         criarEventoAgenda(id, titulo, cliente_nome, prazo, tecnicos.join(', '), hora, hora_fim);
       }
     } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
@@ -2211,6 +2226,31 @@ async function criarEventoAgenda(tarefaId, titulo, cliente_nome, prazo, tecnicos
     renderTarefasBoard();
   } catch(e) {
     console.error('criar-evento-agenda falhou:', e);
+    toast(tr('tarefa_agenda_erro') + ': ' + e.message, 'err');
+  }
+}
+
+async function atualizarEventoAgenda(eventId, titulo, cliente_nome, prazo, tecnicosTexto, hora, hora_fim) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/criar-evento-agenda', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({
+        acao: 'atualizar',
+        event_id: eventId,
+        titulo,
+        descricao: cliente_nome ? ('Cliente: ' + cliente_nome) : '',
+        data: prazo,
+        hora: hora || null,
+        hora_fim: hora_fim || null,
+        tecnico_nome: tecnicosTexto
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    toast(tr('tarefa_agenda_sucesso'), 'ok');
+  } catch(e) {
+    console.error('atualizar-evento-agenda falhou:', e);
     toast(tr('tarefa_agenda_erro') + ': ' + e.message, 'err');
   }
 }

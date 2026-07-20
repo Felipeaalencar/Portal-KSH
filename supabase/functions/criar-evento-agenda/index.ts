@@ -1,7 +1,7 @@
 // Supabase Edge Function: criar-evento-agenda
-// Cria um evento no Google Calendar da conta conectada (a mesma do Drive),
+// Cria, atualiza ou exclui um evento no Google Calendar da conta conectada (a mesma do Drive),
 // usando o refresh_token ja salvo em google_integracao.
-// Se "hora" vier preenchida, cria evento com horario; senao, evento de dia inteiro.
+// acao: "criar" (padrao), "atualizar" (precisa event_id) ou "excluir" (precisa event_id).
 
 const CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID");
 const CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET");
@@ -58,10 +58,23 @@ Deno.serve(async (req: Request) => {
   try {
     if (!SUPABASE_URL || !SERVICE_ROLE_KEY) return json({ error: "Config do Supabase ausente" }, 500);
 
-    const { titulo, descricao, data, hora, tecnico_nome } = await req.json();
-    if (!data) return json({ error: "Campo 'data' obrigatorio" }, 400);
-
+    const { acao, event_id, titulo, descricao, data, hora, hora_fim, tecnico_nome } = await req.json();
     const accessToken = await renovarAccessToken();
+
+    if (acao === "excluir") {
+      if (!event_id) return json({ error: "event_id obrigatorio" }, 400);
+      const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${event_id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      if (!r.ok && r.status !== 410 && r.status !== 404) {
+        const d = await r.json().catch(() => ({}));
+        throw new Error(d.error?.message || "Falha ao excluir evento");
+      }
+      return json({ ok: true });
+    }
+
+    if (!data) return json({ error: "Campo 'data' obrigatorio" }, 400);
 
     const eventBody: Record<string, unknown> = {
       summary: titulo + (tecnico_nome ? " - " + tecnico_nome : ""),
@@ -69,12 +82,24 @@ Deno.serve(async (req: Request) => {
     };
 
     if (hora) {
-      const horaFim = somaUmaHora(hora);
+      const fim = hora_fim || somaUmaHora(hora);
       eventBody.start = { dateTime: `${data}T${hora}:00`, timeZone: TIMEZONE };
-      eventBody.end = { dateTime: `${data}T${horaFim}:00`, timeZone: TIMEZONE };
+      eventBody.end = { dateTime: `${data}T${fim}:00`, timeZone: TIMEZONE };
     } else {
       eventBody.start = { date: data };
       eventBody.end = { date: data };
+    }
+
+    if (acao === "atualizar") {
+      if (!event_id) return json({ error: "event_id obrigatorio" }, 400);
+      const r = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${event_id}`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify(eventBody),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error?.message || "Falha ao atualizar evento");
+      return json({ event_id: d.id, link: d.htmlLink });
     }
 
     const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
