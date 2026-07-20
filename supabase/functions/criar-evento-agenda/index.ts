@@ -1,11 +1,13 @@
 // Supabase Edge Function: criar-evento-agenda
-// Cria um evento de dia inteiro no Google Calendar da conta conectada (a mesma do Drive),
+// Cria um evento no Google Calendar da conta conectada (a mesma do Drive),
 // usando o refresh_token ja salvo em google_integracao.
+// Se "hora" vier preenchida, cria evento com horario; senao, evento de dia inteiro.
 
 const CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID");
 const CLIENT_SECRET = Deno.env.get("GOOGLE_CLIENT_SECRET");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+const TIMEZONE = "America/New_York";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,26 +44,43 @@ async function renovarAccessToken(): Promise<string> {
   return data.access_token;
 }
 
+function somaUmaHora(hora: string): string {
+  const [h, m] = hora.split(":").map(Number);
+  const total = (h * 60 + m + 60) % (24 * 60);
+  const hh = String(Math.floor(total / 60)).padStart(2, "0");
+  const mm = String(total % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
     if (!SUPABASE_URL || !SERVICE_ROLE_KEY) return json({ error: "Config do Supabase ausente" }, 500);
 
-    const { titulo, descricao, data, tecnico_nome } = await req.json();
+    const { titulo, descricao, data, hora, tecnico_nome } = await req.json();
     if (!data) return json({ error: "Campo 'data' obrigatorio" }, 400);
 
     const accessToken = await renovarAccessToken();
 
+    const eventBody: Record<string, unknown> = {
+      summary: titulo + (tecnico_nome ? " - " + tecnico_nome : ""),
+      description: descricao || "",
+    };
+
+    if (hora) {
+      const horaFim = somaUmaHora(hora);
+      eventBody.start = { dateTime: `${data}T${hora}:00`, timeZone: TIMEZONE };
+      eventBody.end = { dateTime: `${data}T${horaFim}:00`, timeZone: TIMEZONE };
+    } else {
+      eventBody.start = { date: data };
+      eventBody.end = { date: data };
+    }
+
     const r = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
       method: "POST",
       headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        summary: titulo + (tecnico_nome ? " - " + tecnico_nome : ""),
-        description: descricao || "",
-        start: { date: data },
-        end: { date: data },
-      }),
+      body: JSON.stringify(eventBody),
     });
     const d = await r.json();
     if (!r.ok) throw new Error(d.error?.message || "Falha ao criar evento no Google Calendar");
