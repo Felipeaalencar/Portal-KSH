@@ -183,6 +183,7 @@ const I18N = {
   os_notepad_salvo: { en: 'Notepad saved', pt: 'Bloco de notas salvo' },
   os_notepad_resumir: { en: '🎙️ Summarize with AI', pt: '🎙️ Resumir com IA' },
   notepad_trecho_adicionado: { en: 'Voice note added to the notepad', pt: 'Trecho de voz adicionado ao bloco de notas' },
+  os_servico_salvo: { en: 'Service description saved', pt: 'Descrição do serviço salva' },
   foto_marcar_privada: { en: 'Mark as private (hidden from client)', pt: 'Marcar como privada (não aparece pro cliente)' },
   foto_marcar_publica: { en: 'Mark as visible to client', pt: 'Marcar como visível pro cliente' },
   foto_privada_badge: { en: 'Private', pt: 'Privada' },
@@ -968,7 +969,13 @@ async function abrirOS(id) {
         <div style="font-size:11px;color:#888;margin-top:3px">${tr('os_por')}${os.criado_por||'—'}</div>
       </div>
       ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">'+tr('os_endereco_label')+'</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
-      ${os.descricao?'<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">'+tr('os_servico_label')+'</div><div style="font-size:13px;color:#78350f">'+os.descricao+'</div></div>':''}
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+          <div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px">${tr('os_servico_label')}</div>
+          <button id="servico-save-${id}" onclick="salvarDescricaoOS('${id}')" style="display:none;padding:3px 10px;border:none;border-radius:6px;background:#92400e;color:#fff;font-size:10px;cursor:pointer;font-family:inherit">${tr('os_salvar_alteracoes')}</button>
+        </div>
+        <textarea id="os-servico-${id}" oninput="document.getElementById('servico-save-${id}').style.display='inline-block'" style="width:100%;min-height:20px;padding:0;border:none;background:transparent;font-size:13px;color:#78350f;font-family:inherit;outline:none;resize:vertical">${os.descricao||''}</textarea>
+      </div>
     </div>
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -1023,6 +1030,20 @@ async function abrirOS(id) {
       <button id="pdf-btn-${id}" onclick="gerarResumoPDF('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_gerar_pdf')}</button>
     </div>
   </div>`;
+}
+
+async function salvarDescricaoOS(osId) {
+  const ta = document.getElementById('os-servico-' + osId);
+  if (!ta) return;
+  const descricao = ta.value.trim();
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { descricao: descricao || null });
+    const os = osData.find(o => o.id === osId);
+    if (os) os.descricao = descricao;
+    const btn = document.getElementById('servico-save-' + osId);
+    if (btn) btn.style.display = 'none';
+    toast(tr('os_servico_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function salvarNotepad(osId) {
