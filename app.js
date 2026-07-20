@@ -68,7 +68,7 @@ const I18N = {
   nav_controle_frota: { en: 'Fleet Control', pt: 'Controle de Frota' },
   nav_cadastros: { en: 'Records', pt: 'Cadastros' },
   nav_ordem_servico: { en: 'Work Order', pt: 'Ordem de Serviço' },
-  nav_tecnicos: { en: 'Technicians', pt: 'Técnicos' },
+  nav_tecnicos: { en: 'Employees', pt: 'Funcionários' },
   nav_tarefas: { en: 'Tasks', pt: 'Tarefas' },
   nav_ferramentas: { en: 'Tools', pt: 'Ferramentas' },
   nav_documentos: { en: 'Documents', pt: 'Documentos' },
@@ -97,8 +97,8 @@ const I18N = {
   card_despesas_desc: { en: 'Logging and approval by category', pt: 'Lançamento e aprovação por categoria' },
   card_os_title: { en: 'Work Order', pt: 'Ordem de Serviço' },
   card_os_desc: { en: 'Work orders, field photos and reports', pt: 'Ordens de serviço, fotos em campo e relatórios' },
-  card_tecnicos_title: { en: 'Technicians', pt: 'Técnicos' },
-  card_tecnicos_desc: { en: 'Field team records and hourly rate', pt: 'Cadastro da equipe técnica e valor da hora trabalhada' },
+  card_tecnicos_title: { en: 'Employees', pt: 'Funcionários' },
+  card_tecnicos_desc: { en: 'Employee records, role and hourly rate', pt: 'Cadastro dos funcionários, função e valor da hora trabalhada' },
   card_tarefas_title: { en: 'Tasks', pt: 'Tarefas' },
   card_tarefas_desc: { en: 'Team kanban synced with Google Calendar', pt: 'Kanban da equipe sincronizado com Google Calendar' },
   card_ferramentas_title: { en: 'Tools', pt: 'Ferramentas' },
@@ -133,16 +133,21 @@ const I18N = {
   modal_editar_cliente: { en: 'Edit Client', pt: 'Editar Cliente' },
 
   // Técnicos module
-  tecnicos_subtitle: { en: 'Field team records and hourly rate', pt: 'Cadastro da equipe técnica e valor da hora trabalhada' },
-  btn_novo_tecnico: { en: '+ New Technician', pt: '+ Novo Técnico' },
+  tecnicos_subtitle: { en: 'Employee records, role and hourly rate', pt: 'Cadastro dos funcionários, função e valor da hora trabalhada' },
+  btn_novo_tecnico: { en: '+ New Employee', pt: '+ Novo Funcionário' },
   tecnicos_search_ph: { en: 'Search by name, email or phone...', pt: 'Buscar por nome, email ou telefone...' },
   tecnicos_th_valor: { en: 'Hourly rate', pt: 'Valor/hora' },
+  tecnicos_th_funcao: { en: 'Role', pt: 'Função' },
   tecnicos_none: { en: 'No technicians registered', pt: 'Nenhum técnico cadastrado' },
   tecnico_nome_obrigatorio: { en: 'Name is required', pt: 'Nome é obrigatório' },
-  tecnico_cadastrado: { en: 'Technician registered!', pt: 'Técnico cadastrado!' },
-  tecnico_atualizado: { en: 'Technician updated!', pt: 'Técnico atualizado!' },
-  modal_novo_tecnico: { en: 'New Technician', pt: 'Novo Técnico' },
-  modal_editar_tecnico: { en: 'Edit Technician', pt: 'Editar Técnico' },
+  tecnico_cadastrado: { en: 'Employee registered!', pt: 'Funcionário cadastrado!' },
+  tecnico_atualizado: { en: 'Employee updated!', pt: 'Funcionário atualizado!' },
+  modal_novo_tecnico: { en: 'New Employee', pt: 'Novo Funcionário' },
+  modal_editar_tecnico: { en: 'Edit Employee', pt: 'Editar Funcionário' },
+  label_funcao: { en: 'Role', pt: 'Função' },
+  funcao_adicionar_nova: { en: '+ Add new role...', pt: '+ Adicionar nova função...' },
+  funcao_prompt_nome: { en: 'New role name:', pt: 'Nome da nova função:' },
+  funcao_criada: { en: 'Role added', pt: 'Função adicionada' },
 
   // Ordem de Serviço / KSHCam
   os_subtitle: { en: 'Work orders generated from approved quotes or created manually by technicians', pt: 'OS geradas por orçamentos aprovados ou criadas manualmente pelos técnicos' },
@@ -423,7 +428,7 @@ const I18N = {
   nav_veiculos: { en: 'Vehicles', pt: 'Veículos' },
   pt_fin_cadastros: { en: 'Records', pt: 'Cadastros' },
   pt_kshcam: { en: 'Work Order', pt: 'Ordem de Serviço' },
-  pt_tecnicos: { en: 'Technicians', pt: 'Técnicos' },
+  pt_tecnicos: { en: 'Employees', pt: 'Funcionários' },
   pt_tarefas: { en: 'Tasks', pt: 'Tarefas' },
   pt_ferramentas: { en: 'Tools', pt: 'Ferramentas' },
   pt_documentos: { en: 'Documents', pt: 'Documentos' },
@@ -911,6 +916,42 @@ function editarCliente(id) {
 // ── TÉCNICOS ──────────────────────────────────────────────────
 let tecnicosData = [];
 
+let funcoesData = [];
+
+async function carregarFuncoesTecnico() {
+  try {
+    funcoesData = await sbGet('funcoes_tecnico?order=nome');
+  } catch(e) {
+    funcoesData = [];
+  }
+}
+
+function popularSelectFuncao(selecionado) {
+  const sel = document.getElementById('tec-funcao');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">—</option>'
+    + funcoesData.map(f => '<option value="' + f.nome + '"' + (f.nome === selecionado ? ' selected' : '') + '>' + f.nome + '</option>').join('')
+    + '<option value="__nova__">' + tr('funcao_adicionar_nova') + '</option>';
+}
+
+async function tratarSelecaoFuncao(selectEl) {
+  if (selectEl.value !== '__nova__') return;
+  const nome = (prompt(tr('funcao_prompt_nome')) || '').trim();
+  if (!nome) { selectEl.value = ''; return; }
+  try {
+    const existente = funcoesData.find(f => f.nome.toLowerCase() === nome.toLowerCase());
+    if (!existente) {
+      await sbPost('funcoes_tecnico', { nome });
+      await carregarFuncoesTecnico();
+      toast(tr('funcao_criada'), 'ok');
+    }
+    popularSelectFuncao(nome);
+  } catch(e) {
+    toast(tr('erro_prefix') + e.message, 'err');
+    selectEl.value = '';
+  }
+}
+
 async function renderTecnicos() {
   const el = document.getElementById('mod-content');
   el.innerHTML = `
@@ -919,7 +960,7 @@ async function renderTecnicos() {
   </div>
   <div class="tbl-wrap">
     <table class="tbl">
-      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('tecnicos_th_valor')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
+      <thead><tr><th>${tr('clientes_th_nome')}</th><th>${tr('tecnicos_th_funcao')}</th><th>${tr('clientes_th_email')}</th><th>${tr('clientes_th_tel')}</th><th>${tr('tecnicos_th_valor')}</th><th>${tr('clientes_th_acoes')}</th></tr></thead>
       <tbody id="tec-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">${tr('loading')}</td></tr></tbody>
     </table>
   </div>`;
@@ -927,7 +968,7 @@ async function renderTecnicos() {
     tecnicosData = await sbGet('tecnicos?ativo=eq.true&order=nome');
     renderTabelaTecnicos(tecnicosData);
   } catch(e) {
-    document.getElementById('tec-tbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</td></tr>';
+    document.getElementById('tec-tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</td></tr>';
   }
 }
 
@@ -939,9 +980,10 @@ function filtrarTecnicos() {
 function renderTabelaTecnicos(lista) {
   const tb = document.getElementById('tec-tbody');
   if (!tb) return;
-  if (!lista.length) { tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:#bbb">' + tr('tecnicos_none') + '</td></tr>'; return; }
+  if (!lista.length) { tb.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#bbb">' + tr('tecnicos_none') + '</td></tr>'; return; }
   tb.innerHTML = lista.map(t => `<tr>
     <td style="font-weight:500">${t.nome||'—'}</td>
+    <td>${t.funcao||'—'}</td>
     <td>${t.email||'—'}</td>
     <td>${t.telefone||'—'}</td>
     <td>${t.valor_hora != null ? '$' + Number(t.valor_hora).toFixed(2) : '—'}</td>
@@ -949,8 +991,10 @@ function renderTabelaTecnicos(lista) {
   </tr>`).join('');
 }
 
-function abrirNovoTecnico() {
+async function abrirNovoTecnico() {
   ['tec-nome','tec-email','tec-tel','tec-valor'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  if (!funcoesData.length) await carregarFuncoesTecnico();
+  popularSelectFuncao(null);
   document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = tr('modal_novo_tecnico');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = tr('btn_cadastrar');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = salvarTecnico;
@@ -963,6 +1007,7 @@ async function salvarTecnico() {
   try {
     await sbPost('tecnicos', {
       nome,
+      funcao: document.getElementById('tec-funcao')?.value || null,
       email: document.getElementById('tec-email')?.value.trim() || null,
       telefone: document.getElementById('tec-tel')?.value.trim() || null,
       valor_hora: document.getElementById('tec-valor')?.value ? parseFloat(document.getElementById('tec-valor').value) : null,
@@ -974,10 +1019,12 @@ async function salvarTecnico() {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
-function editarTecnico(id) {
+async function editarTecnico(id) {
   const t = tecnicosData.find(x => x.id === id);
   if (!t) return;
   document.getElementById('tec-nome').value = t.nome || '';
+  if (!funcoesData.length) await carregarFuncoesTecnico();
+  popularSelectFuncao(t.funcao || null);
   document.getElementById('tec-email').value = t.email || '';
   document.getElementById('tec-tel').value = t.telefone || '';
   document.getElementById('tec-valor').value = t.valor_hora != null ? t.valor_hora : '';
@@ -987,6 +1034,7 @@ function editarTecnico(id) {
     try {
       await sbPatch('tecnicos?id=eq.' + id, {
         nome: document.getElementById('tec-nome').value.trim(),
+        funcao: document.getElementById('tec-funcao')?.value || null,
         email: document.getElementById('tec-email').value.trim() || null,
         telefone: document.getElementById('tec-tel').value.trim() || null,
         valor_hora: document.getElementById('tec-valor').value ? parseFloat(document.getElementById('tec-valor').value) : null

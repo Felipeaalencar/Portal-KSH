@@ -256,7 +256,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       </div>
       <div class="sb-sec" onclick="toggleSec('pessoas',this)"><span data-i18n="sec_pessoas">GESTÃO DE PESSOAS</span> <span class="sb-sec-arr">−</span></div>
       <div class="sb-sec-body" id="sec-pessoas" style="max-height:500px">
-        <button class="sb-item" onclick="goPage(this,'tecnicos','Técnicos','Gestão de Pessoas')" data-i18n="nav_tecnicos">Técnicos</button>
+        <button class="sb-item" onclick="goPage(this,'tecnicos','Funcionários','Gestão de Pessoas')" data-i18n="nav_tecnicos">Funcionários</button>
       </div>
       <div class="sb-sec" onclick="toggleSec('registros',this)"><span data-i18n="sec_registros">REGISTROS</span> <span class="sb-sec-arr">−</span></div>
       <div class="sb-sec-body" id="sec-registros" style="max-height:500px">
@@ -317,7 +317,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
         <div class="h-sec" data-i18n="sec_operacoes">Operações</div>
         <div class="h-cards">
           <div class="h-card" onclick="goPage(null,'kshcam','Ordem de Serviço','Operações')"><div class="h-card-title" data-i18n="card_os_title">Ordem de Serviço</div><div class="h-card-desc" data-i18n="card_os_desc">Ordens de serviço, fotos em campo e relatórios</div><span class="badge bb" data-i18n="badge_novo">● Novo</span></div>
-          <div class="h-card" onclick="goPage(null,'tecnicos','Técnicos','Operações')"><div class="h-card-title" data-i18n="card_tecnicos_title">Técnicos</div><div class="h-card-desc" data-i18n="card_tecnicos_desc">Cadastro da equipe técnica e valor da hora trabalhada</div><span class="badge bg" data-i18n="badge_ativo">● Ativo</span></div>
+          <div class="h-card" onclick="goPage(null,'tecnicos','Funcionários','Gestão de Pessoas')"><div class="h-card-title" data-i18n="card_tecnicos_title">Funcionários</div><div class="h-card-desc" data-i18n="card_tecnicos_desc">Cadastro dos funcionários, função e valor da hora trabalhada</div><span class="badge bg" data-i18n="badge_ativo">● Ativo</span></div>
           <div class="h-card" onclick="goPage(null,'tarefas','Tarefas','Operações')"><div class="h-card-title" data-i18n="card_tarefas_title">Tarefas</div><div class="h-card-desc" data-i18n="card_tarefas_desc">Kanban da equipe sincronizado com Google Calendar</div><span class="badge bg" data-i18n="badge_ativo">● Ativo</span></div>
           <div class="h-card" onclick="goPage(null,'agenda','Agenda','Operações')"><div class="h-card-title" data-i18n="card_agenda_title">Agenda</div><div class="h-card-desc" data-i18n="card_agenda_desc">Agenda semanal por técnico</div><span class="badge bg" data-i18n="badge_ativo">● Ativo</span></div>
           <div class="h-card" onclick="goPage(null,'ferramentas','Ferramentas','Operações')"><div class="h-card-title" data-i18n="card_ferramentas_title">Ferramentas</div><div class="h-card-desc" data-i18n="card_ferramentas_desc">Inventário de equipamentos e maletas</div><span class="badge bg" data-i18n="badge_ativo">● Ativo</span></div>
@@ -605,8 +605,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 
 <div class="modal-bg" id="m-novo-tec">
   <div class="modal-box" style="width:460px">
-    <div class="modal-hd"><span class="modal-hd-title" data-i18n="modal_novo_tecnico">Novo Técnico</span><button class="modal-close" onclick="fecharModal('m-novo-tec')">×</button></div>
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="modal_novo_tecnico">Novo Funcionário</span><button class="modal-close" onclick="fecharModal('m-novo-tec')">×</button></div>
     <label class="f-lbl" data-i18n="label_nome_completo">Nome completo *</label><input class="f-inp" id="tec-nome" placeholder="Nome completo" data-i18n-placeholder="nome_completo_ph">
+    <label class="f-lbl" data-i18n="label_funcao">Função</label>
+    <select class="f-sel" id="tec-funcao" onchange="tratarSelecaoFuncao(this)"></select>
     <label class="f-lbl" data-i18n="label_email_opt">Email</label><input class="f-inp" id="tec-email" type="email" placeholder="email@exemplo.com" data-i18n-placeholder="email_ph">
     <label class="f-lbl" data-i18n="label_tel_opt">Telefone</label><input class="f-inp" id="tec-tel" placeholder="Ex: +55 11 91234-5678 ou (555) 000-0000" data-i18n-placeholder="tel_ph">
     <label class="f-lbl" data-i18n="label_valor_hora">Valor da hora trabalhada (US$)</label><input class="f-inp" id="tec-valor" type="number" step="0.01" placeholder="Ex: 45.00" data-i18n-placeholder="valor_hora_ph">
