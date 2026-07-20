@@ -357,6 +357,9 @@ const I18N = {
   tarefa_criada: { en: 'Task created', pt: 'Tarefa criada' },
   tarefa_gerar_os: { en: 'Generate OS', pt: 'Gerar OS' },
   tarefa_os_gerada_badge: { en: 'OS #NUM created', pt: 'OS #NUM gerada' },
+  tarefa_cancelar_os: { en: 'Cancel OS', pt: 'Cancelar OS' },
+  tarefa_cancelar_os_confirm: { en: 'Cancel and delete OS #NUM? This cannot be undone.', pt: 'Cancelar e apagar a OS #NUM? Essa ação não pode ser desfeita.' },
+  tarefa_os_cancelada: { en: 'OS cancelled', pt: 'OS cancelada' },
   tarefa_notas_ph: { en: 'Add information...', pt: 'Adicionar informação...' },
   btn_add: { en: 'Add', pt: 'Add' },
   tarefa_sem_tecnico: { en: 'No technician', pt: 'Sem técnico' },
@@ -2001,7 +2004,9 @@ function tarefaCardHTML(t) {
     + (t.descricao ? '<div style="font-size:11px;color:#555;margin-top:6px;padding:6px 8px;background:#f7f7f5;border-radius:6px;white-space:pre-wrap;line-height:1.4">' + t.descricao + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0">'
     + '<button onclick="toggleTarefaNotas(\'' + t.id + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">📝 ' + notasCount + '</button>'
-    + (!t.os_gerada_numero ? '<button onclick="abrirNovaOSDeTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;cursor:pointer">' + tr('tarefa_gerar_os') + '</button>' : '')
+    + (!t.os_gerada_numero
+        ? '<button onclick="abrirNovaOSDeTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;cursor:pointer">' + tr('tarefa_gerar_os') + '</button>'
+        : '<button onclick="cancelarOSDaTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#dc2626;cursor:pointer">' + tr('tarefa_cancelar_os') + '</button>')
     + '</div>'
     + '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:' + (abertas?'6':'0') + 'px">'
     + (tarefasTecnicosLista.length ? tarefaTecnicoChipsHTML(t) : '<span style="font-size:10px;color:#bbb">' + tr('tarefa_sem_tecnico') + '</span>')
@@ -2102,6 +2107,20 @@ async function excluirTarefa(id) {
     renderTarefasBoard();
     if (document.getElementById('agenda-grade')) renderAgendaGrade();
     if (t && t.calendar_event_id) excluirEventoAgenda(t.calendar_event_id);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function cancelarOSDaTarefa(id) {
+  const t = tarefasData.find(x => x.id === id);
+  if (!t || !t.os_gerada_id) return;
+  if (!confirm(tr('tarefa_cancelar_os_confirm').replace('NUM', t.os_gerada_numero))) return;
+  try {
+    await sbDelete('ordens_servico?id=eq.' + t.os_gerada_id);
+    await sbPatch('tarefas?id=eq.' + id, { os_gerada_numero: null, os_gerada_id: null });
+    t.os_gerada_numero = null;
+    t.os_gerada_id = null;
+    renderTarefasBoard();
+    toast(tr('tarefa_os_cancelada'), 'ok');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
@@ -2589,7 +2608,7 @@ async function salvarNovaOS() {
     // Próximo número
     const nums = await sbGet('ordens_servico?select=numero&order=numero.desc.nullslast&limit=1');
     const numero = (nums[0]?.numero || 0) + 1;
-    await sbPost('ordens_servico', {
+    const [novaOS] = await sbPost('ordens_servico', {
       numero, titulo,
       cliente: osCliSel.nome, cliente_nome: osCliSel.nome,
       cliente_tel: osCliSel.telefone||null, cliente_email: osCliSel.email||null,
@@ -2608,9 +2627,9 @@ async function salvarNovaOS() {
       const tId = tarefaOrigemOS;
       tarefaOrigemOS = null;
       try {
-        await sbPatch('tarefas?id=eq.' + tId, { os_gerada_numero: numero, status: 'concluida' });
+        await sbPatch('tarefas?id=eq.' + tId, { os_gerada_numero: numero, os_gerada_id: novaOS?.id || null });
         const t = tarefasData.find(x => x.id === tId);
-        if (t) { t.os_gerada_numero = numero; t.status = 'concluida'; }
+        if (t) { t.os_gerada_numero = numero; t.os_gerada_id = novaOS?.id || null; }
         renderTarefasBoard();
       } catch(e) {}
     }
@@ -2670,6 +2689,7 @@ async function deletarOS(id, titulo) {
       }
     }
     await sbDelete('ordens_servico?id=eq.' + id);
+    try { await sbPatch('tarefas?os_gerada_id=eq.' + id, { os_gerada_numero: null, os_gerada_id: null }); } catch(e2) {}
     toast(tr('os_deletada'), 'ok');
     carregarOS();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
