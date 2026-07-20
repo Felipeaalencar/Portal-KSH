@@ -177,6 +177,16 @@ const I18N = {
   os_fotos_label: { en: 'Photos', pt: 'Fotos' },
   os_dias_label: { en: 'Work days', pt: 'Dias de trabalho' },
   os_gastos_label: { en: 'Expenses', pt: 'Gastos' },
+  resumo_valores_label: { en: 'Value summary', pt: 'Resumo de valores' },
+  resumo_mao_obra: { en: 'Labor', pt: 'Mão de obra' },
+  resumo_sem_valor_hora: { en: 'no hourly rate set', pt: 'sem valor/hora cadastrado' },
+  resumo_sem_dias: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
+  resumo_pendentes: { en: 'pending', pt: 'pendentes' },
+  resumo_total: { en: 'Total', pt: 'Total' },
+  resumo_gerar_ia: { en: 'Generate work summary with AI', pt: 'Gerar resumo do trabalho com IA' },
+  resumo_trabalho_label: { en: 'Work summary', pt: 'Resumo do trabalho' },
+  resumo_sem_observacoes: { en: 'No day has notes to summarize yet', pt: 'Nenhum dia tem observação pra resumir ainda' },
+  resumo_salvo: { en: 'Summary saved', pt: 'Resumo salvo' },
   gasto_lancar_btn: { en: '+ Log expense', pt: '+ Lançar despesa' },
   gasto_sem_registro: { en: 'No expense logged yet', pt: 'Nenhum gasto lançado ainda' },
   gasto_total_aprovado: { en: 'Approved total', pt: 'Total aprovado' },
@@ -1127,8 +1137,12 @@ async function abrirOS(id) {
       <div id="gastos-${id}" style="display:flex;flex-direction:column;gap:8px">
         ${gastos.length ? gastos.map(g => gastoCardHTML(g, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('gasto_sem_registro')+'</div>'}
       </div>
-      ${gastos.length ? '<div style="text-align:right;font-size:12px;color:#555;margin-top:8px;font-weight:600">'+tr('gasto_total_aprovado')+': $'+gastos.filter(g=>g.status==='aprovado').reduce((s,g)=>s+Number(g.valor||0),0).toFixed(2)+'</div>' : ''}
     </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('resumo_valores_label')}</div>
+      ${resumoValoresHTML(resumoValores, id)}
+    </div>
+    ${os.resumo_ia ? '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('resumo_trabalho_label')+'</div><div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;font-size:12px;white-space:pre-wrap">'+os.resumo_ia+'</div></div>' : ''}
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
@@ -1160,6 +1174,65 @@ async function abrirOS(id) {
       <button id="pdf-btn-${id}" onclick="gerarResumoPDF('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_gerar_pdf')}</button>
     </div>
   </div>`;
+}
+
+function calcularResumoValores(dias, gastos, tecnicosLista) {
+  const valorHoraPorNome = {};
+  (tecnicosLista || []).forEach(t => { valorHoraPorNome[t.nome] = t.valor_hora != null ? Number(t.valor_hora) : null; });
+
+  function horasDoDia(d) {
+    if (!d.hora_inicio || !d.hora_fim) return 0;
+    const [h1, m1] = String(d.hora_inicio).slice(0,5).split(':').map(Number);
+    const [h2, m2] = String(d.hora_fim).slice(0,5).split(':').map(Number);
+    let min = (h2*60+m2) - (h1*60+m1);
+    if (min < 0) min += 24*60;
+    return min / 60;
+  }
+
+  const porTecnico = {};
+  (dias || []).forEach(d => {
+    const horas = horasDoDia(d);
+    (Array.isArray(d.tecnicos) ? d.tecnicos : []).forEach(nome => {
+      if (!porTecnico[nome]) porTecnico[nome] = { nome, horas: 0, valorHora: valorHoraPorNome[nome] != null ? valorHoraPorNome[nome] : null, subtotal: 0 };
+      porTecnico[nome].horas += horas;
+      if (porTecnico[nome].valorHora != null) porTecnico[nome].subtotal += horas * porTecnico[nome].valorHora;
+    });
+  });
+
+  const listaTecnicos = Object.values(porTecnico);
+  const totalMaoObra = listaTecnicos.reduce((s, t) => s + t.subtotal, 0);
+  const gastosAprovados = (gastos || []).filter(g => g.status === 'aprovado');
+  const totalGastos = gastosAprovados.reduce((s, g) => s + Number(g.valor||0), 0);
+
+  return {
+    porTecnico: listaTecnicos,
+    totalMaoObra,
+    totalGastos,
+    totalGeral: totalMaoObra + totalGastos,
+    qtdGastosPendentes: (gastos || []).filter(g => g.status === 'pendente').length
+  };
+}
+
+function resumoValoresHTML(r, id) {
+  const linhasTec = r.porTecnico.length
+    ? r.porTecnico.map(t => '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">'
+        + '<span>' + tr('resumo_mao_obra') + ' — ' + t.nome + ' (' + t.horas.toFixed(1) + 'h' + (t.valorHora != null ? ' × $' + t.valorHora.toFixed(2) : ' · ' + tr('resumo_sem_valor_hora')) + ')</span>'
+        + '<span>' + (t.valorHora != null ? '$' + t.subtotal.toFixed(2) : '—') + '</span></div>').join('')
+    : '<div style="font-size:12px;color:#bbb">' + tr('resumo_sem_dias') + '</div>';
+
+  return '<div style="background:#f9f9f7;border-radius:8px;padding:12px 14px">'
+    + linhasTec
+    + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">'
+      + '<span>' + tr('os_gastos_label') + (r.qtdGastosPendentes ? ' <span style="color:#92400e">(' + r.qtdGastosPendentes + ' ' + tr('resumo_pendentes') + ')</span>' : '') + '</span>'
+      + '<span>$' + r.totalGastos.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding-top:8px;margin-top:6px;border-top:1px solid #e8e8e5">'
+      + '<span>' + tr('resumo_total') + '</span><span>$' + r.totalGeral.toFixed(2) + '</span></div>'
+    + '</div>'
+    + '<div style="margin-top:10px">'
+      + '<button onclick="gerarResumoTrabalhoOS(\''+id+'\')" style="font-size:12px;padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;color:#333">🎙️ ' + tr('resumo_gerar_ia') + '</button>'
+      + '<div id="resumo-ia-status-' + id + '" style="display:none;font-size:11px;color:#2563eb;margin-top:6px"></div>'
+    + '</div>'
+    + '<div id="resumo-ia-preview-' + id + '" style="display:none;margin-top:8px"></div>';
 }
 
 function diaTrabalhoCardHTML(d, osId) {
@@ -1252,6 +1325,81 @@ async function excluirDiaTrabalho(diaId, osId) {
   if (!confirm(tr('dia_excluir_confirm'))) return;
   try {
     await sbDelete('os_dias?id=eq.' + diaId);
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function gerarResumoTrabalhoOS(osId) {
+  let dias = [];
+  try { dias = await sbGet('os_dias?os_id=eq.' + osId + '&order=data.asc'); } catch(e) {}
+  const comObservacao = dias.filter(d => (d.observacao || '').trim());
+  if (!comObservacao.length) { toast(tr('resumo_sem_observacoes'), 'err'); return; }
+
+  const texto = comObservacao.map(d => {
+    const tecs = Array.isArray(d.tecnicos) && d.tecnicos.length ? ' (' + d.tecnicos.join(', ') + ')' : '';
+    return 'Dia ' + d.data + tecs + ': ' + d.observacao.trim();
+  }).join('\n');
+
+  const statusEl = document.getElementById('resumo-ia-status-' + osId);
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('os_gerando'); }
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ texto })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    if (statusEl) statusEl.style.display = 'none';
+    mostrarPreviaResumoOS(osId, d.resumo || texto);
+  } catch(e) {
+    if (statusEl) statusEl.style.display = 'none';
+    toast(tr('erro_prefix') + e.message, 'err');
+  }
+}
+
+function mostrarPreviaResumoOS(osId, resumo) {
+  const el = document.getElementById('resumo-ia-preview-' + osId);
+  if (!el) return;
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px 12px">
+      <div style="font-size:10px;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600">${tr('os_resumo_ia')}</div>
+      <div id="resumo-trabalho-texto-${osId}" contenteditable="false" style="font-size:12px;background:#fff;border:1.5px solid #e8e8e5;border-radius:7px;padding:9px 11px;margin-bottom:8px;outline:none;white-space:pre-wrap">${resumo}</div>
+      <div style="display:flex;gap:8px">
+        <button onclick="toggleEditarResumoOS('${osId}')" id="resumo-trabalho-edit-btn-${osId}" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:11px;cursor:pointer">${tr('os_editar_nota')}</button>
+        <button onclick="cancelarResumoOS('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:11px;cursor:pointer">${tr('btn_cancelar')}</button>
+        <button onclick="confirmarResumoOS('${osId}')" style="padding:6px 12px;border:none;border-radius:7px;background:#166534;color:#fff;font-size:11px;cursor:pointer">${tr('os_confirmar')}</button>
+      </div>
+    </div>`;
+}
+
+function toggleEditarResumoOS(osId) {
+  const el = document.getElementById('resumo-trabalho-texto-' + osId);
+  const btn = document.getElementById('resumo-trabalho-edit-btn-' + osId);
+  if (!el) return;
+  const editando = el.getAttribute('contenteditable') === 'true';
+  el.setAttribute('contenteditable', editando ? 'false' : 'true');
+  el.style.borderColor = editando ? '#e8e8e5' : '#166534';
+  if (btn) btn.textContent = editando ? tr('os_editar_nota') : tr('os_concluir_edicao');
+  if (!editando) el.focus();
+}
+
+function cancelarResumoOS(osId) {
+  const el = document.getElementById('resumo-ia-preview-' + osId);
+  if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+}
+
+async function confirmarResumoOS(osId) {
+  const el = document.getElementById('resumo-trabalho-texto-' + osId);
+  const texto = el?.innerText.trim();
+  if (!texto) return;
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { resumo_ia: texto });
+    const os = osData.find(o => o.id === osId);
+    if (os) os.resumo_ia = texto;
+    cancelarResumoOS(osId);
+    toast(tr('resumo_salvo'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
@@ -1476,6 +1624,7 @@ async function salvarGasto() {
   const valor = parseFloat(document.getElementById('ng-valor')?.value) || 0;
   if (!valor) { toast(tr('gasto_valor_obrigatorio'), 'err'); return; }
   const body = {
+    os_id: osId,
     fornecedor: document.getElementById('ng-fornecedor')?.value.trim() || '',
     descricao: document.getElementById('ng-descricao')?.value.trim() || '',
     categoria: document.getElementById('ng-categoria')?.value || 'outro',
