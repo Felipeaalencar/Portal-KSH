@@ -361,6 +361,10 @@ const I18N = {
   tarefas_email_sync_label: { en: 'Synced with email (to be defined)', pt: 'Sincronizado com email (a definir)' },
   tarefa_excluir: { en: 'Delete task', pt: 'Excluir tarefa' },
   tarefa_confirma_excluir: { en: 'Delete this task?', pt: 'Excluir esta tarefa?' },
+  btn_sincronizar_gmail: { en: '🔄 Sync Gmail', pt: '🔄 Sincronizar Gmail' },
+  tarefa_gmail_sincronizando: { en: 'Checking Gmail...', pt: 'Verificando o Gmail...' },
+  tarefa_gmail_sucesso: { en: 'NUM new task(s) imported from Gmail', pt: 'NUM tarefa(s) nova(s) importada(s) do Gmail' },
+  tarefa_gmail_nenhuma: { en: 'No new emails labeled "Tarefas"', pt: 'Nenhum email novo com a label "Tarefas"' },
 };
 
 function tr(key) {
@@ -617,7 +621,7 @@ function getActions(id) {
     'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">' + tr('btn_novo_tecnico') + '</button>',
     'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">' + tr('btn_novo_cliente') + '</button>',
     'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
-    'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
+    'tarefas': '<button class="btn-sec" onclick="sincronizarGmailTarefas()">' + tr('btn_sincronizar_gmail') + '</button><button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
   };
   return m[id] || '';
@@ -2109,6 +2113,28 @@ function abrirNovaOSDeTarefa(tarefaId) {
 }
 
 
+async function sincronizarGmailTarefas() {
+  toast(tr('tarefa_gmail_sincronizando'), 'ok');
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/sincronizar-gmail', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY }
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    const n = d.criadas || 0;
+    toast(n > 0 ? tr('tarefa_gmail_sucesso').replace('NUM', n) : tr('tarefa_gmail_nenhuma'), 'ok');
+    if (document.getElementById('tarefas-board')) {
+      tarefasData = await sbGet('tarefas?order=ordem.asc');
+      renderTarefasBoard();
+    }
+  } catch(e) {
+    console.error('sincronizar-gmail falhou:', e);
+    toast(tr('erro_prefix') + e.message, 'err');
+  }
+}
+
+
 // Nova OS
 let osCliSel = null;
 
@@ -2296,7 +2322,7 @@ function conectarGoogle() {
   const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GID
     + '&redirect_uri=' + encodeURIComponent(window.location.origin + window.location.pathname)
     + '&response_type=code&access_type=offline&prompt=consent'
-    + '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file');
+    + '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/gmail.modify');
   window.location.href = url;
 }
 
