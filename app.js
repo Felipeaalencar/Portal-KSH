@@ -430,6 +430,42 @@ const I18N = {
   sub_tarefas: { en: 'Team schedule synced with Google Calendar', pt: 'Agenda da equipe sincronizada com Google Calendar' },
   sub_ferramentas: { en: 'Equipment, toolkit and materials inventory', pt: 'Inventário de equipamentos, maletas e materiais' },
   sub_documentos: { en: 'Licenses, insurance, permits and manuals', pt: 'Licenças, seguros, alvarás e manuais' },
+  doc_novo_title: { en: 'New document', pt: 'Novo documento' },
+  doc_editar_title: { en: 'Edit document', pt: 'Editar documento' },
+  btn_novo_documento: { en: '+ New document', pt: '+ Novo documento' },
+  label_titulo_documento: { en: 'Title', pt: 'Título do documento' },
+  doc_titulo_ph: { en: 'Ex: Business license', pt: 'Ex: Alvará de funcionamento' },
+  cat_licenca: { en: 'License', pt: 'Licença' },
+  cat_seguro: { en: 'Insurance', pt: 'Seguro' },
+  cat_alvara: { en: 'Permit', pt: 'Alvará' },
+  cat_manual: { en: 'Manual', pt: 'Manual' },
+  cat_tecnico: { en: 'Technical', pt: 'Documento técnico' },
+  cat_registro: { en: 'Record', pt: 'Registro' },
+  label_orgao_emissor: { en: 'Issuer', pt: 'Órgão emissor / fornecedor' },
+  doc_orgao_ph: { en: 'Ex: City hall, insurer, manufacturer', pt: 'Ex: Prefeitura, seguradora, fabricante' },
+  label_numero_documento: { en: 'Document number', pt: 'Número do documento' },
+  doc_numero_ph: { en: 'Optional', pt: 'Opcional' },
+  label_data_emissao: { en: 'Issue date', pt: 'Data de emissão' },
+  label_data_validade: { en: 'Expiry date', pt: 'Data de validade' },
+  doc_sem_validade_hint: { en: 'Leave blank if it does not expire', pt: 'Deixe em branco se não tiver validade' },
+  label_observacoes_doc: { en: 'Notes', pt: 'Observações' },
+  doc_observacoes_ph: { en: 'Optional notes', pt: 'Observações opcionais' },
+  label_arquivo_documento: { en: 'File', pt: 'Arquivo' },
+  doc_anexar_arquivo: { en: 'Attach file (photo or PDF)', pt: 'Anexar arquivo (foto ou PDF)' },
+  doc_arquivo_ja_anexado: { en: 'File already attached', pt: 'Arquivo já anexado' },
+  doc_ia_disponivel_apenas_foto: { en: 'Auto-fill only works with a photo (not PDF)', pt: 'Preenchimento automático só funciona com foto (não com PDF)' },
+  doc_ia_lendo: { en: 'Reading document with AI…', pt: 'Lendo documento com IA…' },
+  doc_ia_sucesso: { en: 'Fields filled! Review before saving.', pt: 'Dados preenchidos! Confira antes de salvar.' },
+  doc_ia_erro: { en: 'Could not read the document', pt: 'Não consegui ler o documento' },
+  doc_titulo_obrigatorio: { en: 'Title is required', pt: 'Título é obrigatório' },
+  doc_salvo: { en: 'Document saved', pt: 'Documento salvo' },
+  doc_excluir_confirm: { en: 'Delete this document?', pt: 'Excluir este documento?' },
+  doc_excluido: { en: 'Document deleted', pt: 'Documento excluído' },
+  doc_none_found: { en: 'No documents in this category', pt: 'Nenhum documento nessa categoria' },
+  doc_abrir: { en: 'Open', pt: 'Abrir' },
+  doc_filtro_todos: { en: 'All', pt: 'Todos' },
+  doc_sem_validade: { en: 'No expiry date', pt: 'Sem validade' },
+
   tarefas_col_media: { en: 'Medium', pt: 'Média' },
   tarefas_col_alta: { en: 'High', pt: 'Alta' },
   tarefas_col_urgente: { en: 'Urgent', pt: 'Urgente' },
@@ -733,6 +769,7 @@ function getActions(id) {
     'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
     'fin-rentabilidade': '<button class="btn-sec" onclick="loadModule(\'fin-rentabilidade\')">' + tr('btn_atualizar') + '</button>',
+    'documentos': '<button class="btn-pri" onclick="abrirNovoDocumento()">' + tr('btn_novo_documento') + '</button>',
   };
   return m[id] || '';
 }
@@ -784,6 +821,7 @@ function loadModule(id) {
   else if (id === 'tarefas') renderTarefas();
   else if (id === 'agenda') renderAgenda();
   else if (id === 'fin-rentabilidade') renderRentabilidadeOS();
+  else if (id === 'documentos') renderDocumentos();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -3894,6 +3932,284 @@ async function uploadDrive(file, folderId) {
   const d = await r.json();
   if (d.id) await fetch('https://www.googleapis.com/drive/v3/files/'+d.id+'/permissions',{method:'POST',headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
   return d;
+}
+
+// Pasta "Documentos" dentro de Portal — cria uma vez e reaproveita (cacheada na sessão)
+let documentosFolderId = null;
+async function getPastaDocumentos() {
+  if (documentosFolderId) return documentosFolderId;
+  const cached = sessionStorage.getItem('ksh_documentos_folder_id');
+  if (cached) { documentosFolderId = cached; return documentosFolderId; }
+  try {
+    const parentId = await getPastaPortal();
+    const q = encodeURIComponent("name='Documentos' and mimeType='application/vnd.google-apps.folder' and trashed=false and '" + parentId + "' in parents");
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', { headers: { 'Authorization': 'Bearer ' + googleToken } });
+    const d = await r.json();
+    documentosFolderId = (d.files && d.files[0] && d.files[0].id) || await criarPastaDrive('Documentos', parentId);
+  } catch(e) {
+    const parentId = await getPastaPortal();
+    documentosFolderId = await criarPastaDrive('Documentos', parentId);
+  }
+  if (documentosFolderId) sessionStorage.setItem('ksh_documentos_folder_id', documentosFolderId);
+  return documentosFolderId;
+}
+
+
+// ── DOCUMENTOS ────────────────────────────────────────────────
+const DOC_CATEGORIA_COR = {
+  licenca: { c: '#1d4ed8', bg: '#eff6ff' },
+  seguro: { c: '#7c3aed', bg: '#f5f3ff' },
+  alvara: { c: '#c2410c', bg: '#fff7ed' },
+  manual: { c: '#166534', bg: '#f0fdf4' },
+  tecnico: { c: '#0f766e', bg: '#f0fdfa' },
+  registro: { c: '#be123c', bg: '#fff1f2' },
+  outro: { c: '#555', bg: '#f5f5f3' }
+};
+const DOC_CATEGORIAS = ['licenca', 'seguro', 'alvara', 'manual', 'tecnico', 'registro', 'outro'];
+
+let documentosData = [];
+let docFiltroCategoria = 'todos';
+let ndocArquivoFile = null;
+
+function fmtDataBR(str) {
+  if (!str) return '';
+  const p = String(str).slice(0, 10).split('-');
+  if (p.length !== 3) return str;
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+function diasParaValidade(dataStr) {
+  if (!dataStr) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const [y, m, d] = String(dataStr).slice(0,10).split('-').map(Number);
+  const alvo = new Date(y, m - 1, d);
+  return Math.round((alvo - hoje) / 86400000);
+}
+
+async function renderDocumentos() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    documentosData = await sbGet('documentos?order=criado_em.desc');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  docFiltroCategoria = 'todos';
+  el.innerHTML = '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="doc-filtros"></div>'
+    + '<div id="doc-alerta" style="margin-bottom:14px"></div>'
+    + '<div id="doc-grid"></div>';
+  renderDocumentosGrid();
+}
+
+function renderDocumentosGrid() {
+  const filtrosEl = document.getElementById('doc-filtros');
+  const alertaEl = document.getElementById('doc-alerta');
+  const gridEl = document.getElementById('doc-grid');
+  if (!filtrosEl || !gridEl) return;
+
+  filtrosEl.innerHTML = '<button onclick="docFiltrar(\'todos\')" style="padding:6px 14px;border-radius:99px;font-size:11px;cursor:pointer;border:1px solid ' + (docFiltroCategoria==='todos'?'#111':'#e8e8e5') + ';background:' + (docFiltroCategoria==='todos'?'#111':'#fff') + ';color:' + (docFiltroCategoria==='todos'?'#fff':'#555') + '">' + tr('doc_filtro_todos') + '</button>'
+    + DOC_CATEGORIAS.map(cat => {
+        const ativo = docFiltroCategoria === cat;
+        const cor = DOC_CATEGORIA_COR[cat];
+        return '<button onclick="docFiltrar(\'' + cat + '\')" style="padding:6px 14px;border-radius:99px;font-size:11px;cursor:pointer;border:1px solid ' + (ativo?cor.c:'#e8e8e5') + ';background:' + (ativo?cor.bg:'#fff') + ';color:' + (ativo?cor.c:'#555') + '">' + tr('cat_' + cat) + '</button>';
+      }).join('');
+
+  const vencidos = documentosData.filter(d => { const dd = diasParaValidade(d.data_validade); return dd !== null && dd < 0; });
+  const vencendo = documentosData.filter(d => { const dd = diasParaValidade(d.data_validade); return dd !== null && dd >= 0 && dd <= 30; });
+  if (vencidos.length || vencendo.length) {
+    const partes = [];
+    if (vencidos.length) partes.push(vencidos.length + ' ' + (LANG==='pt' ? (vencidos.length>1?'vencidos':'vencido') : (vencidos.length>1?'expired':'expired')));
+    if (vencendo.length) partes.push(vencendo.length + ' ' + (LANG==='pt' ? 'vencendo nos próximos 30 dias' : 'expiring in the next 30 days'));
+    alertaEl.innerHTML = '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;color:#92400e">⚠️ ' + partes.join(' · ') + '</div>';
+  } else {
+    alertaEl.innerHTML = '';
+  }
+
+  const lista = docFiltroCategoria === 'todos' ? documentosData : documentosData.filter(d => (d.categoria || 'outro') === docFiltroCategoria);
+  if (!lista.length) {
+    gridEl.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('doc_none_found') + '</div>';
+    return;
+  }
+  gridEl.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px">'
+    + lista.map(documentoCardHTML).join('')
+    + '</div>';
+}
+
+function docFiltrar(cat) { docFiltroCategoria = cat; renderDocumentosGrid(); }
+
+function documentoCardHTML(d) {
+  const cor = DOC_CATEGORIA_COR[d.categoria || 'outro'] || DOC_CATEGORIA_COR.outro;
+  const dd = diasParaValidade(d.data_validade);
+  let validadeHTML;
+  if (dd === null) {
+    validadeHTML = '<div style="font-size:11px;color:#bbb">' + tr('doc_sem_validade') + '</div>';
+  } else if (dd < 0) {
+    validadeHTML = '<div style="display:inline-flex;align-items:center;gap:5px;background:#fef2f2;border-radius:6px;padding:3px 8px;font-size:11px;color:#991b1b;font-weight:600">' + (LANG==='pt' ? 'Venceu em ' : 'Expired on ') + fmtDataBR(d.data_validade) + '</div>';
+  } else if (dd <= 30) {
+    validadeHTML = '<div style="display:inline-flex;align-items:center;gap:5px;background:#fffbeb;border-radius:6px;padding:3px 8px;font-size:11px;color:#92400e;font-weight:600">' + (LANG==='pt' ? ('Vence em ' + dd + ' dias') : ('Expires in ' + dd + ' days')) + '</div>';
+  } else {
+    validadeHTML = '<div style="font-size:11px;color:#888">' + (LANG==='pt' ? 'Válido até ' : 'Valid until ') + fmtDataBR(d.data_validade) + '</div>';
+  }
+  return '<div style="background:#fff;border:1px solid #e8e8e5;border-radius:12px;padding:14px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'
+    + '<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:' + cor.bg + ';color:' + cor.c + '">' + tr('cat_' + (d.categoria||'outro')) + '</span>'
+    + '</div>'
+    + '<div style="font-size:13px;font-weight:600;margin-bottom:2px">' + (d.titulo || '—') + '</div>'
+    + '<div style="font-size:11px;color:#888;margin-bottom:8px">' + [d.orgao_emissor, d.numero_documento].filter(Boolean).join(' · ') + '</div>'
+    + validadeHTML
+    + '<div style="display:flex;gap:6px;margin-top:12px;border-top:1px solid #f0f0ee;padding-top:10px">'
+    + (d.arquivo_drive_url ? '<a href="' + d.arquivo_drive_url + '" target="_blank" style="flex:1;text-align:center;font-size:11px;padding:5px;border:1px solid #e8e8e5;border-radius:6px;color:#333;text-decoration:none">' + tr('doc_abrir') + '</a>' : '<span style="flex:1"></span>')
+    + '<button onclick="abrirEditarDocumento(\'' + d.id + '\')" style="font-size:11px;padding:5px 9px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;color:#555">✎</button>'
+    + '<button onclick="excluirDocumento(\'' + d.id + '\')" style="font-size:11px;padding:5px 9px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;color:#999">×</button>'
+    + '</div></div>';
+}
+
+function abrirNovoDocumento() {
+  document.getElementById('nd2-modal-title').textContent = tr('doc_novo_title');
+  document.getElementById('nd2-modal-btn').textContent = tr('btn_novo_documento');
+  document.getElementById('nd2-doc-id').value = '';
+  document.getElementById('nd2-arquivo-drive-id').value = '';
+  document.getElementById('nd2-arquivo-drive-url').value = '';
+  document.getElementById('nd2-titulo').value = '';
+  document.getElementById('nd2-categoria').value = 'outro';
+  document.getElementById('nd2-orgao').value = '';
+  document.getElementById('nd2-numero').value = '';
+  document.getElementById('nd2-data-emissao').value = '';
+  document.getElementById('nd2-data-validade').value = '';
+  document.getElementById('nd2-observacoes').value = '';
+  document.getElementById('nd2-arquivo-nome').textContent = '';
+  document.getElementById('nd2-ia-status').style.display = 'none';
+  const btnIA0 = document.getElementById('nd2-preencher-ia-btn');
+  if (btnIA0) { btnIA0.disabled = true; btnIA0.style.color = '#999'; btnIA0.style.background = '#f5f5f3'; }
+  ndocArquivoFile = null;
+  abrirModal('m-documento');
+}
+
+async function abrirEditarDocumento(id) {
+  try {
+    const d = documentosData.find(x => x.id === id) || (await sbGet('documentos?id=eq.' + id))[0];
+    if (!d) return;
+    document.getElementById('nd2-modal-title').textContent = tr('doc_editar_title');
+    document.getElementById('nd2-modal-btn').textContent = tr('btn_salvar');
+    document.getElementById('nd2-doc-id').value = d.id;
+    document.getElementById('nd2-arquivo-drive-id').value = d.arquivo_drive_id || '';
+    document.getElementById('nd2-arquivo-drive-url').value = d.arquivo_drive_url || '';
+    document.getElementById('nd2-titulo').value = d.titulo || '';
+    document.getElementById('nd2-categoria').value = d.categoria || 'outro';
+    document.getElementById('nd2-orgao').value = d.orgao_emissor || '';
+    document.getElementById('nd2-numero').value = d.numero_documento || '';
+    document.getElementById('nd2-data-emissao').value = d.data_emissao || '';
+    document.getElementById('nd2-data-validade').value = d.data_validade || '';
+    document.getElementById('nd2-observacoes').value = d.observacoes || '';
+    document.getElementById('nd2-arquivo-nome').textContent = d.arquivo_drive_url ? tr('doc_arquivo_ja_anexado') : '';
+    document.getElementById('nd2-ia-status').style.display = 'none';
+    const btnIA1 = document.getElementById('nd2-preencher-ia-btn');
+    if (btnIA1) { btnIA1.disabled = true; btnIA1.style.color = '#999'; btnIA1.style.background = '#f5f5f3'; }
+    ndocArquivoFile = null;
+    abrirModal('m-documento');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function selecionarArquivoDocumento(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  ndocArquivoFile = file;
+  document.getElementById('nd2-arquivo-nome').textContent = file.name;
+  const btnIA = document.getElementById('nd2-preencher-ia-btn');
+  const statusEl = document.getElementById('nd2-ia-status');
+  if (file.type && file.type.startsWith('image/')) {
+    if (btnIA) { btnIA.disabled = false; btnIA.style.color = '#333'; btnIA.style.background = '#fff'; }
+    if (statusEl) statusEl.style.display = 'none';
+  } else {
+    if (btnIA) { btnIA.disabled = true; btnIA.style.color = '#999'; btnIA.style.background = '#f5f5f3'; }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#92400e'; statusEl.textContent = tr('doc_ia_disponivel_apenas_foto'); }
+  }
+}
+
+async function preencherDocumentoComIA() {
+  if (!ndocArquivoFile) return;
+  const btn = document.getElementById('nd2-preencher-ia-btn');
+  const statusEl = document.getElementById('nd2-ia-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('doc_ia_lendo'); }
+  try {
+    const imagem_base64 = await blobParaBase64(ndocArquivoFile);
+    const r = await fetch(SB_URL + '/functions/v1/extrair-documento', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ imagem_base64, mime_type: ndocArquivoFile.type || 'image/jpeg' })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    if (d.titulo) document.getElementById('nd2-titulo').value = d.titulo;
+    if (d.categoria) document.getElementById('nd2-categoria').value = d.categoria;
+    if (d.orgao_emissor) document.getElementById('nd2-orgao').value = d.orgao_emissor;
+    if (d.numero_documento) document.getElementById('nd2-numero').value = d.numero_documento;
+    if (d.data_emissao) document.getElementById('nd2-data-emissao').value = d.data_emissao;
+    if (d.data_validade) document.getElementById('nd2-data-validade').value = d.data_validade;
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('doc_ia_sucesso'); }
+    toast(tr('doc_ia_sucesso'), 'ok');
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('doc_ia_erro'); }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function salvarDocumento() {
+  const docId = document.getElementById('nd2-doc-id').value;
+  const titulo = document.getElementById('nd2-titulo')?.value.trim();
+  if (!titulo) { toast(tr('doc_titulo_obrigatorio'), 'err'); return; }
+  const body = {
+    titulo,
+    categoria: document.getElementById('nd2-categoria')?.value || 'outro',
+    orgao_emissor: document.getElementById('nd2-orgao')?.value.trim() || '',
+    numero_documento: document.getElementById('nd2-numero')?.value.trim() || '',
+    data_emissao: document.getElementById('nd2-data-emissao')?.value || null,
+    data_validade: document.getElementById('nd2-data-validade')?.value || null,
+    observacoes: document.getElementById('nd2-observacoes')?.value.trim() || ''
+  };
+
+  const btn = document.getElementById('nd2-modal-btn');
+  if (btn) { btn.disabled = true; btn.textContent = tr('os_gerando'); }
+
+  try {
+    if (ndocArquivoFile) {
+      const conectado = await garantirTokenDrive();
+      if (conectado) {
+        const folderId = await getPastaDocumentos();
+        const up = await uploadDrive(ndocArquivoFile, folderId);
+        if (up?.id) {
+          body.arquivo_drive_id = up.id;
+          body.arquivo_drive_url = 'https://drive.google.com/file/d/' + up.id + '/view';
+        }
+      } else {
+        toast(tr('drive_conecte_primeiro'), 'err');
+      }
+    }
+
+    if (docId) {
+      await sbPatch('documentos?id=eq.' + docId, body);
+    } else {
+      body.criado_por = ME.nome;
+      await sbPost('documentos', body);
+    }
+    fecharModal('m-documento');
+    toast(tr('doc_salvo'), 'ok');
+    renderDocumentos();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = docId ? tr('btn_salvar') : tr('btn_novo_documento'); } }
+}
+
+async function excluirDocumento(id) {
+  if (!confirm(tr('doc_excluir_confirm'))) return;
+  try {
+    await sbDelete('documentos?id=eq.' + id);
+    toast(tr('doc_excluido'), 'ok');
+    renderDocumentos();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // ── INIT ──────────────────────────────────────────────────────

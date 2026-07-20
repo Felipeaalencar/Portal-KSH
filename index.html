@@ -539,6 +539,53 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </div>
 
 
+<!-- Modal Novo/Editar Documento -->
+<div class="modal-bg" id="m-documento">
+  <div class="modal-box">
+    <div class="modal-hd"><span class="modal-hd-title" id="nd2-modal-title" data-i18n="doc_novo_title">Novo documento</span><button class="modal-close" onclick="fecharModal('m-documento')">×</button></div>
+    <input type="hidden" id="nd2-doc-id">
+    <input type="hidden" id="nd2-arquivo-drive-id">
+    <input type="hidden" id="nd2-arquivo-drive-url">
+    <label class="f-lbl" data-i18n="label_titulo_documento">Título do documento</label>
+    <input class="f-inp" id="nd2-titulo" data-i18n-placeholder="doc_titulo_ph" placeholder="Ex: Alvará de funcionamento">
+    <label class="f-lbl" data-i18n="label_categoria">Categoria</label>
+    <select class="f-sel" id="nd2-categoria">
+      <option value="licenca" data-i18n="cat_licenca">Licença</option>
+      <option value="seguro" data-i18n="cat_seguro">Seguro</option>
+      <option value="alvara" data-i18n="cat_alvara">Alvará</option>
+      <option value="manual" data-i18n="cat_manual">Manual</option>
+      <option value="tecnico" data-i18n="cat_tecnico">Documento técnico</option>
+      <option value="registro" data-i18n="cat_registro">Registro</option>
+      <option value="outro" data-i18n="cat_outro">Outro</option>
+    </select>
+    <label class="f-lbl" data-i18n="label_orgao_emissor">Órgão emissor / fornecedor</label>
+    <input class="f-inp" id="nd2-orgao" data-i18n-placeholder="doc_orgao_ph" placeholder="Ex: Prefeitura, seguradora, fabricante">
+    <label class="f-lbl" data-i18n="label_numero_documento">Número do documento</label>
+    <input class="f-inp" id="nd2-numero" data-i18n-placeholder="doc_numero_ph" placeholder="Opcional">
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_data_emissao">Data de emissão</label><input class="f-inp" type="date" id="nd2-data-emissao"></div>
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_data_validade">Data de validade</label><input class="f-inp" type="date" id="nd2-data-validade"></div>
+    </div>
+    <label class="f-lbl" data-i18n="label_observacoes_doc">Observações</label>
+    <textarea class="f-ta" id="nd2-observacoes" data-i18n-placeholder="doc_observacoes_ph" placeholder="Observações opcionais"></textarea>
+    <label class="f-lbl" data-i18n="label_arquivo_documento">Arquivo</label>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+      <label style="padding:7px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
+        <span data-i18n="doc_anexar_arquivo">Anexar arquivo (foto ou PDF)</span>
+        <input type="file" accept="image/*,.pdf,application/pdf" id="nd2-arquivo-input" style="display:none" onchange="selecionarArquivoDocumento(event)">
+      </label>
+      <button type="button" id="nd2-preencher-ia-btn" onclick="preencherDocumentoComIA()" disabled style="padding:7px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#999;background:#f5f5f3" data-i18n="gasto_preencher_ia">🪄 Preencher automaticamente</button>
+      <span id="nd2-arquivo-nome" style="font-size:11px;color:#888"></span>
+    </div>
+    <div id="nd2-ia-status" style="display:none;font-size:11px;color:#2563eb;margin-bottom:12px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-documento')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" id="nd2-modal-btn" onclick="salvarDocumento()" data-i18n="btn_novo_documento">+ Novo documento</button>
+    </div>
+  </div>
+</div>
+
+
 <!-- Modal Novo Cliente (aba Clientes) -->
 <div class="modal-bg" id="m-novo-cli-crm">
   <div class="modal-box" style="width:460px">
