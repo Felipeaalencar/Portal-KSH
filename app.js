@@ -2382,9 +2382,9 @@ async function salvarNovaOS() {
       const tId = tarefaOrigemOS;
       tarefaOrigemOS = null;
       try {
-        await sbPatch('tarefas?id=eq.' + tId, { os_gerada_numero: numero, status: 'concluido' });
+        await sbPatch('tarefas?id=eq.' + tId, { os_gerada_numero: numero, status: 'concluida' });
         const t = tarefasData.find(x => x.id === tId);
-        if (t) { t.os_gerada_numero = numero; t.status = 'concluido'; }
+        if (t) { t.os_gerada_numero = numero; t.status = 'concluida'; }
         renderTarefasBoard();
       } catch(e) {}
     }
