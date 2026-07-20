@@ -50,8 +50,10 @@ Deno.serve(async (req: Request) => {
             content:
               "Voce extrai dados de fotos de notas fiscais, cupons e recibos de despesas de campo (combustivel, alimentacao, pedagio, material, hospedagem). " +
               "Responda SOMENTE com um JSON valido no formato: " +
-              '{"fornecedor": string, "data": "YYYY-MM-DD" ou null, "valor": number, "categoria": "alimentacao"|"combustivel"|"pedagio"|"material"|"hospedagem"|"outro", "descricao": string}. ' +
-              "O campo valor deve ser o valor TOTAL pago, em numero (sem simbolo de moeda). " +
+              '{"fornecedor": string, "data": "YYYY-MM-DD" ou null, "valor": number, "quantidade": number, "categoria": "alimentacao"|"combustivel"|"pedagio"|"material"|"hospedagem"|"outro", "descricao": string}. ' +
+              "O campo valor deve ser o valor TOTAL pago (soma de todos os itens + taxas), em numero (sem simbolo de moeda). " +
+              "O campo quantidade e o numero total de itens/unidades distintos que aparecem na nota (conte as linhas de item, nao some quantidades de cada linha); use 1 se so houver um item ou nao der pra saber. " +
+              "O campo descricao deve resumir o(s) item(ns): se houver apenas um item, use o nome dele; se houver mais de um item (mesmo que com o mesmo nome mas precos diferentes, ou itens diferentes), resuma como 'Nx <nome ou principais itens>' (ex: '2x CUP', '3x itens diversos') deixando claro que sao varios itens, nunca cite so um item como se fosse o total. " +
               `Se a data nao estiver visivel ou legivel, use null (nao invente; hoje e ${hoje} apenas de referencia, nao a use como a data do documento a menos que esteja escrita nele). ` +
               "Se algum campo nao puder ser identificado com confianca, deixe string vazia ou null. Nao adicione texto fora do JSON.",
           },
@@ -81,10 +83,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Nao foi possivel interpretar a resposta da IA" }, 500);
     }
 
+    const qtdNum = typeof extraido.quantidade === "number" ? extraido.quantidade : parseFloat(String(extraido.quantidade || "")) || 1;
+
     return json({
       fornecedor: extraido.fornecedor || "",
       data: extraido.data || null,
       valor: typeof extraido.valor === "number" ? extraido.valor : parseFloat(String(extraido.valor || "")) || null,
+      quantidade: qtdNum > 0 ? qtdNum : 1,
       categoria: extraido.categoria || "outro",
       descricao: extraido.descricao || "",
     });

@@ -1055,6 +1055,8 @@ async function abrirOS(id) {
       sbGet('os_gastos?os_id=eq.' + id + '&order=criado_em.desc')
     ]);
   } catch(e) {}
+  await garantirTecnicosAtivosCache();
+  const resumoValores = calcularResumoValores(dias, gastos, tecnicosAtivosCache);
 
   content.innerHTML = `
   <div style="padding:16px 20px;border-bottom:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:#fff;z-index:10">
@@ -1455,7 +1457,7 @@ async function preencherGastoComIA() {
     if (d.data) document.getElementById('ng-data').value = d.data;
     if (d.valor) {
       document.getElementById('ng-valor-unit').value = '';
-      document.getElementById('ng-qtd').value = 1;
+      document.getElementById('ng-qtd').value = d.quantidade && d.quantidade > 0 ? d.quantidade : 1;
       document.getElementById('ng-valor').value = Number(d.valor).toFixed(2);
     }
     if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('gasto_ia_sucesso'); }
