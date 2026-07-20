@@ -2133,13 +2133,22 @@ async function excluirTarefa(id) {
 
 async function cancelarOSDaTarefa(id) {
   const t = tarefasData.find(x => x.id === id);
-  if (!t || !t.os_gerada_id) return;
+  if (!t || !t.os_gerada_numero) return;
   if (!confirm(tr('tarefa_cancelar_os_confirm').replace('NUM', t.os_gerada_numero))) return;
   try {
-    await sbDelete('ordens_servico?id=eq.' + t.os_gerada_id);
-    await sbPatch('tarefas?id=eq.' + id, { os_gerada_numero: null, os_gerada_id: null });
+    let osId = t.os_gerada_id;
+    if (!osId) {
+      // tarefa antiga, gerada antes do vinculo por id existir: acha a OS pelo numero
+      try {
+        const rows = await sbGet('ordens_servico?numero=eq.' + t.os_gerada_numero + '&select=id');
+        osId = rows[0]?.id;
+      } catch(e2) {}
+    }
+    if (osId) await sbDelete('ordens_servico?id=eq.' + osId);
+    await sbPatch('tarefas?id=eq.' + id, { os_gerada_numero: null, os_gerada_id: null, status: 'pendente' });
     t.os_gerada_numero = null;
     t.os_gerada_id = null;
+    t.status = 'pendente';
     renderTarefasBoard();
     toast(tr('tarefa_os_cancelada'), 'ok');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
