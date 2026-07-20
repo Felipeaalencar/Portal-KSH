@@ -343,6 +343,8 @@ const I18N = {
   tarefas_col_alta: { en: 'High', pt: 'Alta' },
   tarefas_col_urgente: { en: 'Urgent', pt: 'Urgente' },
   tarefas_col_concluido: { en: 'Done', pt: 'Concluído' },
+  tarefas_col_os_criada: { en: 'OS Created', pt: 'OS Criada' },
+  tarefa_os_criada_automatica: { en: "This column follows the linked OS status — it moves automatically when the OS is completed", pt: 'Essa coluna é automática: a tarefa segue o status da OS vinculada e vai pra Concluído quando a OS for concluída' },
   tarefa_nova_title: { en: 'New task', pt: 'Nova tarefa' },
   tarefa_titulo_ph: { en: 'Ex: Call the Aqua Vista client', pt: 'Ex: Ligar pro cliente da Aqua Vista' },
   tarefa_titulo_obrigatorio: { en: 'Enter a title', pt: 'Preencha o título' },
@@ -1578,6 +1580,9 @@ async function salvarStatusOS(id) {
   if (!status) return;
   try {
     await sbPatch('ordens_servico?id=eq.' + id, { status });
+    if (status === 'concluida') {
+      try { await sbPatch('tarefas?os_gerada_id=eq.' + id, { status: 'concluida' }); } catch(e2) {}
+    }
     const os = osData.find(o => o.id === id);
     if (os) os.status = status;
     const saveBtn = document.getElementById('status-save-' + id);
@@ -1943,10 +1948,15 @@ const TAREFA_COLS = [
   { id: 'media', key: 'tarefas_col_media', color: '#666', bg: '#f1f1ee' },
   { id: 'alta', key: 'tarefas_col_alta', color: '#92400e', bg: '#fffbeb' },
   { id: 'urgente', key: 'tarefas_col_urgente', color: '#991b1b', bg: '#fef2f2' },
+  { id: 'os_criada', key: 'tarefas_col_os_criada', color: '#1d4ed8', bg: '#eff6ff' },
   { id: 'concluido', key: 'tarefas_col_concluido', color: '#166534', bg: '#f0fdf4' },
 ];
 
-function tarefaColuna(t) { return t.status === 'concluida' ? 'concluido' : (t.prioridade || 'media'); }
+function tarefaColuna(t) {
+  if (t.status === 'concluida') return 'concluido';
+  if (t.os_gerada_numero) return 'os_criada';
+  return t.prioridade || 'media';
+}
 
 async function renderTarefas() {
   const el = document.getElementById('mod-content');
@@ -1962,7 +1972,7 @@ async function renderTarefas() {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
     return;
   }
-  el.innerHTML = '<div id="tarefas-board" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px"></div>';
+  el.innerHTML = '<div style="overflow-x:auto"><div id="tarefas-board" style="display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:10px;min-width:820px"></div></div>';
   renderTarefasBoard();
 }
 
@@ -2048,6 +2058,7 @@ async function addTarefaNota(id) {
 function tarefaDragStart(ev, id) { tarefaArrastando = id; }
 
 function tarefaAplicarColuna(t, colId) {
+  if (colId === 'os_criada') return; // coluna automatica (segue o status da OS vinculada)
   if (colId === 'concluido') { t.status = 'concluida'; }
   else { t.status = 'pendente'; t.prioridade = colId; }
 }
@@ -2058,6 +2069,11 @@ async function tarefaDropCard(ev, destId) {
   const destino = tarefasData.find(t => t.id === destId);
   if (!origem || !destino) return;
   const colDestino = tarefaColuna(destino);
+  if (colDestino === 'os_criada' || tarefaColuna(origem) === 'os_criada') {
+    toast(tr('tarefa_os_criada_automatica'), 'err');
+    tarefaArrastando = null;
+    return;
+  }
   tarefaAplicarColuna(origem, colDestino);
   const semOrigem = tarefasData.filter(t => t.id !== origem.id);
   const idxDestino = semOrigem.findIndex(t => t.id === destId);
@@ -2072,6 +2088,11 @@ async function tarefaDropColuna(ev, destColId) {
   if (!tarefaArrastando) return;
   const origem = tarefasData.find(t => t.id === tarefaArrastando);
   if (!origem) return;
+  if (destColId === 'os_criada' || tarefaColuna(origem) === 'os_criada') {
+    toast(tr('tarefa_os_criada_automatica'), 'err');
+    tarefaArrastando = null;
+    return;
+  }
   tarefaAplicarColuna(origem, destColId);
   tarefaArrastando = null;
   renderTarefasBoard();
@@ -2654,13 +2675,17 @@ async function salvarEditOS() {
   const id = document.getElementById('edit-os-id').value;
   const titulo = document.getElementById('edit-os-titulo').value.trim();
   if (!titulo) { toast(tr('os_titulo_obrigatorio'),'err'); return; }
+  const statusNovo = document.getElementById('edit-os-status').value;
   try {
     await sbPatch('ordens_servico?id=eq.' + id, {
-      titulo, status: document.getElementById('edit-os-status').value,
+      titulo, status: statusNovo,
       tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
       tecnicos: editOsTecnicosSelecionados,
       descricao: document.getElementById('edit-os-desc').value.trim()||null
     });
+    if (statusNovo === 'concluida') {
+      try { await sbPatch('tarefas?os_gerada_id=eq.' + id, { status: 'concluida' }); } catch(e2) {}
+    }
     fecharModal('m-edit-os');
     toast(tr('os_atualizada'), 'ok');
     carregarOS();
