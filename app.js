@@ -2736,6 +2736,7 @@ async function preencherGastoComIA() {
       body: JSON.stringify({ imagem_base64, mime_type: ngFotoFile.type || 'image/jpeg' })
     });
     const d = await r.json();
+    console.log('[extrair-gasto] resposta da IA:', d);
     if (!r.ok) throw new Error(d.error || 'Erro');
     if (d.fornecedor) document.getElementById('ng-fornecedor').value = d.fornecedor;
     if (d.descricao) document.getElementById('ng-descricao').value = d.descricao;
@@ -2748,7 +2749,10 @@ async function preencherGastoComIA() {
     }
     const nadaEncontrado = !d.fornecedor && !d.descricao && !d.valor && !d.data;
     if (nadaEncontrado) {
-      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#92400e'; statusEl.textContent = tr('gasto_ia_vazio'); }
+      if (statusEl) {
+        statusEl.style.display = 'block'; statusEl.style.color = '#92400e';
+        statusEl.innerHTML = tr('gasto_ia_vazio') + '<br><span style="font-size:9px;color:#999;word-break:break-all;user-select:text">' + JSON.stringify(d).replace(/</g,'&lt;') + '</span>';
+      }
       toast(tr('gasto_ia_vazio'), 'err');
     } else {
       if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('gasto_ia_sucesso'); }
@@ -5229,6 +5233,7 @@ async function preencherDocumentoComIA() {
       body: JSON.stringify({ imagem_base64, mime_type: ndocArquivoFile.type || 'image/jpeg' })
     });
     const d = await r.json();
+    console.log('[extrair-documento] resposta da IA:', d);
     if (!r.ok) throw new Error(d.error || 'Erro');
     if (d.titulo) document.getElementById('nd2-titulo').value = d.titulo;
     if (d.categoria) document.getElementById('nd2-categoria').value = d.categoria;
@@ -5238,7 +5243,10 @@ async function preencherDocumentoComIA() {
     if (d.data_validade) document.getElementById('nd2-data-validade').value = d.data_validade;
     const nadaEncontrado = !d.titulo && !d.orgao_emissor && !d.numero_documento && !d.data_emissao && !d.data_validade;
     if (nadaEncontrado) {
-      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#92400e'; statusEl.textContent = tr('doc_ia_vazio'); }
+      if (statusEl) {
+        statusEl.style.display = 'block'; statusEl.style.color = '#92400e';
+        statusEl.innerHTML = tr('doc_ia_vazio') + '<br><span style="font-size:9px;color:#999;word-break:break-all;user-select:text">' + JSON.stringify(d).replace(/</g,'&lt;') + '</span>';
+      }
       toast(tr('doc_ia_vazio'), 'err');
     } else {
       if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('doc_ia_sucesso'); }
