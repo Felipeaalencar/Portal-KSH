@@ -2255,13 +2255,16 @@ async function atualizarEventoAgenda(eventId, titulo, cliente_nome, prazo, tecni
   }
 }
 
-function abrirNovaOSDeTarefa(tarefaId) {
+async function abrirNovaOSDeTarefa(tarefaId) {
   const t = tarefasData.find(x => x.id === tarefaId);
   if (!t) return;
-  abrirNovaOS();
+  await abrirNovaOS();
   tarefaOrigemOS = tarefaId;
   document.getElementById('os-titulo').value = t.titulo;
-  if (t.tecnicos && t.tecnicos.length) popularSelectTecnicos('os-tecnico', t.tecnicos.join(', '));
+  if (t.tecnicos && t.tecnicos.length) {
+    osTecnicosSelecionados = t.tecnicos.slice();
+    renderOsTecnicoChips();
+  }
   if (t.cliente_nome) {
     document.getElementById('os-cli-busca').value = t.cliente_nome;
     buscarClienteOS(t.cliente_nome);
@@ -2272,29 +2275,60 @@ function abrirNovaOSDeTarefa(tarefaId) {
 
 // Nova OS
 let osCliSel = null;
+let osTecnicosSelecionados = [];
+let editOsTecnicosSelecionados = [];
+let tecnicosAtivosCache = [];
 
-async function popularSelectTecnicos(selectId, selecionado) {
-  const sel = document.getElementById(selectId);
-  if (!sel) return;
-  let lista = [];
-  try {
-    lista = await sbGet('tecnicos?ativo=eq.true&order=nome');
-    tecnicosData = lista;
-  } catch(e) { lista = tecnicosData || []; }
-  const nomes = lista.map(t => t.nome);
-  let opts = '<option value="">' + tr('os_tecnico_selecione') + '</option>';
-  opts += lista.map(t => '<option value="' + String(t.nome).replace(/"/g,'&quot;') + '"' + (t.nome === selecionado ? ' selected' : '') + '>' + t.nome + '</option>').join('');
-  if (selecionado && !nomes.includes(selecionado)) {
-    opts += '<option value="' + String(selecionado).replace(/"/g,'&quot;') + '" selected>' + selecionado + ' (' + tr('os_tecnico_nao_cadastrado') + ')</option>';
-  }
-  sel.innerHTML = opts;
+async function garantirTecnicosAtivosCache() {
+  try { tecnicosAtivosCache = await sbGet('tecnicos?ativo=eq.true&order=nome'); tecnicosData = tecnicosAtivosCache; }
+  catch(e) { tecnicosAtivosCache = tecnicosData || []; }
+  return tecnicosAtivosCache;
 }
 
-function abrirNovaOS() {
+function chipTecnicoHTML(valor, label, sel, onclickFn) {
+  const valorEsc = String(valor).replace(/'/g, "\\'");
+  return '<span onclick="' + onclickFn + '(\'' + valorEsc + '\')" style="font-size:12px;padding:5px 10px;border-radius:99px;cursor:pointer;border:1px solid ' + (sel?'#1a1a1a':'#e8e8e5') + ';background:' + (sel?'#1a1a1a':'#fff') + ';color:' + (sel?'#fff':'#555') + '">' + label + '</span>';
+}
+
+function renderOsTecnicoChips() {
+  const el = document.getElementById('os-tecnico-chips');
+  if (!el) return;
+  const nomesCadastrados = tecnicosAtivosCache.map(t => t.nome);
+  let html = tecnicosAtivosCache.map(t => chipTecnicoHTML(t.nome, t.nome, osTecnicosSelecionados.includes(t.nome), 'toggleOsTecnico')).join('');
+  osTecnicosSelecionados.filter(n => !nomesCadastrados.includes(n)).forEach(n => {
+    html += chipTecnicoHTML(n, n + ' (' + tr('os_tecnico_nao_cadastrado') + ')', true, 'toggleOsTecnico');
+  });
+  el.innerHTML = html;
+}
+
+function toggleOsTecnico(nome) {
+  osTecnicosSelecionados = osTecnicosSelecionados.includes(nome) ? osTecnicosSelecionados.filter(n => n !== nome) : [...osTecnicosSelecionados, nome];
+  renderOsTecnicoChips();
+}
+
+function renderEditOsTecnicoChips() {
+  const el = document.getElementById('edit-os-tecnico-chips');
+  if (!el) return;
+  const nomesCadastrados = tecnicosAtivosCache.map(t => t.nome);
+  let html = tecnicosAtivosCache.map(t => chipTecnicoHTML(t.nome, t.nome, editOsTecnicosSelecionados.includes(t.nome), 'toggleEditOsTecnico')).join('');
+  editOsTecnicosSelecionados.filter(n => !nomesCadastrados.includes(n)).forEach(n => {
+    html += chipTecnicoHTML(n, n + ' (' + tr('os_tecnico_nao_cadastrado') + ')', true, 'toggleEditOsTecnico');
+  });
+  el.innerHTML = html;
+}
+
+function toggleEditOsTecnico(nome) {
+  editOsTecnicosSelecionados = editOsTecnicosSelecionados.includes(nome) ? editOsTecnicosSelecionados.filter(n => n !== nome) : [...editOsTecnicosSelecionados, nome];
+  renderEditOsTecnicoChips();
+}
+
+async function abrirNovaOS() {
   osCliSel = null;
   tarefaOrigemOS = null;
+  osTecnicosSelecionados = [];
   ['os-titulo','os-desc','os-cli-busca'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
-  popularSelectTecnicos('os-tecnico', '');
+  await garantirTecnicosAtivosCache();
+  renderOsTecnicoChips();
   document.getElementById('os-cli-sel').style.display = 'none';
   document.getElementById('os-cli-novo').style.display = 'none';
   document.getElementById('os-cli-res').style.display = 'none';
@@ -2369,7 +2403,8 @@ async function salvarNovaOS() {
       cliente: osCliSel.nome, cliente_nome: osCliSel.nome,
       cliente_tel: osCliSel.telefone||null, cliente_email: osCliSel.email||null,
       endereco: osCliSel.endereco||null,
-      tecnico_nome: document.getElementById('os-tecnico')?.value.trim()||null,
+      tecnico_nome: osTecnicosSelecionados.join(', ')||null,
+      tecnicos: osTecnicosSelecionados,
       descricao: document.getElementById('os-desc')?.value.trim()||null,
       status: 'aberta', origem: 'manual', criado_por: ME.nome
     });
@@ -2397,7 +2432,9 @@ async function editarOS(id) {
   document.getElementById('edit-os-id').value = id;
   document.getElementById('edit-os-titulo').value = os.titulo||'';
   document.getElementById('edit-os-status').value = os.status||'aberta';
-  await popularSelectTecnicos('edit-os-tecnico', os.tecnico_nome||'');
+  editOsTecnicosSelecionados = (os.tecnicos && os.tecnicos.length) ? os.tecnicos.slice() : (os.tecnico_nome ? [os.tecnico_nome] : []);
+  await garantirTecnicosAtivosCache();
+  renderEditOsTecnicoChips();
   document.getElementById('edit-os-desc').value = os.descricao||'';
   document.getElementById('edit-os-cli-info').textContent = tr('cliente_colon') + (os.cliente_nome||os.cliente||'—');
   abrirModal('m-edit-os');
@@ -2410,7 +2447,8 @@ async function salvarEditOS() {
   try {
     await sbPatch('ordens_servico?id=eq.' + id, {
       titulo, status: document.getElementById('edit-os-status').value,
-      tecnico_nome: document.getElementById('edit-os-tecnico').value.trim()||null,
+      tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
+      tecnicos: editOsTecnicosSelecionados,
       descricao: document.getElementById('edit-os-desc').value.trim()||null
     });
     fecharModal('m-edit-os');
