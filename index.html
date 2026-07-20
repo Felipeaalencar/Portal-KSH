@@ -164,7 +164,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784520899" defer></script>
+<script src="app.js?v=1784521913" defer></script>
 </head>
 <body>
 
@@ -344,6 +344,19 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-nova-os')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarNovaOS()" data-i18n="btn_criar_os">Criar OS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Escolha OS existente -->
+<div class="modal-bg" id="m-os-existente">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="os_existente_title">Já existe uma OS aberta para esse cliente</span><button class="modal-close" onclick="fecharModal('m-os-existente')">×</button></div>
+    <div id="os-existente-info" style="font-size:13px;color:#555;margin-bottom:18px;background:#f7f7f5;border-radius:8px;padding:10px 12px"></div>
+    <div class="modal-btns" style="justify-content:flex-end;gap:8px">
+      <button class="btn-sec" onclick="fecharModal('m-os-existente')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-sec" onclick="escolherCriarNovaOS()" data-i18n="os_existente_criar_nova">Criar OS separada</button>
+      <button class="btn-pri" onclick="escolherAnexarOS()" data-i18n="os_existente_anexar">Anexar nessa OS</button>
     </div>
   </div>
 </div>

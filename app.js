@@ -243,6 +243,11 @@ const I18N = {
   os_criada: { en: 'Work Order #', pt: 'OS #' },
   os_prefix: { en: 'WO #', pt: 'OS #' },
   os_criada_suffix: { en: ' created!', pt: ' criada!' },
+  os_existente_title: { en: 'There is already an open OS for this client', pt: 'Já existe uma OS aberta para esse cliente' },
+  os_existente_info: { en: 'OS #NUM · CLIENTE — "TITULO". Attach this day to it, or create a separate OS.', pt: 'OS #NUM · CLIENTE — "TITULO". Anexar esse dia nela, ou criar uma OS separada.' },
+  os_existente_criar_nova: { en: 'Create separate OS', pt: 'Criar OS separada' },
+  os_existente_anexar: { en: 'Attach to this OS', pt: 'Anexar nessa OS' },
+  tarefa_anexada_os: { en: 'Day added to OS #NUM', pt: 'Dia adicionado na OS #NUM' },
   os_atualizada: { en: 'Work order updated!', pt: 'OS atualizada!' },
   os_status_atualizado: { en: 'Status updated!', pt: 'Status atualizado!' },
   os_deletar_confirm: { en: 'Delete work order "', pt: 'Deletar OS "' },
@@ -2325,7 +2330,30 @@ async function atualizarEventoAgenda(eventId, titulo, cliente_nome, prazo, tecni
   }
 }
 
+let osEscolhaTarefaId = null;
+let osEscolhaOSAlvo = null;
+
 async function abrirNovaOSDeTarefa(tarefaId) {
+  const t = tarefasData.find(x => x.id === tarefaId);
+  if (!t) return;
+  let osExistente = null;
+  if (t.cliente_nome) {
+    try {
+      osExistente = await sbGet('ordens_servico?cliente_nome=eq.' + encodeURIComponent(t.cliente_nome) + '&status=in.(aberta,em_campo)&order=created_at.desc&limit=1').then(r => r[0] || null);
+    } catch(e) {}
+  }
+  if (osExistente) {
+    osEscolhaTarefaId = tarefaId;
+    osEscolhaOSAlvo = osExistente;
+    document.getElementById('os-existente-info').innerHTML =
+      tr('os_existente_info').replace('NUM', osExistente.numero).replace('CLIENTE', t.cliente_nome).replace('TITULO', osExistente.titulo || '');
+    abrirModal('m-os-existente');
+    return;
+  }
+  criarNovaOSDeTarefa(tarefaId);
+}
+
+async function criarNovaOSDeTarefa(tarefaId) {
   const t = tarefasData.find(x => x.id === tarefaId);
   if (!t) return;
   await abrirNovaOS();
@@ -2340,6 +2368,40 @@ async function abrirNovaOSDeTarefa(tarefaId) {
     document.getElementById('os-cli-busca').value = t.cliente_nome;
     buscarClienteOS(t.cliente_nome);
   }
+}
+
+function escolherCriarNovaOS() {
+  const tarefaId = osEscolhaTarefaId;
+  fecharModal('m-os-existente');
+  osEscolhaTarefaId = null;
+  osEscolhaOSAlvo = null;
+  criarNovaOSDeTarefa(tarefaId);
+}
+
+async function escolherAnexarOS() {
+  const tarefaId = osEscolhaTarefaId;
+  const os = osEscolhaOSAlvo;
+  fecharModal('m-os-existente');
+  osEscolhaTarefaId = null;
+  osEscolhaOSAlvo = null;
+  const t = tarefasData.find(x => x.id === tarefaId);
+  if (!t || !os) return;
+  try {
+    await sbPost('os_dias', {
+      os_id: os.id,
+      data: t.prazo || new Date().toISOString().slice(0,10),
+      tecnicos: t.tecnicos || [],
+      hora_inicio: t.hora || null,
+      hora_fim: t.hora_fim || null,
+      observacao: t.descricao || '',
+      tarefa_origem_id: t.id
+    });
+    await sbPatch('tarefas?id=eq.' + tarefaId, { os_gerada_numero: os.numero, os_gerada_id: os.id });
+    t.os_gerada_numero = os.numero;
+    t.os_gerada_id = os.id;
+    renderTarefasBoard();
+    toast(tr('tarefa_anexada_os').replace('NUM', os.numero), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // ── AGENDA (visao semanal por tecnico) ──────────────────────────
@@ -2661,6 +2723,19 @@ async function salvarNovaOS() {
         const t = tarefasData.find(x => x.id === tId);
         if (t) { t.os_gerada_numero = numero; t.os_gerada_id = novaOS?.id || null; }
         renderTarefasBoard();
+        if (t && novaOS?.id) {
+          try {
+            await sbPost('os_dias', {
+              os_id: novaOS.id,
+              data: t.prazo || new Date().toISOString().slice(0,10),
+              tecnicos: t.tecnicos || [],
+              hora_inicio: t.hora || null,
+              hora_fim: t.hora_fim || null,
+              observacao: t.descricao || '',
+              tarefa_origem_id: t.id
+            });
+          } catch(e2) {}
+        }
       } catch(e) {}
     }
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
