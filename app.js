@@ -365,6 +365,17 @@ const I18N = {
   tarefa_editar: { en: 'Edit task', pt: 'Editar tarefa' },
   btn_salvar_tarefa: { en: 'Save changes', pt: 'Salvar alterações' },
   tarefa_atualizada: { en: 'Task updated', pt: 'Tarefa atualizada' },
+  nav_agenda: { en: 'Schedule', pt: 'Agenda' },
+  card_agenda_title: { en: 'Schedule', pt: 'Agenda' },
+  card_agenda_desc: { en: 'Weekly schedule by technician', pt: 'Agenda semanal por técnico' },
+  agenda_subtitle: { en: 'One row per technician, tasks with a date', pt: 'Uma linha por técnico, tarefas com data marcada' },
+  agenda_hoje: { en: 'Today', pt: 'Hoje' },
+  agenda_busca_ph: { en: 'Search client or title...', pt: 'Buscar cliente ou título...' },
+  agenda_filtro_tecnico: { en: 'Technician', pt: 'Técnico' },
+  agenda_filtro_prioridade: { en: 'Priority', pt: 'Prioridade' },
+  agenda_semana: { en: 'Week', pt: 'Semana' },
+  agenda_dia: { en: 'Day', pt: 'Dia' },
+  agenda_sem_tarefas: { en: 'No scheduled tasks this week', pt: 'Sem tarefas marcadas nessa semana' },
 };
 
 function tr(key) {
@@ -634,6 +645,7 @@ function getSubtitle(id) {
     'kshcam': tr('os_subtitle'),
     'tecnicos': tr('tecnicos_subtitle'),
     'tarefas': tr('sub_tarefas'),
+    'agenda': tr('agenda_subtitle'),
     'ferramentas': tr('sub_ferramentas'),
     'documentos': tr('sub_documentos'),
   };
@@ -669,6 +681,7 @@ function loadModule(id) {
   else if (id === 'kshcam') renderKSHCam();
   else if (id === 'tecnicos') renderTecnicos();
   else if (id === 'tarefas') renderTarefas();
+  else if (id === 'agenda') renderAgenda();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -2084,6 +2097,7 @@ async function excluirTarefa(id) {
     delete tarefaNotasCache[id];
     delete tarefaNotasAbertas[id];
     renderTarefasBoard();
+    if (document.getElementById('agenda-grade')) renderAgendaGrade();
     if (t && t.calendar_event_id) excluirEventoAgenda(t.calendar_event_id);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
@@ -2176,6 +2190,7 @@ async function salvarNovaTarefa() {
       const jaTinhaAgenda = t && t.calendar_event_id;
       if (t) { t.titulo = titulo; t.tecnicos = tecnicos; t.cliente_nome = cliente_nome; t.prazo = prazo; t.hora = hora; t.hora_fim = hora_fim; }
       renderTarefasBoard();
+      if (document.getElementById('agenda-grade')) renderAgendaGrade();
       if (jaTinhaAgenda && prazo) {
         atualizarEventoAgenda(t.calendar_event_id, titulo, cliente_nome, prazo, tecnicos.join(', '), hora, hora_fim);
       } else if (querAgenda && prazo && !jaTinhaAgenda) {
@@ -2269,6 +2284,168 @@ async function abrirNovaOSDeTarefa(tarefaId) {
     document.getElementById('os-cli-busca').value = t.cliente_nome;
     buscarClienteOS(t.cliente_nome);
   }
+}
+
+// ── AGENDA (visao semanal por tecnico) ──────────────────────────
+let agendaSemanaBase = null;
+let agendaTecnicosAtivos = null;
+let agendaPrioridadesAtivas = ['media','alta','urgente'];
+let agendaModoView = 'semana';
+
+function agendaSegundaDaSemana(d) {
+  const dt = new Date(d);
+  const dia = dt.getDay();
+  const diff = (dia === 0 ? -6 : 1 - dia);
+  dt.setDate(dt.getDate() + diff);
+  dt.setHours(0,0,0,0);
+  return dt;
+}
+
+function agendaFormatarISO(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function agendaFormatarCurta(d) {
+  return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0');
+}
+
+async function renderAgenda() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    const [tarefas, tecnicos] = await Promise.all([
+      sbGet('tarefas?status=eq.pendente&prazo=not.is.null&order=prazo.asc'),
+      sbGet('tecnicos?ativo=eq.true&order=nome')
+    ]);
+    tarefasData = tarefas.map(t => ({ ...t, tecnicos: Array.isArray(t.tecnicos) ? t.tecnicos : [] }));
+    tarefasTecnicosLista = tecnicos;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  if (!agendaSemanaBase) agendaSemanaBase = agendaSegundaDaSemana(new Date());
+  if (!agendaTecnicosAtivos) agendaTecnicosAtivos = tarefasTecnicosLista.map(t => t.nome);
+
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">'
+    + '<button class="btn-sec" onclick="agendaMudarSemana(-1)">‹</button>'
+    + '<span id="agenda-label-semana" style="font-size:13px;font-weight:500;min-width:170px;text-align:center;display:inline-block"></span>'
+    + '<button class="btn-sec" onclick="agendaMudarSemana(1)">›</button>'
+    + '<button class="btn-sec" onclick="agendaIrHoje()">' + tr('agenda_hoje') + '</button>'
+    + '</div>'
+    + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center">'
+    + '<input id="agenda-busca" oninput="renderAgendaGrade()" placeholder="' + tr('agenda_busca_ph') + '" style="flex:1;min-width:160px;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none">'
+    + '<div id="agenda-filtro-view" style="display:flex;gap:4px"></div>'
+    + '</div>'
+    + '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px">'
+    + '<div><div style="font-size:11px;color:#888;margin-bottom:6px">' + tr('agenda_filtro_tecnico') + '</div><div id="agenda-filtro-tecnicos" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>'
+    + '<div><div style="font-size:11px;color:#888;margin-bottom:6px">' + tr('agenda_filtro_prioridade') + '</div><div id="agenda-filtro-prioridade" style="display:flex;gap:6px;flex-wrap:wrap"></div></div>'
+    + '</div>'
+    + '<div id="agenda-grade" style="overflow-x:auto"></div>';
+
+  renderAgendaGrade();
+}
+
+function agendaMudarSemana(delta) {
+  agendaSemanaBase.setDate(agendaSemanaBase.getDate() + delta * (agendaModoView === 'dia' ? 1 : 7));
+  renderAgendaGrade();
+}
+
+function agendaIrHoje() {
+  agendaSemanaBase = agendaSegundaDaSemana(new Date());
+  renderAgendaGrade();
+}
+
+function agendaToggleTecnico(nome) {
+  agendaTecnicosAtivos = agendaTecnicosAtivos.includes(nome) ? agendaTecnicosAtivos.filter(n => n !== nome) : [...agendaTecnicosAtivos, nome];
+  renderAgendaGrade();
+}
+
+function agendaTogglePrioridade(p) {
+  agendaPrioridadesAtivas = agendaPrioridadesAtivas.includes(p) ? agendaPrioridadesAtivas.filter(x => x !== p) : [...agendaPrioridadesAtivas, p];
+  renderAgendaGrade();
+}
+
+function agendaSetModoView(m) {
+  agendaModoView = m;
+  renderAgendaGrade();
+}
+
+function agendaAbrirTarefa(id) {
+  abrirEditarTarefa(id);
+}
+
+function renderAgendaGrade() {
+  const labelEl = document.getElementById('agenda-label-semana');
+  if (!labelEl) return;
+
+  document.getElementById('agenda-filtro-tecnicos').innerHTML = tarefasTecnicosLista.map(t =>
+    chipTecnicoHTML(t.nome, t.nome, agendaTecnicosAtivos.includes(t.nome), 'agendaToggleTecnico')
+  ).join('');
+
+  const labelPrioridade = { media: tr('tarefas_col_media'), alta: tr('tarefas_col_alta'), urgente: tr('tarefas_col_urgente') };
+  document.getElementById('agenda-filtro-prioridade').innerHTML = ['media','alta','urgente'].map(p =>
+    chipTecnicoHTML(p, labelPrioridade[p], agendaPrioridadesAtivas.includes(p), 'agendaTogglePrioridade')
+  ).join('');
+
+  document.getElementById('agenda-filtro-view').innerHTML =
+    chipTecnicoHTML('semana', tr('agenda_semana'), agendaModoView === 'semana', 'agendaSetModoView')
+    + chipTecnicoHTML('dia', tr('agenda_dia'), agendaModoView === 'dia', 'agendaSetModoView');
+
+  const nDias = agendaModoView === 'dia' ? 1 : 7;
+  const dias = [];
+  for (let i = 0; i < nDias; i++) {
+    const d = new Date(agendaSemanaBase);
+    d.setDate(d.getDate() + i);
+    dias.push(d);
+  }
+  labelEl.textContent = agendaModoView === 'dia'
+    ? agendaFormatarCurta(dias[0]) + '/' + dias[0].getFullYear()
+    : agendaFormatarCurta(dias[0]) + ' - ' + agendaFormatarCurta(dias[dias.length-1]) + '/' + dias[0].getFullYear();
+
+  const busca = (document.getElementById('agenda-busca')?.value || '').toLowerCase();
+  const cores = {
+    urgente: { bg: '#fef2f2', text: '#991b1b' },
+    alta: { bg: '#fffbeb', text: '#92400e' },
+    media: { bg: '#f1f1ee', text: '#555' },
+  };
+
+  const tecnicosVisiveis = tarefasTecnicosLista.filter(t => agendaTecnicosAtivos.includes(t.nome));
+  const diasISO = dias.map(agendaFormatarISO);
+
+  const grade = document.getElementById('agenda-grade');
+  if (!tecnicosVisiveis.length) { grade.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:30px">' + tr('agenda_sem_tarefas') + '</div>'; return; }
+
+  let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:' + (agendaModoView==='dia' ? 340 : 780) + 'px">';
+  html += '<tr><td style="width:110px;font-size:11px;color:#888;padding:6px 8px"></td>'
+    + dias.map(d => '<td style="text-align:center;font-size:12px;color:#555;padding:6px 4px;border-left:1px solid #f0f0ee"><div>' + ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'][(d.getDay()+6)%7] + '</div><div style="font-size:11px;color:#aaa">' + agendaFormatarCurta(d) + '</div></td>').join('')
+    + '</tr>';
+
+  html += tecnicosVisiveis.map(tec => {
+    const evsPorDia = diasISO.map(iso => tarefasData.filter(t => {
+      if (!t.tecnicos.includes(tec.nome)) return false;
+      if (t.prazo !== iso) return false;
+      if (!agendaPrioridadesAtivas.includes(t.prioridade || 'media')) return false;
+      if (busca && !((t.titulo||'').toLowerCase().includes(busca) || (t.cliente_nome||'').toLowerCase().includes(busca))) return false;
+      return true;
+    }));
+    return '<tr>'
+      + '<td style="font-size:12px;font-weight:500;padding:8px;border-top:1px solid #f0f0ee">' + tec.nome + '</td>'
+      + evsPorDia.map(evs => '<td style="vertical-align:top;padding:4px;border-top:1px solid #f0f0ee;border-left:1px solid #f0f0ee">'
+        + evs.map(t => {
+            const cor = cores[t.prioridade || 'media'];
+            const hora = t.hora ? String(t.hora).slice(0,5) + (t.hora_fim ? '-' + String(t.hora_fim).slice(0,5) : '') : '';
+            return '<div onclick="agendaAbrirTarefa(\'' + t.id + '\')" style="cursor:pointer;background:' + cor.bg + ';color:' + cor.text + ';border-radius:6px;padding:4px 6px;margin-bottom:4px;font-size:11px">'
+              + '<div style="font-weight:500">' + t.titulo + '</div>'
+              + (hora ? '<div>' + hora + '</div>' : '')
+              + (t.cliente_nome ? '<div style="opacity:.8">' + t.cliente_nome + '</div>' : '')
+              + '</div>';
+          }).join('')
+        + '</td>').join('')
+      + '</tr>';
+  }).join('');
+
+  html += '</table>';
+  grade.innerHTML = html;
 }
 
 
