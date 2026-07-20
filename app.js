@@ -1199,6 +1199,79 @@ async function excluirDiaTrabalho(diaId, osId) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+// ── Gravação por voz da observação do dia de trabalho (transcreve e acrescenta) ──
+async function toggleGravacaoDia() {
+  const chave = 'nd-obs';
+  const ativa = gravacoesAtivas[chave];
+  if (ativa) { ativa.recorder.stop(); return; }
+
+  if (!navigator.mediaDevices || !window.MediaRecorder) { toast(tr('nota_erro_microfone'), 'err'); return; }
+
+  let stream;
+  try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }); }
+  catch(e) { toast(tr('nota_erro_microfone'), 'err'); return; }
+
+  const candidatos = ['audio/webm', 'audio/mp4', 'audio/ogg'];
+  const mime = candidatos.find(m => window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported(m)) || '';
+  const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+
+  const micBtn = document.getElementById('nd-mic');
+  const statusEl = document.getElementById('nd-rec-status');
+  const inicioEm = Date.now();
+  let timerId = null;
+
+  function atualizarTimer() {
+    if (!statusEl) return;
+    const seg = Math.floor((Date.now() - inicioEm) / 1000);
+    const m = String(Math.floor(seg / 60)).padStart(2, '0');
+    const s = String(seg % 60).padStart(2, '0');
+    statusEl.textContent = '● ' + tr('nota_gravando') + ' (' + m + ':' + s + ')';
+  }
+
+  recorder.onstop = async () => {
+    clearInterval(timerId);
+    stream.getTracks().forEach(t => t.stop());
+    delete gravacoesAtivas[chave];
+    if (micBtn) { micBtn.textContent = '🎤'; micBtn.style.background = '#fff'; micBtn.style.color = '#555'; }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#2563eb'; statusEl.textContent = tr('nota_transcrevendo'); }
+
+    const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+    if (!blob.size) { if (statusEl) statusEl.style.display = 'none'; return; }
+
+    try {
+      const audio_base64 = await blobParaBase64(blob);
+      const r = await fetch(SB_URL + '/functions/v1/bright-processor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+        body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro');
+      const texto = (d.texto || '').trim();
+      if (statusEl) statusEl.style.display = 'none';
+      if (!texto) { toast(tr('nota_audio_vazio'), 'err'); return; }
+
+      const ta = document.getElementById('nd-observacao');
+      if (ta) {
+        ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/, '') + '\n' + texto) : texto;
+      }
+    } catch(e) {
+      if (statusEl) statusEl.style.display = 'none';
+      console.error('transcrever-audio (dia) falhou:', e);
+      toast(tr('nota_erro_transcricao') + ': ' + e.message, 'err');
+    }
+  };
+
+  recorder.start();
+  gravacoesAtivas[chave] = { recorder };
+  if (micBtn) { micBtn.textContent = '⏹'; micBtn.style.background = '#e74c3c'; micBtn.style.color = '#fff'; }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; }
+  atualizarTimer();
+  timerId = setInterval(atualizarTimer, 1000);
+}
+
 async function salvarDescricaoOS(osId) {
   const ta = document.getElementById('os-servico-' + osId);
   if (!ta) return;

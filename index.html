@@ -164,7 +164,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784522561" defer></script>
+<script src="app.js?v=1784522815" defer></script>
 </head>
 <body>
 
@@ -455,6 +455,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div id="nd-tecnicos-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <label class="f-lbl" data-i18n="label_observacao_dia">Observação do dia (opcional)</label>
     <textarea class="f-ta" id="nd-observacao" placeholder="O que foi feito nesse dia..." data-i18n-placeholder="dia_observacao_ph"></textarea>
+    <div style="display:flex;align-items:center;gap:8px;margin:-4px 0 12px">
+      <button type="button" id="nd-mic" onclick="toggleGravacaoDia()" title="Gravar observação" style="padding:6px 10px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;color:#555;font-size:13px;cursor:pointer;font-family:inherit">🎤</button>
+      <div id="nd-rec-status" style="display:none;font-size:11px;color:#e74c3c"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-dia-trabalho')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" id="nd-modal-btn" onclick="salvarDiaTrabalho()" data-i18n="btn_criar_dia">Adicionar dia</button>
