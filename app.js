@@ -1392,7 +1392,7 @@ async function abrirOS(id) {
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; const temMarca = Array.isArray(f.anotacoes) && f.anotacoes.length > 0; return '<div onclick="abrirFotoEditor(\''+f.id+'\',\''+id+'\')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5;cursor:pointer' + (priv ? ';opacity:.55' : '') + '"><div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</div><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+'<button onclick="event.preventDefault();event.stopPropagation();excluirFotoOS(\''+f.id+'\',\''+id+'\',\''+(f.drive_url||'')+'\')" title="'+tr('foto_excluir_title')+'" style="position:absolute;bottom:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">🗑</button>'+(temMarca?'<span title="'+tr('foto_tem_marcacao')+'" style="position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);font-size:11px;display:flex;align-items:center;justify-content:center">✏️</span>':'')+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; const temMarca = Array.isArray(f.anotacoes) && f.anotacoes.length > 0; return '<div onclick="abrirFotoEditor(\''+f.id+'\',\''+id+'\')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5;cursor:pointer' + (priv ? ';opacity:.55' : '') + '"><div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</div><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+'<button onclick="event.preventDefault();event.stopPropagation();excluirFotoOS(\''+f.id+'\',\''+id+'\',\''+(f.drive_url||'')+'\')" title="'+tr('foto_excluir_title')+'" style="position:absolute;bottom:4px;right:4px;width:30px;height:30px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center">🗑</button>'+(temMarca?'<span title="'+tr('foto_tem_marcacao')+'" style="position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,.9);font-size:12px;display:flex;align-items:center;justify-content:center">✏️</span>':'')+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
@@ -1411,7 +1411,7 @@ async function abrirOS(id) {
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8e8e5">
       ${os.status === 'concluida'
-        ? '<div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-weight:600">✓ ' + tr('os_finalizada_label') + '</span><button onclick="reabrirOS(\'' + id + '\')" style="background:none;border:none;cursor:pointer;color:#166534;font-size:11px;text-decoration:underline;padding:0">↩ ' + tr('os_reabrir_btn') + '</button></div>'
+        ? '<div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-weight:600">✓ ' + tr('os_finalizada_label') + '</span><button onclick="reabrirOS(\'' + id + '\')" style="background:none;border:none;cursor:pointer;color:#166534;font-size:12px;text-decoration:underline;padding:8px 4px">↩ ' + tr('os_reabrir_btn') + '</button></div>'
         : '<div style="background:#eff6ff;border-radius:8px;padding:12px 14px">'
           + '<div style="font-size:12px;font-weight:600;color:#1d4ed8;margin-bottom:2px">' + tr('os_finalizar_label') + '</div>'
           + '<div style="font-size:11px;color:#1d4ed8;margin-bottom:10px">' + tr('os_finalizar_desc') + '</div>'
@@ -1542,8 +1542,8 @@ function diaTrabalhoCardHTML(d, osId) {
     + '<div style="font-size:12px;font-weight:600">' + (d.data||'') + (horaTxt ? ' · ' + horaTxt : '') + '</div>'
     + '<span style="display:flex;gap:8px;flex-shrink:0;align-items:center">'
     + (agendado ? '<span style="font-size:9px;padding:2px 7px;border-radius:99px;background:#fef3c7;color:#92400e">' + tr('dia_status_agendado') + '</span>' : '')
-    + '<button onclick="abrirEditarDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">✎</button>'
-    + '<button onclick="excluirDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0">×</button>'
+    + '<button onclick="abrirEditarDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:8px;line-height:1">✎</button>'
+    + '<button onclick="excluirDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:19px;padding:8px;line-height:1">×</button>'
     + '</span></div>'
     + (tecs ? '<div style="font-size:11px;color:#888;margin-top:2px">' + tecs + '</div>' : '')
     + (d.observacao ? '<div style="font-size:11px;color:#555;margin-top:4px">' + d.observacao + '</div>' : '')
@@ -1863,8 +1863,8 @@ function gastoCardHTML(g, osId) {
     + '<span style="font-size:10px;color:#888">' + tr('cat_' + (g.categoria||'outro')) + (g.foto_drive_url ? ' · <a href="'+g.foto_drive_url+'" target="_blank" style="color:#2563eb;text-decoration:none">'+tr('gasto_ver_comprovante')+'</a>' : '') + '</span>'
     + '<span style="display:flex;gap:8px;align-items:center">'
     + (podeAprovar ? '<button onclick="aprovarGasto(\''+g.id+'\',\''+osId+'\')" style="font-size:10px;padding:2px 8px;border:1px solid #bbf7d0;border-radius:6px;background:#fff;color:#166534;cursor:pointer">'+tr('gasto_aprovar')+'</button><button onclick="rejeitarGasto(\''+g.id+'\',\''+osId+'\')" style="font-size:10px;padding:2px 8px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#dc2626;cursor:pointer">'+tr('gasto_rejeitar')+'</button>' : '')
-    + '<button onclick="abrirEditarGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:11px;padding:0">✎</button>'
-    + '<button onclick="excluirGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">×</button>'
+    + '<button onclick="abrirEditarGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:8px;line-height:1">✎</button>'
+    + '<button onclick="excluirGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:19px;padding:8px;line-height:1">×</button>'
     + '</span></div>'
     + '</div>';
 }
@@ -2605,8 +2605,8 @@ function notaCardHTML(n, osId) {
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">'
     + '<div style="font-size:13px;margin-bottom:3px;flex:1;white-space:pre-wrap">' + n.texto + '</div>'
     + '<span style="display:flex;gap:8px;flex-shrink:0">'
-    + '<button onclick="editarNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">✎</button>'
-    + '<button onclick="excluirNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0">×</button>'
+    + '<button onclick="editarNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;padding:8px;line-height:1">✎</button>'
+    + '<button onclick="excluirNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#888;font-size:19px;padding:8px;line-height:1">×</button>'
     + '</span></div>'
     + '<div style="font-size:10px;color:#bbb">' + (n.autor||'—') + ' · ' + new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US') + '</div>'
     + '</div>';
@@ -3052,8 +3052,8 @@ function tarefaCardHTML(t) {
     + '<div style="display:flex;justify-content:space-between;gap:6px">'
     + '<div style="font-size:12px;line-height:1.4">' + t.titulo + '</div>'
     + '<span style="display:flex;gap:6px;flex-shrink:0">'
-    + '<button onclick="abrirEditarTarefa(\'' + t.id + '\')" title="' + tr('tarefa_editar') + '" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;line-height:1;padding:0">✎</button>'
-    + '<button onclick="excluirTarefa(\'' + t.id + '\')" title="' + tr('tarefa_excluir') + '" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;line-height:1;padding:0">×</button>'
+    + '<button onclick="abrirEditarTarefa(\'' + t.id + '\')" title="' + tr('tarefa_editar') + '" style="background:none;border:none;cursor:pointer;color:#888;font-size:16px;line-height:1;padding:8px">✎</button>'
+    + '<button onclick="excluirTarefa(\'' + t.id + '\')" title="' + tr('tarefa_excluir') + '" style="background:none;border:none;cursor:pointer;color:#888;font-size:19px;line-height:1;padding:8px">×</button>'
     + '</span></div>'
     + (t.os_gerada_numero ? '<div style="font-size:10px;color:#166534;margin-top:4px">' + tr('tarefa_os_gerada_badge').replace('NUM', t.os_gerada_numero) + '</div>' : '')
     + (t.prazo ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.prazo + (t.hora ? ' ' + String(t.hora).slice(0,5) + (t.hora_fim ? '-' + String(t.hora_fim).slice(0,5) : '') : '') + (t.calendar_event_id ? ' ✓' : '') + '</div>' : '')
