@@ -164,7 +164,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784524132" defer></script>
+<script src="app.js?v=1784524396" defer></script>
 </head>
 <body>
 
@@ -498,13 +498,15 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <label class="f-lbl" data-i18n="label_valor_total">Valor total (US$)</label>
     <input class="f-inp" type="number" step="0.01" id="ng-valor">
     <label class="f-lbl" data-i18n="label_comprovante">Comprovante (opcional)</label>
-    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">
       <label style="padding:7px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff" data-i18n="gasto_anexar_foto">
         Anexar foto
         <input type="file" accept="image/*" id="ng-foto-input" style="display:none" onchange="selecionarFotoGasto(event)">
       </label>
+      <button type="button" id="ng-preencher-ia-btn" onclick="preencherGastoComIA()" disabled style="padding:7px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#999;background:#f5f5f3" data-i18n="gasto_preencher_ia">🪄 Preencher automaticamente</button>
       <span id="ng-foto-nome" style="font-size:11px;color:#888"></span>
     </div>
+    <div id="ng-ia-status" style="display:none;font-size:11px;color:#2563eb;margin-bottom:12px"></div>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-gasto')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" id="ng-modal-btn" onclick="salvarGasto()" data-i18n="btn_lancar_gasto">Lançar despesa</button>

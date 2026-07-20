@@ -202,6 +202,10 @@ const I18N = {
   label_comprovante: { en: 'Receipt (optional)', pt: 'Comprovante (opcional)' },
   gasto_anexar_foto: { en: 'Attach photo', pt: 'Anexar foto' },
   gasto_foto_ja_anexada: { en: 'Photo already attached', pt: 'Foto já anexada' },
+  gasto_preencher_ia: { en: '🪄 Auto-fill', pt: '🪄 Preencher automaticamente' },
+  gasto_ia_lendo: { en: 'Reading receipt...', pt: 'Lendo a nota...' },
+  gasto_ia_sucesso: { en: 'Data filled in — check before saving', pt: 'Dados preenchidos — confira antes de salvar' },
+  gasto_ia_erro: { en: "Couldn't read the receipt", pt: 'Não consegui ler a nota' },
   gasto_valor_obrigatorio: { en: 'Enter a value', pt: 'Preencha o valor' },
   gasto_salvo: { en: 'Expense saved', pt: 'Despesa salva' },
   gasto_excluir_confirm: { en: 'Delete this expense?', pt: 'Excluir essa despesa?' },
@@ -1370,6 +1374,9 @@ async function abrirNovoGasto(osId) {
   document.getElementById('ng-valor-unit').value = '';
   document.getElementById('ng-valor').value = '';
   document.getElementById('ng-foto-nome').textContent = '';
+  document.getElementById('ng-ia-status').style.display = 'none';
+  const btnIA0 = document.getElementById('ng-preencher-ia-btn');
+  if (btnIA0) { btnIA0.disabled = true; btnIA0.style.color = '#999'; btnIA0.style.background = '#f5f5f3'; }
   ngFotoFile = null;
   await renderNgDiaOptions(osId, null);
   abrirModal('m-gasto');
@@ -1403,6 +1410,9 @@ async function abrirEditarGasto(gastoId, osId) {
     document.getElementById('ng-valor-unit').value = g.valor_unitario != null ? g.valor_unitario : '';
     document.getElementById('ng-valor').value = g.valor != null ? g.valor : '';
     document.getElementById('ng-foto-nome').textContent = g.foto_drive_url ? tr('gasto_foto_ja_anexada') : '';
+    document.getElementById('ng-ia-status').style.display = 'none';
+    const btnIA1 = document.getElementById('ng-preencher-ia-btn');
+    if (btnIA1) { btnIA1.disabled = true; btnIA1.style.color = '#999'; btnIA1.style.background = '#f5f5f3'; }
     ngFotoFile = null;
     await renderNgDiaOptions(osId, g.os_dia_id);
     abrirModal('m-gasto');
@@ -1420,6 +1430,42 @@ function selecionarFotoGasto(event) {
   if (!file) return;
   ngFotoFile = file;
   document.getElementById('ng-foto-nome').textContent = file.name;
+  const btnIA = document.getElementById('ng-preencher-ia-btn');
+  if (btnIA) { btnIA.disabled = false; btnIA.style.color = '#333'; btnIA.style.background = '#fff'; }
+}
+
+async function preencherGastoComIA() {
+  if (!ngFotoFile) return;
+  const btn = document.getElementById('ng-preencher-ia-btn');
+  const statusEl = document.getElementById('ng-ia-status');
+  if (btn) { btn.disabled = true; }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('gasto_ia_lendo'); }
+  try {
+    const imagem_base64 = await blobParaBase64(ngFotoFile);
+    const r = await fetch(SB_URL + '/functions/v1/extrair-gasto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ imagem_base64, mime_type: ngFotoFile.type || 'image/jpeg' })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    if (d.fornecedor) document.getElementById('ng-fornecedor').value = d.fornecedor;
+    if (d.descricao) document.getElementById('ng-descricao').value = d.descricao;
+    if (d.categoria) document.getElementById('ng-categoria').value = d.categoria;
+    if (d.data) document.getElementById('ng-data').value = d.data;
+    if (d.valor) {
+      document.getElementById('ng-valor-unit').value = '';
+      document.getElementById('ng-qtd').value = 1;
+      document.getElementById('ng-valor').value = Number(d.valor).toFixed(2);
+    }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('gasto_ia_sucesso'); }
+    toast(tr('gasto_ia_sucesso'), 'ok');
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('gasto_ia_erro'); }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 async function salvarGasto() {
