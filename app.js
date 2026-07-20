@@ -168,6 +168,12 @@ const I18N = {
   os_reabrir_btn: { en: 'Reopen order', pt: 'Reabrir OS' },
   os_reabrir_confirm: { en: 'Reopen this order? It will go back to "In progress".', pt: 'Reabrir essa OS? Ela volta para "Em campo".' },
   os_reaberta_sucesso: { en: 'Order reopened', pt: 'OS reaberta' },
+  nota_editar_prompt: { en: 'Edit note:', pt: 'Editar anotação:' },
+  nota_texto_obrigatorio: { en: 'Note text is required', pt: 'Texto da anotação é obrigatório' },
+  nota_atualizada: { en: 'Note updated', pt: 'Anotação atualizada' },
+  nota_excluir_confirm: { en: 'Delete this note?', pt: 'Excluir essa anotação?' },
+  nota_excluida: { en: 'Note deleted', pt: 'Anotação excluída' },
+
 
 
 
@@ -1391,7 +1397,7 @@ async function abrirOS(id) {
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('os_anotacoes_label')} (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
-        ${notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+( n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">'+tr('os_sem_anotacoes')+'</div>'}
+        ${notas.length ? notas.map(n => notaCardHTML(n, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('os_sem_anotacoes')+'</div>'}
       </div>
       <div id="nota-previa-${id}" style="display:none"></div>
       <div id="nota-form-${id}" style="display:flex;gap:8px">
@@ -2592,6 +2598,51 @@ async function salvarStatusOS(id) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+function notaCardHTML(n, osId) {
+  return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">'
+    + '<div style="font-size:13px;margin-bottom:3px;flex:1;white-space:pre-wrap">' + n.texto + '</div>'
+    + '<span style="display:flex;gap:8px;flex-shrink:0">'
+    + '<button onclick="editarNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">✎</button>'
+    + '<button onclick="excluirNotaOS(\'' + n.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0">×</button>'
+    + '</span></div>'
+    + '<div style="font-size:10px;color:#bbb">' + (n.autor||'—') + ' · ' + new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US') + '</div>'
+    + '</div>';
+}
+
+async function renderNotasOS(osId) {
+  const listEl = document.getElementById('notas-' + osId);
+  if (!listEl) return;
+  try {
+    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
+    listEl.innerHTML = notas.length ? notas.map(n => notaCardHTML(n, osId)).join('') : '<div style="color:#bbb;font-size:12px">' + tr('os_sem_anotacoes') + '</div>';
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function editarNotaOS(notaId, osId) {
+  try {
+    const rows = await sbGet('os_notas?id=eq.' + notaId);
+    const n = rows[0];
+    if (!n) return;
+    const novoTexto = prompt(tr('nota_editar_prompt'), n.texto);
+    if (novoTexto === null) return;
+    const texto = novoTexto.trim();
+    if (!texto) { toast(tr('nota_texto_obrigatorio'), 'err'); return; }
+    await sbPatch('os_notas?id=eq.' + notaId, { texto });
+    await renderNotasOS(osId);
+    toast(tr('nota_atualizada'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirNotaOS(notaId, osId) {
+  if (!confirm(tr('nota_excluir_confirm'))) return;
+  try {
+    await sbDelete('os_notas?id=eq.' + notaId);
+    await renderNotasOS(osId);
+    toast(tr('nota_excluida'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
 async function salvarNota(osId) {
   const inp = document.getElementById('nota-input-' + osId);
   const texto = inp?.value.trim();
@@ -2599,9 +2650,7 @@ async function salvarNota(osId) {
   try {
     await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
     inp.value = '';
-    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=created_at.asc');
-    const el = document.getElementById('notas-' + osId);
-    if (el) el.innerHTML = notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('');
+    await renderNotasOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
@@ -2731,9 +2780,7 @@ async function salvarNotaDireta(osId, texto) {
     await sbPost('os_notas', { os_id: osId, texto, autor: ME.nome });
     const inp = document.getElementById('nota-input-' + osId);
     if (inp) inp.value = '';
-    const notas = await sbGet('os_notas?os_id=eq.' + osId + '&order=criado_em.asc');
-    const listEl = document.getElementById('notas-' + osId);
-    if (listEl) listEl.innerHTML = notas.length ? notas.map(n => '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px"><div style="font-size:13px;margin-bottom:3px">'+n.texto+'</div><div style="font-size:10px;color:#bbb">'+(n.autor||'—')+' · '+new Date(n.criado_em||n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US')+'</div></div>').join('') : '<div style="color:#bbb;font-size:12px">'+tr('os_sem_anotacoes')+'</div>';
+    await renderNotasOS(osId);
     toast(tr('anotacao_salva'), 'ok');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
