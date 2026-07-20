@@ -159,6 +159,13 @@ const I18N = {
   dia_marcar_executado: { en: 'Mark as done', pt: 'Marcar como executado' },
   label_dia_executado: { en: 'Work has already been done', pt: 'Trabalho já foi executado' },
   resumo_dias_agendados_aviso: { en: 'scheduled day(s) not yet counted in the total', pt: 'dia(s) agendado(s) ainda não contabilizado(s) no total' },
+  os_finalizada_label: { en: 'Completed order', pt: 'OS finalizada' },
+  os_finalizar_label: { en: 'Finish order', pt: 'Finalizar OS' },
+  os_finalizar_desc: { en: 'Generates the AI work summary and marks the order as completed', pt: 'Gera o resumo do trabalho com IA e marca a OS como concluída' },
+  os_concluir_btn: { en: 'Complete order', pt: 'Concluir OS' },
+  os_concluir_sem_resumo_confirm: { en: 'No day has notes to summarize. Complete the order anyway?', pt: 'Nenhum dia tem observação para resumir. Concluir a OS mesmo assim?' },
+  os_concluida_sucesso: { en: 'Order marked as completed', pt: 'OS marcada como concluída' },
+
 
 
 
@@ -1337,7 +1344,7 @@ async function abrirOS(id) {
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">${tr('os_status_label')}</div>
       <div id="status-pills-${id}" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-        ${Object.entries(S_LABEL).map(([s,l]) => '<button data-status="'+s+'" onclick="selecionarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
+        ${Object.entries(S_LABEL).filter(([s]) => s !== 'concluida').map(([s,l]) => '<button data-status="'+s+'" onclick="selecionarStatusOS(\''+id+'\',\''+s+'\')" style="padding:5px 14px;border-radius:99px;border:1.5px solid '+(os.status===s?S_COLOR[s]:'#e8e8e5')+';background:'+(os.status===s?S_BG[s]:'#fff')+';color:'+(os.status===s?S_COLOR[s]:'#555')+';font-size:12px;font-weight:'+(os.status===s?'600':'400')+';cursor:pointer;font-family:inherit">'+l+'</button>').join('')}
       </div>
       <button id="status-save-${id}" onclick="salvarStatusOS('${id}')" style="display:none;padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_salvar_alteracoes')}</button>
     </div>
@@ -1389,6 +1396,17 @@ async function abrirOS(id) {
         <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_enviar')}</button>
       </div>
       <div id="nota-rec-status-${id}" style="display:none;font-size:11px;color:#e74c3c;margin-top:6px"></div>
+    </div>
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8e8e5">
+      ${os.status === 'concluida'
+        ? '<div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;font-weight:600">✓ ' + tr('os_finalizada_label') + '</div>'
+        : '<div style="background:#eff6ff;border-radius:8px;padding:12px 14px">'
+          + '<div style="font-size:12px;font-weight:600;color:#1d4ed8;margin-bottom:2px">' + tr('os_finalizar_label') + '</div>'
+          + '<div style="font-size:11px;color:#1d4ed8;margin-bottom:10px">' + tr('os_finalizar_desc') + '</div>'
+          + '<button onclick="concluirOS(\'' + id + '\')" style="width:100%;padding:9px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">✓ ' + tr('os_concluir_btn') + '</button>'
+          + '</div>'}
+      <div id="resumo-ia-status-${id}" style="display:none;font-size:11px;color:#2563eb;margin-top:8px"></div>
+      <div id="resumo-ia-preview-${id}" style="display:none;margin-top:8px"></div>
     </div>
     <div style="margin-top:14px;padding-top:14px;border-top:1px solid #e8e8e5;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
       ${os.drive_folder_url?'<a href="'+os.drive_folder_url+'" target="_blank" style="font-size:12px;color:#2563eb;text-decoration:none">'+tr('os_abrir_drive')+'</a>':'<span></span>'}
@@ -1479,11 +1497,7 @@ function resumoValoresHTML(r, id, os) {
       + '<button onclick="alterarStatusCobranca(\''+id+'\',\'a_cobrar\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='a_cobrar'?'#92400e':'#e8e8e5') + ';background:' + (cobranca==='a_cobrar'?'#fffbeb':'#fff') + ';color:' + (cobranca==='a_cobrar'?'#92400e':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='a_cobrar'?'600':'400') + '">' + tr('resumo_a_cobrar') + '</button>'
       + '<button onclick="alterarStatusCobranca(\''+id+'\',\'cobrado\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='cobrado'?'#166534':'#e8e8e5') + ';background:' + (cobranca==='cobrado'?'#f0fdf4':'#fff') + ';color:' + (cobranca==='cobrado'?'#166534':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='cobrado'?'600':'400') + '">' + tr('resumo_cobrado') + '</button>'
     + '</div>'
-    + '<div style="margin-top:10px">'
-      + '<button onclick="gerarResumoTrabalhoOS(\''+id+'\')" style="font-size:12px;padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;color:#333">🎙️ ' + tr('resumo_gerar_ia') + '</button>'
-      + '<div id="resumo-ia-status-' + id + '" style="display:none;font-size:11px;color:#2563eb;margin-top:6px"></div>'
-    + '</div>'
-    + '<div id="resumo-ia-preview-' + id + '" style="display:none;margin-top:8px"></div>';
+    ;
 }
 
 async function salvarValorOrcadoOS(osId) {
@@ -1673,6 +1687,7 @@ function toggleEditarResumoOS(osId) {
 function cancelarResumoOS(osId) {
   const el = document.getElementById('resumo-ia-preview-' + osId);
   if (el) { el.style.display = 'none'; el.innerHTML = ''; }
+  delete concluirAposResumo[osId];
 }
 
 async function confirmarResumoOS(osId) {
@@ -1683,8 +1698,40 @@ async function confirmarResumoOS(osId) {
     await sbPatch('ordens_servico?id=eq.' + osId, { resumo_ia: texto });
     const os = osData.find(o => o.id === osId);
     if (os) os.resumo_ia = texto;
-    cancelarResumoOS(osId);
+    const el2 = document.getElementById('resumo-ia-preview-' + osId);
+    if (el2) { el2.style.display = 'none'; el2.innerHTML = ''; }
     toast(tr('resumo_salvo'), 'ok');
+    if (concluirAposResumo[osId]) {
+      delete concluirAposResumo[osId];
+      await finalizarStatusConcluido(osId);
+    } else {
+      abrirOS(osId);
+    }
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+let concluirAposResumo = {};
+
+async function concluirOS(osId) {
+  let dias = [];
+  try { dias = await sbGet('os_dias?os_id=eq.' + osId + '&order=data.asc'); } catch(e) {}
+  const comObservacao = dias.filter(d => (d.observacao || '').trim());
+  if (comObservacao.length) {
+    concluirAposResumo[osId] = true;
+    await gerarResumoTrabalhoOS(osId);
+  } else {
+    if (!confirm(tr('os_concluir_sem_resumo_confirm'))) return;
+    await finalizarStatusConcluido(osId);
+  }
+}
+
+async function finalizarStatusConcluido(osId) {
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'concluida' });
+    try { await sbPatch('tarefas?os_gerada_id=eq.' + osId, { status: 'concluida' }); } catch(e2) {}
+    const os = osData.find(o => o.id === osId);
+    if (os) os.status = 'concluida';
+    toast(tr('os_concluida_sucesso'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
@@ -3897,7 +3944,10 @@ async function editarOS(id) {
   if (!os) return;
   document.getElementById('edit-os-id').value = id;
   document.getElementById('edit-os-titulo').value = os.titulo||'';
-  document.getElementById('edit-os-status').value = os.status||'aberta';
+  const concluida = os.status === 'concluida';
+  document.getElementById('edit-os-status-wrap').style.display = concluida ? 'none' : 'block';
+  document.getElementById('edit-os-status-readonly').style.display = concluida ? 'block' : 'none';
+  if (!concluida) document.getElementById('edit-os-status').value = os.status||'aberta';
   editOsTecnicosSelecionados = (os.tecnicos && os.tecnicos.length) ? os.tecnicos.slice() : (os.tecnico_nome ? [os.tecnico_nome] : []);
   await garantirTecnicosAtivosCache();
   renderEditOsTecnicoChips();
@@ -3911,16 +3961,19 @@ async function salvarEditOS() {
   const id = document.getElementById('edit-os-id').value;
   const titulo = document.getElementById('edit-os-titulo').value.trim();
   if (!titulo) { toast(tr('os_titulo_obrigatorio'),'err'); return; }
+  const statusEditavel = document.getElementById('edit-os-status-wrap').style.display !== 'none';
   const statusNovo = document.getElementById('edit-os-status').value;
+  const body = {
+    titulo,
+    tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
+    tecnicos: editOsTecnicosSelecionados,
+    descricao: document.getElementById('edit-os-desc').value.trim()||null,
+    valor_orcado: document.getElementById('edit-os-valor-orcado')?.value ? parseFloat(document.getElementById('edit-os-valor-orcado').value) : null
+  };
+  if (statusEditavel) body.status = statusNovo;
   try {
-    await sbPatch('ordens_servico?id=eq.' + id, {
-      titulo, status: statusNovo,
-      tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
-      tecnicos: editOsTecnicosSelecionados,
-      descricao: document.getElementById('edit-os-desc').value.trim()||null,
-      valor_orcado: document.getElementById('edit-os-valor-orcado')?.value ? parseFloat(document.getElementById('edit-os-valor-orcado').value) : null
-    });
-    if (statusNovo === 'concluida') {
+    await sbPatch('ordens_servico?id=eq.' + id, body);
+    if (statusEditavel && statusNovo === 'concluida') {
       try { await sbPatch('tarefas?os_gerada_id=eq.' + id, { status: 'concluida' }); } catch(e2) {}
     }
     fecharModal('m-edit-os');
