@@ -176,6 +176,43 @@ const I18N = {
   os_salvar_alteracoes: { en: '💾 Save changes', pt: '💾 Salvar alterações' },
   os_fotos_label: { en: 'Photos', pt: 'Fotos' },
   os_dias_label: { en: 'Work days', pt: 'Dias de trabalho' },
+  os_gastos_label: { en: 'Expenses', pt: 'Gastos' },
+  gasto_lancar_btn: { en: '+ Log expense', pt: '+ Lançar despesa' },
+  gasto_sem_registro: { en: 'No expense logged yet', pt: 'Nenhum gasto lançado ainda' },
+  gasto_total_aprovado: { en: 'Approved total', pt: 'Total aprovado' },
+  gasto_novo_title: { en: 'Log expense', pt: 'Lançar despesa' },
+  gasto_editar_title: { en: 'Edit expense', pt: 'Editar despesa' },
+  btn_lancar_gasto: { en: 'Log expense', pt: 'Lançar despesa' },
+  label_fornecedor: { en: 'Vendor', pt: 'Fornecedor' },
+  gasto_fornecedor_ph: { en: 'Ex: Shell gas station', pt: 'Ex: Posto Shell' },
+  label_descricao_gasto: { en: 'Description / item', pt: 'Descrição / item' },
+  gasto_descricao_ph: { en: 'Ex: Fuel, lunch, 2x Lutron dimmer...', pt: 'Ex: Combustível, almoço, 2x dimmer Lutron...' },
+  label_categoria: { en: 'Category', pt: 'Categoria' },
+  cat_alimentacao: { en: 'Food', pt: 'Alimentação' },
+  cat_combustivel: { en: 'Fuel', pt: 'Combustível' },
+  cat_pedagio: { en: 'Toll', pt: 'Pedágio' },
+  cat_material: { en: 'Material/part', pt: 'Material/peça' },
+  cat_hospedagem: { en: 'Lodging', pt: 'Hospedagem' },
+  cat_outro: { en: 'Other', pt: 'Outro' },
+  label_dia_vinculado: { en: 'Work day (optional)', pt: 'Dia de trabalho (opcional)' },
+  gasto_sem_dia_vinculado: { en: 'Not linked to a specific day', pt: 'Sem vínculo com um dia específico' },
+  label_quantidade: { en: 'Quantity', pt: 'Quantidade' },
+  label_valor_unitario: { en: 'Unit price (US$)', pt: 'Valor unitário (US$)' },
+  label_valor_total: { en: 'Total value (US$)', pt: 'Valor total (US$)' },
+  label_comprovante: { en: 'Receipt (optional)', pt: 'Comprovante (opcional)' },
+  gasto_anexar_foto: { en: 'Attach photo', pt: 'Anexar foto' },
+  gasto_foto_ja_anexada: { en: 'Photo already attached', pt: 'Foto já anexada' },
+  gasto_valor_obrigatorio: { en: 'Enter a value', pt: 'Preencha o valor' },
+  gasto_salvo: { en: 'Expense saved', pt: 'Despesa salva' },
+  gasto_excluir_confirm: { en: 'Delete this expense?', pt: 'Excluir essa despesa?' },
+  gasto_rejeitar_confirm: { en: 'Reject this expense?', pt: 'Rejeitar essa despesa?' },
+  gasto_sem_descricao: { en: 'Expense', pt: 'Despesa' },
+  gasto_ver_comprovante: { en: 'view receipt', pt: 'ver comprovante' },
+  gasto_aprovar: { en: 'Approve', pt: 'Aprovar' },
+  gasto_rejeitar: { en: 'Reject', pt: 'Rejeitar' },
+  gasto_status_pendente: { en: 'Pending', pt: 'Pendente' },
+  gasto_status_aprovado: { en: 'Approved', pt: 'Aprovado' },
+  gasto_status_rejeitado: { en: 'Rejected', pt: 'Rejeitado' },
   dia_adicionar_btn: { en: '+ Add day', pt: '+ Adicionar dia' },
   dia_sem_registro: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
   dia_novo_title: { en: 'New work day', pt: 'Novo dia de trabalho' },
@@ -198,6 +235,9 @@ const I18N = {
   foto_marcar_privada: { en: 'Mark as private (hidden from client)', pt: 'Marcar como privada (não aparece pro cliente)' },
   foto_marcar_publica: { en: 'Mark as visible to client', pt: 'Marcar como visível pro cliente' },
   foto_privada_badge: { en: 'Private', pt: 'Privada' },
+  foto_excluir_title: { en: 'Delete photo', pt: 'Excluir foto' },
+  foto_excluir_confirm: { en: 'Delete this photo? This cannot be undone.', pt: 'Excluir essa foto? Essa ação não pode ser desfeita.' },
+  foto_excluida: { en: 'Photo deleted', pt: 'Foto excluída' },
   os_gerar_pdf: { en: '📄 Generate client PDF', pt: '📄 Gerar PDF do cliente' },
   os_gerando_pdf: { en: 'Generating PDF...', pt: 'Gerando PDF...' },
   os_pdf_titulo: { en: 'Service order', pt: 'Ordem de serviço' },
@@ -1002,12 +1042,13 @@ async function abrirOS(id) {
     return fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w400') : '';
   }
 
-  let fotos = [], notas = [], dias = [];
+  let fotos = [], notas = [], dias = [], gastos = [];
   try {
-    [fotos, notas, dias] = await Promise.all([
+    [fotos, notas, dias, gastos] = await Promise.all([
       sbGet('os_fotos?os_id=eq.' + id + '&order=criado_em.desc'),
       sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc'),
-      sbGet('os_dias?os_id=eq.' + id + '&order=data.asc')
+      sbGet('os_dias?os_id=eq.' + id + '&order=data.asc'),
+      sbGet('os_gastos?os_id=eq.' + id + '&order=criado_em.desc')
     ]);
   } catch(e) {}
 
@@ -1074,6 +1115,16 @@ async function abrirOS(id) {
     </div>
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600">${tr('os_gastos_label')} (${gastos.length})</div>
+        <button onclick="abrirNovoGasto('${id}')" style="padding:5px 12px;border:1px dashed #d4d4d0;border-radius:7px;font-size:11px;cursor:pointer;color:#555;background:#fff">${tr('gasto_lancar_btn')}</button>
+      </div>
+      <div id="gastos-${id}" style="display:flex;flex-direction:column;gap:8px">
+        ${gastos.length ? gastos.map(g => gastoCardHTML(g, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('gasto_sem_registro')+'</div>'}
+      </div>
+      ${gastos.length ? '<div style="text-align:right;font-size:12px;color:#555;margin-top:8px;font-weight:600">'+tr('gasto_total_aprovado')+': $'+gastos.filter(g=>g.status==='aprovado').reduce((s,g)=>s+Number(g.valor||0),0).toFixed(2)+'</div>' : ''}
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
         <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
           ${tr('os_adicionar_foto')}
@@ -1081,7 +1132,7 @@ async function abrirOS(id) {
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
-        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; const temMarca = Array.isArray(f.anotacoes) && f.anotacoes.length > 0; return '<div onclick="abrirFotoEditor(\''+f.id+'\',\''+id+'\')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5;cursor:pointer' + (priv ? ';opacity:.55' : '') + '"><div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</div><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+(temMarca?'<span title="'+tr('foto_tem_marcacao')+'" style="position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);font-size:11px;display:flex;align-items:center;justify-content:center">✏️</span>':'')+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
+        ${fotos.length ? fotos.map(f => { const src = fotoThumb(f); const priv = !!f.interna; const temMarca = Array.isArray(f.anotacoes) && f.anotacoes.length > 0; return '<div onclick="abrirFotoEditor(\''+f.id+'\',\''+id+'\')" style="position:relative;aspect-ratio:1;border-radius:8px;overflow:hidden;border:1px solid #e8e8e5;cursor:pointer' + (priv ? ';opacity:.55' : '') + '"><div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;background:#f5f5f3">'+(src?'<img src="'+src+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\'">':'<span style="font-size:28px">🖼️</span>')+'</div><button onclick="event.preventDefault();event.stopPropagation();toggleFotoInterna(\''+f.id+'\',\''+id+'\','+(!priv)+')" title="'+(priv?tr('foto_marcar_publica'):tr('foto_marcar_privada'))+'" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">'+(priv?'🔒':'👁')+'</button>'+'<button onclick="event.preventDefault();event.stopPropagation();excluirFotoOS(\''+f.id+'\',\''+id+'\',\''+(f.drive_url||'')+'\')" title="'+tr('foto_excluir_title')+'" style="position:absolute;bottom:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(255,255,255,.9);cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center">🗑</button>'+(temMarca?'<span title="'+tr('foto_tem_marcacao')+'" style="position:absolute;top:4px;left:4px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.9);font-size:11px;display:flex;align-items:center;justify-content:center">✏️</span>':'')+(priv?'<div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,.55);color:#fff;font-size:9px;text-align:center;padding:2px 0">'+tr('foto_privada_badge')+'</div>':'')+'</div>'; }).join('') : '<div style="grid-column:span 3;text-align:center;padding:20px;color:#bbb;font-size:12px;border:1px dashed #e8e8e5;border-radius:8px">'+tr('os_sem_fotos')+'</div>'}
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
@@ -1272,6 +1323,187 @@ async function toggleGravacaoDia() {
   timerId = setInterval(atualizarTimer, 1000);
 }
 
+// ── GASTOS (despesas por OS) ──────────────────────────────────
+const GASTO_STATUS_COR = {
+  pendente: { c: '#92400e', bg: '#fffbeb' },
+  aprovado: { c: '#166534', bg: '#f0fdf4' },
+  rejeitado: { c: '#991b1b', bg: '#fef2f2' }
+};
+
+function gastoCardHTML(g, osId) {
+  const sc = GASTO_STATUS_COR[g.status] || GASTO_STATUS_COR.pendente;
+  const podeAprovar = ME && ME.funcao === 'Gestor' && g.status === 'pendente';
+  return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">'
+    + '<div>'
+    + '<div style="font-size:12px;font-weight:600">' + (g.descricao || tr('gasto_sem_descricao')) + '</div>'
+    + '<div style="font-size:11px;color:#888">' + [g.fornecedor, g.data].filter(Boolean).join(' · ') + '</div>'
+    + '</div>'
+    + '<div style="text-align:right;flex-shrink:0">'
+    + '<div style="font-size:13px;font-weight:700">$' + Number(g.valor||0).toFixed(2) + '</div>'
+    + '<span style="font-size:9px;padding:2px 7px;border-radius:99px;background:' + sc.bg + ';color:' + sc.c + '">' + tr('gasto_status_' + g.status) + '</span>'
+    + '</div></div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;flex-wrap:wrap;gap:6px">'
+    + '<span style="font-size:10px;color:#888">' + tr('cat_' + (g.categoria||'outro')) + (g.foto_drive_url ? ' · <a href="'+g.foto_drive_url+'" target="_blank" style="color:#2563eb;text-decoration:none">'+tr('gasto_ver_comprovante')+'</a>' : '') + '</span>'
+    + '<span style="display:flex;gap:8px;align-items:center">'
+    + (podeAprovar ? '<button onclick="aprovarGasto(\''+g.id+'\',\''+osId+'\')" style="font-size:10px;padding:2px 8px;border:1px solid #bbf7d0;border-radius:6px;background:#fff;color:#166534;cursor:pointer">'+tr('gasto_aprovar')+'</button><button onclick="rejeitarGasto(\''+g.id+'\',\''+osId+'\')" style="font-size:10px;padding:2px 8px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#dc2626;cursor:pointer">'+tr('gasto_rejeitar')+'</button>' : '')
+    + '<button onclick="abrirEditarGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:11px;padding:0">✎</button>'
+    + '<button onclick="excluirGasto(\''+g.id+'\',\''+osId+'\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">×</button>'
+    + '</span></div>'
+    + '</div>';
+}
+
+let ngFotoFile = null;
+
+async function abrirNovoGasto(osId) {
+  document.getElementById('ng-modal-title').textContent = tr('gasto_novo_title');
+  document.getElementById('ng-modal-btn').textContent = tr('btn_lancar_gasto');
+  document.getElementById('ng-os-id').value = osId;
+  document.getElementById('ng-gasto-id').value = '';
+  document.getElementById('ng-foto-drive-id').value = '';
+  document.getElementById('ng-foto-drive-url').value = '';
+  document.getElementById('ng-fornecedor').value = '';
+  document.getElementById('ng-descricao').value = '';
+  document.getElementById('ng-categoria').value = 'outro';
+  document.getElementById('ng-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ng-qtd').value = 1;
+  document.getElementById('ng-valor-unit').value = '';
+  document.getElementById('ng-valor').value = '';
+  document.getElementById('ng-foto-nome').textContent = '';
+  ngFotoFile = null;
+  await renderNgDiaOptions(osId, null);
+  abrirModal('m-gasto');
+}
+
+async function renderNgDiaOptions(osId, selecionado) {
+  const sel = document.getElementById('ng-dia');
+  if (!sel) return;
+  let dias = [];
+  try { dias = await sbGet('os_dias?os_id=eq.' + osId + '&order=data.asc'); } catch(e) {}
+  sel.innerHTML = '<option value="">' + tr('gasto_sem_dia_vinculado') + '</option>'
+    + dias.map(d => '<option value="' + d.id + '"' + (selecionado === d.id ? ' selected' : '') + '>' + d.data + (Array.isArray(d.tecnicos) && d.tecnicos.length ? ' · ' + d.tecnicos.join(', ') : '') + '</option>').join('');
+}
+
+async function abrirEditarGasto(gastoId, osId) {
+  try {
+    const rows = await sbGet('os_gastos?id=eq.' + gastoId);
+    const g = rows[0];
+    if (!g) return;
+    document.getElementById('ng-modal-title').textContent = tr('gasto_editar_title');
+    document.getElementById('ng-modal-btn').textContent = tr('btn_salvar');
+    document.getElementById('ng-os-id').value = osId;
+    document.getElementById('ng-gasto-id').value = gastoId;
+    document.getElementById('ng-foto-drive-id').value = g.foto_drive_id || '';
+    document.getElementById('ng-foto-drive-url').value = g.foto_drive_url || '';
+    document.getElementById('ng-fornecedor').value = g.fornecedor || '';
+    document.getElementById('ng-descricao').value = g.descricao || '';
+    document.getElementById('ng-categoria').value = g.categoria || 'outro';
+    document.getElementById('ng-data').value = g.data || '';
+    document.getElementById('ng-qtd').value = g.quantidade != null ? g.quantidade : 1;
+    document.getElementById('ng-valor-unit').value = g.valor_unitario != null ? g.valor_unitario : '';
+    document.getElementById('ng-valor').value = g.valor != null ? g.valor : '';
+    document.getElementById('ng-foto-nome').textContent = g.foto_drive_url ? tr('gasto_foto_ja_anexada') : '';
+    ngFotoFile = null;
+    await renderNgDiaOptions(osId, g.os_dia_id);
+    abrirModal('m-gasto');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function calcularValorGasto() {
+  const qtd = parseFloat(document.getElementById('ng-qtd')?.value) || 0;
+  const unit = parseFloat(document.getElementById('ng-valor-unit')?.value) || 0;
+  if (qtd && unit) document.getElementById('ng-valor').value = (qtd * unit).toFixed(2);
+}
+
+function selecionarFotoGasto(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  ngFotoFile = file;
+  document.getElementById('ng-foto-nome').textContent = file.name;
+}
+
+async function salvarGasto() {
+  const osId = document.getElementById('ng-os-id').value;
+  const gastoId = document.getElementById('ng-gasto-id').value;
+  const valor = parseFloat(document.getElementById('ng-valor')?.value) || 0;
+  if (!valor) { toast(tr('gasto_valor_obrigatorio'), 'err'); return; }
+  const body = {
+    fornecedor: document.getElementById('ng-fornecedor')?.value.trim() || '',
+    descricao: document.getElementById('ng-descricao')?.value.trim() || '',
+    categoria: document.getElementById('ng-categoria')?.value || 'outro',
+    data: document.getElementById('ng-data')?.value || null,
+    os_dia_id: document.getElementById('ng-dia')?.value || null,
+    quantidade: parseFloat(document.getElementById('ng-qtd')?.value) || 1,
+    valor_unitario: document.getElementById('ng-valor-unit')?.value ? parseFloat(document.getElementById('ng-valor-unit').value) : null,
+    valor
+  };
+
+  const btn = document.getElementById('ng-modal-btn');
+  if (btn) { btn.disabled = true; btn.textContent = tr('os_gerando'); }
+
+  try {
+    if (ngFotoFile) {
+      const conectado = await garantirTokenDrive();
+      if (conectado) {
+        const os = osData.find(o => o.id === osId);
+        let folderId = os?.drive_folder_id;
+        if (!folderId) {
+          const parentId = await getPastaPortal();
+          const nomeCliente = (os?.cliente_nome || os?.cliente || 'Cliente').trim();
+          const nomePasta = 'OS ' + (os?.numero || osId) + ' - ' + nomeCliente;
+          folderId = await criarPastaDrive(nomePasta, parentId);
+          if (folderId) {
+            await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
+            if (os) os.drive_folder_id = folderId;
+          }
+        }
+        const d = await uploadDrive(ngFotoFile, folderId);
+        if (d?.id) {
+          body.foto_drive_id = d.id;
+          body.foto_drive_url = 'https://drive.google.com/file/d/' + d.id + '/view';
+        }
+      } else {
+        toast(tr('drive_conecte_primeiro'), 'err');
+      }
+    }
+
+    if (gastoId) {
+      await sbPatch('os_gastos?id=eq.' + gastoId, body);
+    } else {
+      body.status = 'pendente';
+      body.criado_por = ME.nome;
+      await sbPost('os_gastos', body);
+    }
+    fecharModal('m-gasto');
+    toast(tr('gasto_salvo'), 'ok');
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = gastoId ? tr('btn_salvar') : tr('btn_lancar_gasto'); } }
+}
+
+async function excluirGasto(gastoId, osId) {
+  if (!confirm(tr('gasto_excluir_confirm'))) return;
+  try {
+    await sbDelete('os_gastos?id=eq.' + gastoId);
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function aprovarGasto(gastoId, osId) {
+  try {
+    await sbPatch('os_gastos?id=eq.' + gastoId, { status: 'aprovado' });
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function rejeitarGasto(gastoId, osId) {
+  if (!confirm(tr('gasto_rejeitar_confirm'))) return;
+  try {
+    await sbPatch('os_gastos?id=eq.' + gastoId, { status: 'rejeitado' });
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
 async function salvarDescricaoOS(osId) {
   const ta = document.getElementById('os-servico-' + osId);
   if (!ta) return;
@@ -1303,6 +1535,28 @@ async function salvarNotepad(osId) {
 async function toggleFotoInterna(fotoId, osId, novoValor) {
   try {
     await sbPatch('os_fotos?id=eq.' + fotoId, { interna: novoValor });
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirFotoOS(fotoId, osId, driveUrl) {
+  if (!confirm(tr('foto_excluir_confirm'))) return;
+  try {
+    await sbDelete('os_fotos?id=eq.' + fotoId);
+    if (driveUrl && googleToken) {
+      const m = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+      const fid = m ? m[1] : null;
+      if (fid) {
+        try {
+          await fetch('https://www.googleapis.com/drive/v3/files/' + fid, {
+            method: 'PATCH',
+            headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trashed: true })
+          });
+        } catch(e2) {}
+      }
+    }
+    toast(tr('foto_excluida'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
