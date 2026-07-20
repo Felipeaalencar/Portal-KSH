@@ -444,7 +444,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
         <option value="em_campo" data-i18n="status_em_campo">Em campo</option>
       </select>
     </div>
-    <div id="edit-os-status-readonly" style="display:none;padding:10px 12px;background:#f0fdf4;border-radius:8px;color:#166534;font-size:12px;margin-bottom:12px" data-i18n="os_finalizada_label">OS finalizada</div>
+    <div id="edit-os-status-readonly" style="display:none;padding:10px 12px;background:#f0fdf4;border-radius:8px;color:#166534;font-size:12px;margin-bottom:12px;justify-content:space-between;align-items:center;gap:10px">
+      <span data-i18n="os_finalizada_label">OS finalizada</span>
+      <button type="button" onclick="reabrirOSDoEdit()" style="background:none;border:none;cursor:pointer;color:#166534;font-size:11px;text-decoration:underline;padding:0" data-i18n="os_reabrir_btn">Reabrir OS</button>
+    </div>
     <label class="f-lbl" data-i18n="label_tecnico">Técnico(s)</label><div id="edit-os-tecnico-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px"></div>
     <label class="f-lbl" data-i18n="label_descricao">Descrição</label><textarea class="f-ta" id="edit-os-desc"></textarea>
     <label class="f-lbl" data-i18n="label_valor_orcado">Valor orçado (opcional)</label>

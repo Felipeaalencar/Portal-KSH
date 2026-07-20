@@ -165,6 +165,10 @@ const I18N = {
   os_concluir_btn: { en: 'Complete order', pt: 'Concluir OS' },
   os_concluir_sem_resumo_confirm: { en: 'No day has notes to summarize. Complete the order anyway?', pt: 'Nenhum dia tem observação para resumir. Concluir a OS mesmo assim?' },
   os_concluida_sucesso: { en: 'Order marked as completed', pt: 'OS marcada como concluída' },
+  os_reabrir_btn: { en: 'Reopen order', pt: 'Reabrir OS' },
+  os_reabrir_confirm: { en: 'Reopen this order? It will go back to "In progress".', pt: 'Reabrir essa OS? Ela volta para "Em campo".' },
+  os_reaberta_sucesso: { en: 'Order reopened', pt: 'OS reaberta' },
+
 
 
 
@@ -1399,7 +1403,7 @@ async function abrirOS(id) {
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8e8e5">
       ${os.status === 'concluida'
-        ? '<div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;font-weight:600">✓ ' + tr('os_finalizada_label') + '</div>'
+        ? '<div style="background:#f0fdf4;border-radius:8px;padding:10px 14px;font-size:12px;color:#166534;display:flex;justify-content:space-between;align-items:center;gap:10px"><span style="font-weight:600">✓ ' + tr('os_finalizada_label') + '</span><button onclick="reabrirOS(\'' + id + '\')" style="background:none;border:none;cursor:pointer;color:#166534;font-size:11px;text-decoration:underline;padding:0">↩ ' + tr('os_reabrir_btn') + '</button></div>'
         : '<div style="background:#eff6ff;border-radius:8px;padding:12px 14px">'
           + '<div style="font-size:12px;font-weight:600;color:#1d4ed8;margin-bottom:2px">' + tr('os_finalizar_label') + '</div>'
           + '<div style="font-size:11px;color:#1d4ed8;margin-bottom:10px">' + tr('os_finalizar_desc') + '</div>'
@@ -1734,6 +1738,24 @@ async function finalizarStatusConcluido(osId) {
     toast(tr('os_concluida_sucesso'), 'ok');
     abrirOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function reabrirOS(osId) {
+  if (!confirm(tr('os_reabrir_confirm'))) return;
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { status: 'em_campo' });
+    try { await sbPatch('tarefas?os_gerada_id=eq.' + osId, { status: 'pendente' }); } catch(e2) {}
+    const os = osData.find(o => o.id === osId);
+    if (os) os.status = 'em_campo';
+    toast(tr('os_reaberta_sucesso'), 'ok');
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function reabrirOSDoEdit() {
+  const id = document.getElementById('edit-os-id').value;
+  fecharModal('m-edit-os');
+  await reabrirOS(id);
 }
 
 // ── Gravação por voz da observação do dia de trabalho (transcreve e acrescenta) ──
@@ -3946,7 +3968,7 @@ async function editarOS(id) {
   document.getElementById('edit-os-titulo').value = os.titulo||'';
   const concluida = os.status === 'concluida';
   document.getElementById('edit-os-status-wrap').style.display = concluida ? 'none' : 'block';
-  document.getElementById('edit-os-status-readonly').style.display = concluida ? 'block' : 'none';
+  document.getElementById('edit-os-status-readonly').style.display = concluida ? 'flex' : 'none';
   if (!concluida) document.getElementById('edit-os-status').value = os.status||'aberta';
   editOsTecnicosSelecionados = (os.tecnicos && os.tecnicos.length) ? os.tecnicos.slice() : (os.tecnico_nome ? [os.tecnico_nome] : []);
   await garantirTecnicosAtivosCache();
