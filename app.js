@@ -2374,17 +2374,25 @@ function agendaAbrirTarefa(id) {
   abrirEditarTarefa(id);
 }
 
+// paleta de cores por tecnico (indice = posicao na lista de tecnicos ativos, ordem alfabetica)
+const AGENDA_PALETA_TECNICOS = ['#3b82f6','#a855f7','#14b8a6','#f59e0b','#ef4444','#6366f1','#ec4899','#84cc16','#0ea5e9','#f97316'];
+function agendaCorTecnico(nome) {
+  const idx = tarefasTecnicosLista.findIndex(t => t.nome === nome);
+  return AGENDA_PALETA_TECNICOS[(idx < 0 ? 0 : idx) % AGENDA_PALETA_TECNICOS.length];
+}
+
 function renderAgendaGrade() {
   const labelEl = document.getElementById('agenda-label-semana');
   if (!labelEl) return;
 
   document.getElementById('agenda-filtro-tecnicos').innerHTML = tarefasTecnicosLista.map(t =>
-    chipTecnicoHTML(t.nome, t.nome, agendaTecnicosAtivos.includes(t.nome), 'agendaToggleTecnico')
+    chipTecnicoHTML(t.nome, '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + agendaCorTecnico(t.nome) + ';margin-right:5px;vertical-align:middle"></span>' + t.nome, agendaTecnicosAtivos.includes(t.nome), 'agendaToggleTecnico')
   ).join('');
 
   const labelPrioridade = { media: tr('tarefas_col_media'), alta: tr('tarefas_col_alta'), urgente: tr('tarefas_col_urgente') };
+  const prioridadeDotCor = { media: '#94a3b8', alta: '#f59e0b', urgente: '#ef4444' };
   document.getElementById('agenda-filtro-prioridade').innerHTML = ['media','alta','urgente'].map(p =>
-    chipTecnicoHTML(p, labelPrioridade[p], agendaPrioridadesAtivas.includes(p), 'agendaTogglePrioridade')
+    chipTecnicoHTML(p, '<span style="display:inline-block;width:7px;height:7px;border-radius:2px;background:' + prioridadeDotCor[p] + ';margin-right:5px;vertical-align:middle"></span>' + labelPrioridade[p], agendaPrioridadesAtivas.includes(p), 'agendaTogglePrioridade')
   ).join('');
 
   document.getElementById('agenda-filtro-view').innerHTML =
@@ -2403,11 +2411,6 @@ function renderAgendaGrade() {
     : agendaFormatarCurta(dias[0]) + ' - ' + agendaFormatarCurta(dias[dias.length-1]) + '/' + dias[0].getFullYear();
 
   const busca = (document.getElementById('agenda-busca')?.value || '').toLowerCase();
-  const cores = {
-    urgente: { bg: '#fef2f2', text: '#991b1b' },
-    alta: { bg: '#fffbeb', text: '#92400e' },
-    media: { bg: '#f1f1ee', text: '#555' },
-  };
 
   const tecnicosVisiveis = tarefasTecnicosLista.filter(t => agendaTecnicosAtivos.includes(t.nome));
   const diasISO = dias.map(agendaFormatarISO);
@@ -2415,12 +2418,13 @@ function renderAgendaGrade() {
   const grade = document.getElementById('agenda-grade');
   if (!tecnicosVisiveis.length) { grade.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:30px">' + tr('agenda_sem_tarefas') + '</div>'; return; }
 
-  let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:' + (agendaModoView==='dia' ? 340 : 780) + 'px">';
-  html += '<tr><td style="width:110px;font-size:11px;color:#888;padding:6px 8px"></td>'
+  let html = '<table style="width:100%;border-collapse:collapse;table-layout:fixed;min-width:' + (agendaModoView==='dia' ? 380 : 860) + 'px">';
+  html += '<tr><td style="width:120px;font-size:11px;color:#888;padding:6px 8px"></td>'
     + dias.map(d => '<td style="text-align:center;font-size:12px;color:#555;padding:6px 4px;border-left:1px solid #f0f0ee"><div>' + ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'][(d.getDay()+6)%7] + '</div><div style="font-size:11px;color:#aaa">' + agendaFormatarCurta(d) + '</div></td>').join('')
     + '</tr>';
 
   html += tecnicosVisiveis.map(tec => {
+    const corTec = agendaCorTecnico(tec.nome);
     const evsPorDia = diasISO.map(iso => tarefasData.filter(t => {
       if (!t.tecnicos.includes(tec.nome)) return false;
       if (t.prazo !== iso) return false;
@@ -2429,15 +2433,18 @@ function renderAgendaGrade() {
       return true;
     }));
     return '<tr>'
-      + '<td style="font-size:12px;font-weight:500;padding:8px;border-top:1px solid #f0f0ee">' + tec.nome + '</td>'
-      + evsPorDia.map(evs => '<td style="vertical-align:top;padding:4px;border-top:1px solid #f0f0ee;border-left:1px solid #f0f0ee">'
+      + '<td style="font-size:12px;font-weight:500;padding:10px 8px;border-top:1px solid #f0f0ee;vertical-align:top">'
+        + '<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:' + corTec + ';margin-right:6px;vertical-align:middle"></span>' + tec.nome
+      + '</td>'
+      + evsPorDia.map(evs => '<td style="vertical-align:top;padding:6px;min-height:64px;border-top:1px solid #f0f0ee;border-left:1px solid #f0f0ee">'
         + evs.map(t => {
-            const cor = cores[t.prioridade || 'media'];
-            const hora = t.hora ? String(t.hora).slice(0,5) + (t.hora_fim ? '-' + String(t.hora_fim).slice(0,5) : '') : '';
-            return '<div onclick="agendaAbrirTarefa(\'' + t.id + '\')" style="cursor:pointer;background:' + cor.bg + ';color:' + cor.text + ';border-radius:6px;padding:4px 6px;margin-bottom:4px;font-size:11px">'
-              + '<div style="font-weight:500">' + t.titulo + '</div>'
-              + (hora ? '<div>' + hora + '</div>' : '')
-              + (t.cliente_nome ? '<div style="opacity:.8">' + t.cliente_nome + '</div>' : '')
+            const dotCor = prioridadeDotCor[t.prioridade || 'media'];
+            const hora = t.hora ? String(t.hora).slice(0,5) + (t.hora_fim ? ' - ' + String(t.hora_fim).slice(0,5) : '') : '';
+            return '<div onclick="agendaAbrirTarefa(\'' + t.id + '\')" style="cursor:pointer;position:relative;background:' + corTec + '14;border-left:3px solid ' + corTec + ';border-radius:6px;padding:6px 8px;margin-bottom:6px">'
+              + '<span style="position:absolute;top:6px;right:6px;width:7px;height:7px;border-radius:50%;background:' + dotCor + '"></span>'
+              + '<div style="font-weight:500;font-size:12px;padding-right:12px">' + t.titulo + '</div>'
+              + (hora ? '<div style="font-size:11px;color:#888;margin-top:3px">' + hora + '</div>' : '')
+              + (t.cliente_nome ? '<div style="font-size:11px;color:#888;opacity:.85">' + t.cliente_nome + '</div>' : '')
               + '</div>';
           }).join('')
         + '</td>').join('')
