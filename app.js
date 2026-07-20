@@ -154,6 +154,7 @@ const I18N = {
   perm_acesso_total: { en: 'Manager — full access, cannot be restricted', pt: 'Gestor — acesso total, não pode ser restringido' },
   perm_salvo: { en: 'Permissions saved', pt: 'Permissões salvas' },
   acesso_negado: { en: 'You do not have access to this page', pt: 'Você não tem permissão para acessar essa página' },
+  label_modulos_liberados: { en: 'Modules released in the Portal', pt: 'Módulos liberados no Portal' },
 
 
   // Ordem de Serviço / KSHCam
@@ -945,20 +946,103 @@ function popularSelectFuncao(selecionado) {
 }
 
 async function tratarSelecaoFuncao(selectEl) {
-  if (selectEl.value !== '__nova__') return;
-  const nome = (prompt(tr('funcao_prompt_nome')) || '').trim();
-  if (!nome) { selectEl.value = ''; return; }
-  try {
-    const existente = funcoesData.find(f => f.nome.toLowerCase() === nome.toLowerCase());
-    if (!existente) {
-      await sbPost('funcoes_tecnico', { nome });
-      await carregarFuncoesTecnico();
-      toast(tr('funcao_criada'), 'ok');
+  if (selectEl.value === '__nova__') {
+    const nome = (prompt(tr('funcao_prompt_nome')) || '').trim();
+    if (!nome) { selectEl.value = ''; atualizarVisibilidadePermTec(); return; }
+    try {
+      const existente = funcoesData.find(f => f.nome.toLowerCase() === nome.toLowerCase());
+      if (!existente) {
+        await sbPost('funcoes_tecnico', { nome });
+        await carregarFuncoesTecnico();
+        toast(tr('funcao_criada'), 'ok');
+      }
+      popularSelectFuncao(nome);
+    } catch(e) {
+      toast(tr('erro_prefix') + e.message, 'err');
+      selectEl.value = '';
     }
-    popularSelectFuncao(nome);
+  }
+  atualizarVisibilidadePermTec();
+}
+
+let tecPermEstado = {};
+
+function permEstadoPadrao() {
+  const estado = {};
+  PERMISSOES_ESTRUTURA.forEach(sec => sec.itens.forEach(it => { estado[it.id] = sec.label === 'Operações'; }));
+  return estado;
+}
+
+async function carregarTecPermEstado(email) {
+  if (!email) return permEstadoPadrao();
+  try {
+    const rows = await sbGet('usuarios?email=eq.' + encodeURIComponent(email) + '&limit=1');
+    const u = rows[0];
+    if (!u) return permEstadoPadrao();
+    const permitidas = Array.isArray(u.paginas_permitidas) ? u.paginas_permitidas : [];
+    const estado = {};
+    PERMISSOES_ESTRUTURA.forEach(sec => sec.itens.forEach(it => { estado[it.id] = permitidas.includes(it.id); }));
+    return estado;
+  } catch(e) { return permEstadoPadrao(); }
+}
+
+function renderArvorePermissoesTec() {
+  const container = document.getElementById('tec-perm-tree');
+  if (!container) return;
+  container.innerHTML = PERMISSOES_ESTRUTURA.map(sec => {
+    const ligados = sec.itens.filter(it => tecPermEstado[it.id]).length;
+    const total = sec.itens.length;
+    return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+      + '<div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="togglePermSecaoTec(\'' + sec.label + '\')">'
+      + '<input type="checkbox" ' + (ligados === total ? 'checked' : '') + ' onclick="event.stopPropagation();togglePermSecaoTec(\'' + sec.label + '\')">'
+      + '<span style="font-size:12px;font-weight:600;flex:1">' + sec.label + '</span>'
+      + '<span style="font-size:11px;color:#999">' + ligados + '/' + total + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2px 10px;margin-top:8px;padding-left:2px">'
+      + sec.itens.map(it => '<label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#555;padding:2px 0;cursor:pointer">'
+          + '<input type="checkbox" ' + (tecPermEstado[it.id] ? 'checked' : '') + ' onchange="togglePermItemTec(\'' + it.id + '\')">' + it.label + '</label>').join('')
+      + '</div></div>';
+  }).join('');
+}
+
+function togglePermItemTec(id) { tecPermEstado[id] = !tecPermEstado[id]; renderArvorePermissoesTec(); }
+
+function togglePermSecaoTec(label) {
+  const sec = PERMISSOES_ESTRUTURA.find(s => s.label === label);
+  if (!sec) return;
+  const todosOn = sec.itens.every(it => tecPermEstado[it.id]);
+  sec.itens.forEach(it => { tecPermEstado[it.id] = !todosOn; });
+  renderArvorePermissoesTec();
+}
+
+function atualizarVisibilidadePermTec() {
+  const funcao = document.getElementById('tec-funcao')?.value;
+  const locked = document.getElementById('tec-perm-locked');
+  const tree = document.getElementById('tec-perm-tree');
+  if (!locked || !tree) return;
+  if (funcao === 'Gestor') {
+    locked.style.display = 'block';
+    locked.innerHTML = '🔒 ' + tr('perm_acesso_total');
+    tree.style.display = 'none';
+  } else {
+    locked.style.display = 'none';
+    tree.style.display = 'block';
+    renderArvorePermissoesTec();
+  }
+}
+
+async function upsertUsuarioPermissoes(email, nome, funcao) {
+  if (!email) return;
+  const paginas = funcao === 'Gestor' ? [] : Object.keys(tecPermEstado).filter(id => tecPermEstado[id]);
+  try {
+    const rows = await sbGet('usuarios?email=eq.' + encodeURIComponent(email) + '&limit=1');
+    if (rows[0]) {
+      await sbPatch('usuarios?email=eq.' + encodeURIComponent(email), { nome, funcao: funcao || 'Técnico', paginas_permitidas: paginas });
+    } else {
+      await sbPost('usuarios', { email, nome, funcao: funcao || 'Técnico', paginas_permitidas: paginas });
+    }
   } catch(e) {
     toast(tr('erro_prefix') + e.message, 'err');
-    selectEl.value = '';
   }
 }
 
@@ -1005,6 +1089,8 @@ async function abrirNovoTecnico() {
   ['tec-nome','tec-email','tec-tel','tec-valor'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   if (!funcoesData.length) await carregarFuncoesTecnico();
   popularSelectFuncao(null);
+  tecPermEstado = permEstadoPadrao();
+  atualizarVisibilidadePermTec();
   document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = tr('modal_novo_tecnico');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = tr('btn_cadastrar');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = salvarTecnico;
@@ -1014,15 +1100,18 @@ async function abrirNovoTecnico() {
 async function salvarTecnico() {
   const nome = document.getElementById('tec-nome')?.value.trim();
   if (!nome) { toast(tr('tecnico_nome_obrigatorio'), 'err'); return; }
+  const funcao = document.getElementById('tec-funcao')?.value || null;
+  const email = document.getElementById('tec-email')?.value.trim() || null;
   try {
     await sbPost('tecnicos', {
       nome,
-      funcao: document.getElementById('tec-funcao')?.value || null,
-      email: document.getElementById('tec-email')?.value.trim() || null,
+      funcao,
+      email,
       telefone: document.getElementById('tec-tel')?.value.trim() || null,
       valor_hora: document.getElementById('tec-valor')?.value ? parseFloat(document.getElementById('tec-valor').value) : null,
       ativo: true
     });
+    await upsertUsuarioPermissoes(email, nome, funcao);
     fecharModal('m-novo-tec');
     toast(tr('tecnico_cadastrado'), 'ok');
     renderTecnicos();
@@ -1038,17 +1127,23 @@ async function editarTecnico(id) {
   document.getElementById('tec-email').value = t.email || '';
   document.getElementById('tec-tel').value = t.telefone || '';
   document.getElementById('tec-valor').value = t.valor_hora != null ? t.valor_hora : '';
+  tecPermEstado = await carregarTecPermEstado(t.email || null);
+  atualizarVisibilidadePermTec();
   document.getElementById('m-novo-tec').querySelector('.modal-hd-title').textContent = tr('modal_editar_tecnico');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').textContent = tr('btn_salvar');
   document.getElementById('m-novo-tec').querySelector('.btn-pri').onclick = async () => {
+    const nome = document.getElementById('tec-nome').value.trim();
+    const funcao = document.getElementById('tec-funcao')?.value || null;
+    const email = document.getElementById('tec-email').value.trim() || null;
     try {
       await sbPatch('tecnicos?id=eq.' + id, {
-        nome: document.getElementById('tec-nome').value.trim(),
-        funcao: document.getElementById('tec-funcao')?.value || null,
-        email: document.getElementById('tec-email').value.trim() || null,
+        nome,
+        funcao,
+        email,
         telefone: document.getElementById('tec-tel').value.trim() || null,
         valor_hora: document.getElementById('tec-valor').value ? parseFloat(document.getElementById('tec-valor').value) : null
       });
+      await upsertUsuarioPermissoes(email, nome, funcao);
       fecharModal('m-novo-tec');
       toast(tr('tecnico_atualizado'), 'ok');
       renderTecnicos();

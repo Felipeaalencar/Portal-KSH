@@ -604,7 +604,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </div>
 
 <div class="modal-bg" id="m-novo-tec">
-  <div class="modal-box" style="width:460px">
+  <div class="modal-box" style="width:560px">
     <div class="modal-hd"><span class="modal-hd-title" data-i18n="modal_novo_tecnico">Novo Funcionário</span><button class="modal-close" onclick="fecharModal('m-novo-tec')">×</button></div>
     <label class="f-lbl" data-i18n="label_nome_completo">Nome completo *</label><input class="f-inp" id="tec-nome" placeholder="Nome completo" data-i18n-placeholder="nome_completo_ph">
     <label class="f-lbl" data-i18n="label_funcao">Função</label>
@@ -612,6 +612,9 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <label class="f-lbl" data-i18n="label_email_opt">Email</label><input class="f-inp" id="tec-email" type="email" placeholder="email@exemplo.com" data-i18n-placeholder="email_ph">
     <label class="f-lbl" data-i18n="label_tel_opt">Telefone</label><input class="f-inp" id="tec-tel" placeholder="Ex: +55 11 91234-5678 ou (555) 000-0000" data-i18n-placeholder="tel_ph">
     <label class="f-lbl" data-i18n="label_valor_hora">Valor da hora trabalhada (US$)</label><input class="f-inp" id="tec-valor" type="number" step="0.01" placeholder="Ex: 45.00" data-i18n-placeholder="valor_hora_ph">
+    <label class="f-lbl" data-i18n="label_modulos_liberados">Módulos liberados no Portal</label>
+    <div id="tec-perm-locked" style="display:none;padding:10px 12px;background:#eff6ff;border-radius:8px;color:#1d4ed8;font-size:12px;margin-bottom:10px"></div>
+    <div id="tec-perm-tree" style="max-height:240px;overflow-y:auto;margin-bottom:10px"></div>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-novo-tec')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarTecnico()" data-i18n="btn_cadastrar">Cadastrar</button>
