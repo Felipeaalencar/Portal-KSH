@@ -164,7 +164,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784510500" defer></script>
+<script src="app.js?v=1784560000" defer></script>
 </head>
 <body>
 
@@ -342,6 +342,29 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-nova-os')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarNovaOS()" data-i18n="btn_criar_os">Criar OS</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nova Tarefa -->
+<div class="modal-bg" id="m-nova-tarefa">
+  <div class="modal-box">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="tarefa_nova_title">Nova tarefa</span><button class="modal-close" onclick="fecharModal('m-nova-tarefa')">×</button></div>
+    <label class="f-lbl" data-i18n="label_titulo">Título *</label>
+    <input class="f-inp" id="nt-titulo" data-i18n-placeholder="tarefa_titulo_ph" placeholder="Ex: Ligar pro cliente da Aqua Vista">
+    <label class="f-lbl" data-i18n="label_cliente_opcional">Cliente (opcional)</label>
+    <input class="f-inp" id="nt-cliente">
+    <label class="f-lbl" data-i18n="label_tecnico_resp">Técnico responsável</label>
+    <select class="f-sel" id="nt-tecnico"><option value="" data-i18n="os_tecnico_selecione">Selecione um técnico...</option></select>
+    <label class="f-lbl" data-i18n="label_data">Data</label>
+    <input class="f-inp" type="date" id="nt-data">
+    <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#555;margin:2px 0 12px">
+      <input type="checkbox" id="nt-agenda" style="width:auto">
+      <span data-i18n="tarefa_add_agenda">Adicionar também na agenda (Google Calendar) do técnico</span>
+    </label>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-nova-tarefa')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarNovaTarefa()" data-i18n="btn_criar_tarefa">Criar tarefa</button>
     </div>
   </div>
 </div>

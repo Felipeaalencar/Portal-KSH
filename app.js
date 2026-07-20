@@ -339,6 +339,28 @@ const I18N = {
   sub_tarefas: { en: 'Team schedule synced with Google Calendar', pt: 'Agenda da equipe sincronizada com Google Calendar' },
   sub_ferramentas: { en: 'Equipment, toolkit and materials inventory', pt: 'Inventário de equipamentos, maletas e materiais' },
   sub_documentos: { en: 'Licenses, insurance, permits and manuals', pt: 'Licenças, seguros, alvarás e manuais' },
+  tarefas_col_media: { en: 'Medium', pt: 'Média' },
+  tarefas_col_alta: { en: 'High', pt: 'Alta' },
+  tarefas_col_urgente: { en: 'Urgent', pt: 'Urgente' },
+  tarefas_col_concluido: { en: 'Done', pt: 'Concluído' },
+  tarefa_nova_title: { en: 'New task', pt: 'Nova tarefa' },
+  tarefa_titulo_ph: { en: 'Ex: Call the Aqua Vista client', pt: 'Ex: Ligar pro cliente da Aqua Vista' },
+  tarefa_titulo_obrigatorio: { en: 'Enter a title', pt: 'Preencha o título' },
+  label_cliente_opcional: { en: 'Client (optional)', pt: 'Cliente (opcional)' },
+  label_data: { en: 'Date', pt: 'Data' },
+  tarefa_add_agenda: { en: 'Also add to the technician\'s Google Calendar', pt: 'Adicionar também na agenda (Google Calendar) do técnico' },
+  tarefa_add_agenda_em_breve: { en: 'Calendar sync coming soon — saved here for now', pt: 'Sincronização com a agenda ainda vem por aí — por enquanto só salva aqui' },
+  btn_criar_tarefa: { en: 'Create task', pt: 'Criar tarefa' },
+  tarefa_criada: { en: 'Task created', pt: 'Tarefa criada' },
+  tarefa_gerar_os: { en: 'Generate OS', pt: 'Gerar OS' },
+  tarefa_os_gerada_badge: { en: 'OS #NUM created', pt: 'OS #NUM gerada' },
+  tarefa_notas_ph: { en: 'Add information...', pt: 'Adicionar informação...' },
+  btn_add: { en: 'Add', pt: 'Add' },
+  tarefa_sem_tecnico: { en: 'No technician', pt: 'Sem técnico' },
+  tarefas_vazio_coluna: { en: 'No tasks', pt: 'Sem tarefas' },
+  tarefas_email_sync_label: { en: 'Synced with email (to be defined)', pt: 'Sincronizado com email (a definir)' },
+  tarefa_excluir: { en: 'Delete task', pt: 'Excluir tarefa' },
+  tarefa_confirma_excluir: { en: 'Delete this task?', pt: 'Excluir esta tarefa?' },
 };
 
 function tr(key) {
@@ -595,7 +617,7 @@ function getActions(id) {
     'tecnicos': '<button class="btn-pri" onclick="abrirNovoTecnico()">' + tr('btn_novo_tecnico') + '</button>',
     'crm-clientes': '<button class="btn-pri" onclick="abrirModal(\'m-novo-cli-crm\')">' + tr('btn_novo_cliente') + '</button>',
     'crm-orcamentos': '<button class="btn-sec" onclick="loadModule(\'crm-orcamentos\')">' + tr('btn_atualizar') + '</button>',
-    'tarefas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Nova Tarefa':'New Task') + '</button>',
+    'tarefas': '<button class="btn-pri" onclick="abrirNovaTarefa()">+ ' + tr('tarefa_nova_title') + '</button>',
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
   };
   return m[id] || '';
@@ -642,6 +664,7 @@ function loadModule(id) {
   if (id === 'crm-clientes') renderClientes();
   else if (id === 'kshcam') renderKSHCam();
   else if (id === 'tecnicos') renderTecnicos();
+  else if (id === 'tarefas') renderTarefas();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -1885,6 +1908,207 @@ async function confirmarNotepad(osId) {
   await salvarNotepad(osId);
 }
 
+// ── TAREFAS ───────────────────────────────────────────────────
+let tarefasData = [];
+let tarefasTecnicosLista = [];
+let tarefaNotasAbertas = {};
+let tarefaNotasCache = {};
+let tarefaArrastando = null;
+let tarefaOrigemOS = null;
+
+const TAREFA_COLS = [
+  { id: 'media', key: 'tarefas_col_media', color: '#666', bg: '#f1f1ee' },
+  { id: 'alta', key: 'tarefas_col_alta', color: '#92400e', bg: '#fffbeb' },
+  { id: 'urgente', key: 'tarefas_col_urgente', color: '#991b1b', bg: '#fef2f2' },
+  { id: 'concluido', key: 'tarefas_col_concluido', color: '#166534', bg: '#f0fdf4' },
+];
+
+async function renderTarefas() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    const [tarefas, tecnicos] = await Promise.all([
+      sbGet('tarefas?order=ordem.asc'),
+      sbGet('tecnicos?ativo=eq.true&order=nome')
+    ]);
+    tarefasData = tarefas;
+    tarefasTecnicosLista = tecnicos;
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  el.innerHTML = '<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:#888;margin-bottom:12px">'
+    + '<i style="font-style:normal">✉️</i><span>' + tr('tarefas_email_sync_label') + '</span></div>'
+    + '<div id="tarefas-board" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px"></div>';
+  renderTarefasBoard();
+}
+
+function tarefaTecnicoOpts(sel) {
+  let opts = '<option value=""' + (!sel ? ' selected' : '') + '>' + tr('tarefa_sem_tecnico') + '</option>';
+  opts += tarefasTecnicosLista.map(t => '<option value="' + String(t.nome).replace(/"/g,'&quot;') + '"' + (t.nome === sel ? ' selected' : '') + '>' + t.nome + '</option>').join('');
+  return opts;
+}
+
+function renderTarefasBoard() {
+  const board = document.getElementById('tarefas-board');
+  if (!board) return;
+  board.innerHTML = TAREFA_COLS.map(col => {
+    const itens = tarefasData.filter(t => t.status === col.id).sort((a,b) => (a.ordem||0) - (b.ordem||0));
+    return '<div style="min-width:0">'
+      + '<div style="background:' + col.bg + ';color:' + col.color + ';border-radius:8px 8px 0 0;padding:8px 10px;font-size:12px;font-weight:600;display:flex;justify-content:space-between">'
+      + '<span>' + tr(col.key) + '</span><span>' + itens.length + '</span></div>'
+      + '<div ondragover="event.preventDefault()" ondrop="tarefaDropColuna(event,\'' + col.id + '\')" style="background:#f9f9f7;border-radius:0 0 8px 8px;padding:8px;min-height:120px;display:flex;flex-direction:column;gap:8px">'
+      + (itens.length ? itens.map(t => tarefaCardHTML(t)).join('') : '<div style="text-align:center;color:#bbb;font-size:11px;padding:14px">' + tr('tarefas_vazio_coluna') + '</div>')
+      + '</div></div>';
+  }).join('');
+}
+
+function tarefaCardHTML(t) {
+  const abertas = tarefaNotasAbertas[t.id];
+  const notasCount = tarefaNotasCache[t.id] ? tarefaNotasCache[t.id].length : '';
+  return '<div draggable="true" ondragstart="tarefaDragStart(event,\'' + t.id + '\')" ondragover="event.preventDefault();event.stopPropagation()" ondrop="event.stopPropagation();tarefaDropCard(event,\'' + t.id + '\')" style="background:#fff;border:1px solid #e8e8e5;border-radius:8px;padding:9px 11px;cursor:grab">'
+    + '<div style="display:flex;justify-content:space-between;gap:6px">'
+    + '<div style="font-size:12px;line-height:1.4">' + t.titulo + '</div>'
+    + '<button onclick="excluirTarefa(\'' + t.id + '\')" title="' + tr('tarefa_excluir') + '" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;line-height:1;padding:0">×</button>'
+    + '</div>'
+    + (t.os_gerada_numero ? '<div style="font-size:10px;color:#166534;margin-top:4px">' + tr('tarefa_os_gerada_badge').replace('NUM', t.os_gerada_numero) + '</div>' : '')
+    + (t.data_agenda ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.data_agenda + '</div>' : '')
+    + (t.cliente_nome ? '<div style="font-size:11px;color:#888;margin-top:2px">' + t.cliente_nome + '</div>' : '')
+    + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0">'
+    + '<button onclick="toggleTarefaNotas(\'' + t.id + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">📝 ' + notasCount + '</button>'
+    + (!t.os_gerada_numero ? '<button onclick="abrirNovaOSDeTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;cursor:pointer">' + tr('tarefa_gerar_os') + '</button>' : '')
+    + '</div>'
+    + '<select onchange="mudarTecnicoTarefa(\'' + t.id + '\',this.value)" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid #e8e8e5;border-radius:6px;margin-bottom:' + (abertas?'6':'0') + 'px">'
+    + tarefaTecnicoOpts(t.tecnico_nome) + '</select>'
+    + (abertas ? tarefaNotasHTML(t.id) : '')
+    + '</div>';
+}
+
+function tarefaNotasHTML(id) {
+  const notas = tarefaNotasCache[id] || [];
+  return '<div style="border-top:1px solid #f0f0ee;padding-top:6px;margin-top:6px">'
+    + notas.map(n => '<div style="font-size:10px;color:#666;margin-bottom:3px">• ' + n.texto + '</div>').join('')
+    + '<div style="display:flex;gap:4px">'
+    + '<input id="tarefa-nota-input-' + id + '" placeholder="' + tr('tarefa_notas_ph') + '" style="flex:1;font-size:11px;padding:4px 6px;border:1px solid #e8e8e5;border-radius:6px" onkeydown="if(event.key===\'Enter\')addTarefaNota(\'' + id + '\')">'
+    + '<button onclick="addTarefaNota(\'' + id + '\')" style="font-size:11px;padding:4px 8px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">' + tr('btn_add') + '</button>'
+    + '</div></div>';
+}
+
+async function toggleTarefaNotas(id) {
+  tarefaNotasAbertas[id] = !tarefaNotasAbertas[id];
+  if (tarefaNotasAbertas[id] && !tarefaNotasCache[id]) {
+    try { tarefaNotasCache[id] = await sbGet('tarefa_notas?tarefa_id=eq.' + id + '&order=criado_em.asc'); }
+    catch(e) { tarefaNotasCache[id] = []; }
+  }
+  renderTarefasBoard();
+}
+
+async function addTarefaNota(id) {
+  const inp = document.getElementById('tarefa-nota-input-' + id);
+  const texto = inp?.value.trim();
+  if (!texto) return;
+  try {
+    await sbPost('tarefa_notas', { tarefa_id: id, texto, autor: ME.nome });
+    tarefaNotasCache[id] = await sbGet('tarefa_notas?tarefa_id=eq.' + id + '&order=criado_em.asc');
+    renderTarefasBoard();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function tarefaDragStart(ev, id) { tarefaArrastando = id; }
+
+async function tarefaDropCard(ev, destId) {
+  if (!tarefaArrastando || tarefaArrastando === destId) return;
+  const origem = tarefasData.find(t => t.id === tarefaArrastando);
+  const destino = tarefasData.find(t => t.id === destId);
+  if (!origem || !destino) return;
+  origem.status = destino.status;
+  const semOrigem = tarefasData.filter(t => t.id !== origem.id);
+  const idxDestino = semOrigem.findIndex(t => t.id === destId);
+  semOrigem.splice(idxDestino, 0, origem);
+  tarefasData = semOrigem;
+  tarefaArrastando = null;
+  renderTarefasBoard();
+  await persistirOrdemColuna(origem.status);
+}
+
+async function tarefaDropColuna(ev, destStatus) {
+  if (!tarefaArrastando) return;
+  const origem = tarefasData.find(t => t.id === tarefaArrastando);
+  if (!origem) return;
+  origem.status = destStatus;
+  tarefaArrastando = null;
+  renderTarefasBoard();
+  await persistirOrdemColuna(destStatus);
+}
+
+async function persistirOrdemColuna(status) {
+  const itens = tarefasData.filter(t => t.status === status);
+  await Promise.all(itens.map((t, i) => {
+    t.ordem = i;
+    return sbPatch('tarefas?id=eq.' + t.id, { status: t.status, ordem: i }).catch(() => {});
+  }));
+}
+
+async function mudarTecnicoTarefa(id, nome) {
+  const t = tarefasData.find(x => x.id === id);
+  if (t) t.tecnico_nome = nome || null;
+  try { await sbPatch('tarefas?id=eq.' + id, { tecnico_nome: nome || null }); }
+  catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirTarefa(id) {
+  if (!confirm(tr('tarefa_confirma_excluir'))) return;
+  try {
+    await sbDelete('tarefas?id=eq.' + id);
+    tarefasData = tarefasData.filter(t => t.id !== id);
+    delete tarefaNotasCache[id];
+    delete tarefaNotasAbertas[id];
+    renderTarefasBoard();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirNovaTarefa() {
+  document.getElementById('nt-titulo').value = '';
+  document.getElementById('nt-cliente').value = '';
+  document.getElementById('nt-data').value = '';
+  document.getElementById('nt-agenda').checked = false;
+  await popularSelectTecnicos('nt-tecnico', '');
+  abrirModal('m-nova-tarefa');
+  setTimeout(() => document.getElementById('nt-titulo')?.focus(), 100);
+}
+
+async function salvarNovaTarefa() {
+  const titulo = document.getElementById('nt-titulo')?.value.trim();
+  if (!titulo) { toast(tr('tarefa_titulo_obrigatorio'), 'err'); return; }
+  const tecnico_nome = document.getElementById('nt-tecnico')?.value.trim() || null;
+  const cliente_nome = document.getElementById('nt-cliente')?.value.trim() || null;
+  const data_agenda = document.getElementById('nt-data')?.value || null;
+  const querAgenda = document.getElementById('nt-agenda')?.checked;
+  try {
+    const ordem = tarefasData.filter(t => t.status === 'media').length;
+    await sbPost('tarefas', { titulo, tecnico_nome, cliente_nome, data_agenda, status: 'media', ordem, origem: 'manual', criado_por: ME.nome });
+    fecharModal('m-nova-tarefa');
+    toast(tr('tarefa_criada'), 'ok');
+    if (querAgenda && data_agenda) toast(tr('tarefa_add_agenda_em_breve'), 'ok');
+    tarefasData = await sbGet('tarefas?order=ordem.asc');
+    renderTarefasBoard();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function abrirNovaOSDeTarefa(tarefaId) {
+  const t = tarefasData.find(x => x.id === tarefaId);
+  if (!t) return;
+  abrirNovaOS();
+  tarefaOrigemOS = tarefaId;
+  document.getElementById('os-titulo').value = t.titulo;
+  if (t.tecnico_nome) popularSelectTecnicos('os-tecnico', t.tecnico_nome);
+  if (t.cliente_nome) {
+    document.getElementById('os-cli-busca').value = t.cliente_nome;
+    buscarClienteOS(t.cliente_nome);
+  }
+}
+
+
 // Nova OS
 let osCliSel = null;
 
@@ -1907,6 +2131,7 @@ async function popularSelectTecnicos(selectId, selecionado) {
 
 function abrirNovaOS() {
   osCliSel = null;
+  tarefaOrigemOS = null;
   ['os-titulo','os-desc','os-cli-busca'].forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
   popularSelectTecnicos('os-tecnico', '');
   document.getElementById('os-cli-sel').style.display = 'none';
@@ -1992,6 +2217,16 @@ async function salvarNovaOS() {
     // Cria lead no CRM
     try { await sbPost('crm_leads', { nome: osCliSel.nome, origem: 'os_manual', status: 'lead', criado_por: ME.nome }); } catch(e) {}
     carregarOS();
+    if (tarefaOrigemOS) {
+      const tId = tarefaOrigemOS;
+      tarefaOrigemOS = null;
+      try {
+        await sbPatch('tarefas?id=eq.' + tId, { os_gerada_numero: numero, status: 'concluido' });
+        const t = tarefasData.find(x => x.id === tId);
+        if (t) { t.os_gerada_numero = numero; t.status = 'concluido'; }
+        renderTarefasBoard();
+      } catch(e) {}
+    }
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
