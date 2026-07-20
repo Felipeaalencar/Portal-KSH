@@ -175,6 +175,17 @@ const I18N = {
   os_status_label: { en: 'Status', pt: 'Status' },
   os_salvar_alteracoes: { en: '💾 Save changes', pt: '💾 Salvar alterações' },
   os_fotos_label: { en: 'Photos', pt: 'Fotos' },
+  os_dias_label: { en: 'Work days', pt: 'Dias de trabalho' },
+  dia_adicionar_btn: { en: '+ Add day', pt: '+ Adicionar dia' },
+  dia_sem_registro: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
+  dia_novo_title: { en: 'New work day', pt: 'Novo dia de trabalho' },
+  dia_editar_title: { en: 'Edit work day', pt: 'Editar dia de trabalho' },
+  btn_criar_dia: { en: 'Add day', pt: 'Adicionar dia' },
+  label_observacao_dia: { en: 'Day notes (optional)', pt: 'Observação do dia (opcional)' },
+  dia_observacao_ph: { en: 'What was done that day...', pt: 'O que foi feito nesse dia...' },
+  dia_data_obrigatoria: { en: 'Enter a date', pt: 'Preencha a data' },
+  dia_salvo: { en: 'Work day saved', pt: 'Dia salvo' },
+  dia_excluir_confirm: { en: 'Delete this work day?', pt: 'Excluir esse dia de trabalho?' },
   os_adicionar_foto: { en: '📷 Add', pt: '📷 Adicionar' },
   os_sem_fotos: { en: 'No photos yet. Tap "Add" to start.', pt: 'Nenhuma foto. Toque em "Adicionar" para começar.' },
   os_notepad_label: { en: 'Notepad', pt: 'Bloco de notas' },
@@ -991,11 +1002,12 @@ async function abrirOS(id) {
     return fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w400') : '';
   }
 
-  let fotos = [], notas = [];
+  let fotos = [], notas = [], dias = [];
   try {
-    [fotos, notas] = await Promise.all([
+    [fotos, notas, dias] = await Promise.all([
       sbGet('os_fotos?os_id=eq.' + id + '&order=criado_em.desc'),
-      sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc')
+      sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc'),
+      sbGet('os_dias?os_id=eq.' + id + '&order=data.asc')
     ]);
   } catch(e) {}
 
@@ -1053,6 +1065,15 @@ async function abrirOS(id) {
     </div>
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:600">${tr('os_dias_label')} (${dias.length})</div>
+        <button onclick="abrirNovoDiaTrabalho('${id}')" style="padding:5px 12px;border:1px dashed #d4d4d0;border-radius:7px;font-size:11px;cursor:pointer;color:#555;background:#fff">${tr('dia_adicionar_btn')}</button>
+      </div>
+      <div id="dias-${id}" style="display:flex;flex-direction:column;gap:8px">
+        ${dias.length ? dias.map(d => diaTrabalhoCardHTML(d, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('dia_sem_registro')+'</div>'}
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
         <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
           ${tr('os_adicionar_foto')}
@@ -1082,6 +1103,100 @@ async function abrirOS(id) {
       <button id="pdf-btn-${id}" onclick="gerarResumoPDF('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_gerar_pdf')}</button>
     </div>
   </div>`;
+}
+
+function diaTrabalhoCardHTML(d, osId) {
+  const horaTxt = d.hora_inicio ? String(d.hora_inicio).slice(0,5) + (d.hora_fim ? ' - ' + String(d.hora_fim).slice(0,5) : '') : '';
+  const tecs = Array.isArray(d.tecnicos) ? d.tecnicos.join(', ') : '';
+  return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">'
+    + '<div style="font-size:12px;font-weight:600">' + (d.data||'') + (horaTxt ? ' · ' + horaTxt : '') + '</div>'
+    + '<span style="display:flex;gap:8px;flex-shrink:0">'
+    + '<button onclick="abrirEditarDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">✎</button>'
+    + '<button onclick="excluirDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0">×</button>'
+    + '</span></div>'
+    + (tecs ? '<div style="font-size:11px;color:#888;margin-top:2px">' + tecs + '</div>' : '')
+    + (d.observacao ? '<div style="font-size:11px;color:#555;margin-top:4px">' + d.observacao + '</div>' : '')
+    + '</div>';
+}
+
+let ndTecnicosSelecionados = [];
+let ndDiaEditandoId = null;
+
+async function abrirNovoDiaTrabalho(osId) {
+  ndDiaEditandoId = null;
+  document.getElementById('nd-modal-title').textContent = tr('dia_novo_title');
+  document.getElementById('nd-modal-btn').textContent = tr('btn_criar_dia');
+  document.getElementById('nd-os-id').value = osId;
+  document.getElementById('nd-dia-id').value = '';
+  document.getElementById('nd-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('nd-hora-inicio').value = '';
+  document.getElementById('nd-hora-fim').value = '';
+  document.getElementById('nd-observacao').value = '';
+  ndTecnicosSelecionados = [];
+  await garantirTecnicosAtivosCache();
+  renderNdTecnicosChips();
+  abrirModal('m-dia-trabalho');
+}
+
+async function abrirEditarDiaTrabalho(diaId, osId) {
+  try {
+    const rows = await sbGet('os_dias?id=eq.' + diaId);
+    const d = rows[0];
+    if (!d) return;
+    ndDiaEditandoId = diaId;
+    document.getElementById('nd-modal-title').textContent = tr('dia_editar_title');
+    document.getElementById('nd-modal-btn').textContent = tr('btn_salvar');
+    document.getElementById('nd-os-id').value = osId;
+    document.getElementById('nd-dia-id').value = diaId;
+    document.getElementById('nd-data').value = d.data || '';
+    document.getElementById('nd-hora-inicio').value = d.hora_inicio ? String(d.hora_inicio).slice(0,5) : '';
+    document.getElementById('nd-hora-fim').value = d.hora_fim ? String(d.hora_fim).slice(0,5) : '';
+    document.getElementById('nd-observacao').value = d.observacao || '';
+    ndTecnicosSelecionados = Array.isArray(d.tecnicos) ? d.tecnicos.slice() : [];
+    await garantirTecnicosAtivosCache();
+    renderNdTecnicosChips();
+    abrirModal('m-dia-trabalho');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function renderNdTecnicosChips() {
+  const el = document.getElementById('nd-tecnicos-chips');
+  if (!el) return;
+  el.innerHTML = tecnicosAtivosCache.map(t => chipTecnicoHTML(t.nome, t.nome, ndTecnicosSelecionados.includes(t.nome), 'toggleNdTecnico')).join('');
+}
+
+function toggleNdTecnico(nome) {
+  ndTecnicosSelecionados = ndTecnicosSelecionados.includes(nome) ? ndTecnicosSelecionados.filter(n => n !== nome) : [...ndTecnicosSelecionados, nome];
+  renderNdTecnicosChips();
+}
+
+async function salvarDiaTrabalho() {
+  const osId = document.getElementById('nd-os-id').value;
+  const data = document.getElementById('nd-data').value;
+  if (!data) { toast(tr('dia_data_obrigatoria'), 'err'); return; }
+  const hora_inicio = document.getElementById('nd-hora-inicio').value || null;
+  const hora_fim = document.getElementById('nd-hora-fim').value || null;
+  const observacao = document.getElementById('nd-observacao').value.trim();
+  const tecnicos = ndTecnicosSelecionados.slice();
+  try {
+    if (ndDiaEditandoId) {
+      await sbPatch('os_dias?id=eq.' + ndDiaEditandoId, { data, hora_inicio, hora_fim, observacao, tecnicos });
+    } else {
+      await sbPost('os_dias', { os_id: osId, data, hora_inicio, hora_fim, observacao, tecnicos });
+    }
+    fecharModal('m-dia-trabalho');
+    toast(tr('dia_salvo'), 'ok');
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirDiaTrabalho(diaId, osId) {
+  if (!confirm(tr('dia_excluir_confirm'))) return;
+  try {
+    await sbDelete('os_dias?id=eq.' + diaId);
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function salvarDescricaoOS(osId) {
