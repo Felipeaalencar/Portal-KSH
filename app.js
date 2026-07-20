@@ -349,7 +349,8 @@ const I18N = {
   label_cliente_opcional: { en: 'Client (optional)', pt: 'Cliente (opcional)' },
   label_data: { en: 'Date', pt: 'Data' },
   tarefa_add_agenda: { en: 'Also add to the technician\'s Google Calendar', pt: 'Adicionar também na agenda (Google Calendar) do técnico' },
-  tarefa_add_agenda_em_breve: { en: 'Calendar sync coming soon — saved here for now', pt: 'Sincronização com a agenda ainda vem por aí — por enquanto só salva aqui' },
+  tarefa_agenda_sucesso: { en: 'Added to Google Calendar', pt: 'Adicionado na agenda (Google Calendar)' },
+  tarefa_agenda_erro: { en: "Couldn't add to Google Calendar", pt: 'Não deu pra adicionar na agenda' },
   btn_criar_tarefa: { en: 'Create task', pt: 'Criar tarefa' },
   tarefa_criada: { en: 'Task created', pt: 'Tarefa criada' },
   tarefa_gerar_os: { en: 'Generate OS', pt: 'Gerar OS' },
@@ -1969,7 +1970,7 @@ function tarefaCardHTML(t) {
     + '<button onclick="excluirTarefa(\'' + t.id + '\')" title="' + tr('tarefa_excluir') + '" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;line-height:1;padding:0">×</button>'
     + '</div>'
     + (t.os_gerada_numero ? '<div style="font-size:10px;color:#166534;margin-top:4px">' + tr('tarefa_os_gerada_badge').replace('NUM', t.os_gerada_numero) + '</div>' : '')
-    + (t.data_agenda ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.data_agenda + '</div>' : '')
+    + (t.data_agenda ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.data_agenda + (t.calendar_event_id ? ' ✓' : '') + '</div>' : '')
     + (t.cliente_nome ? '<div style="font-size:11px;color:#888;margin-top:2px">' + t.cliente_nome + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0">'
     + '<button onclick="toggleTarefaNotas(\'' + t.id + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">📝 ' + notasCount + '</button>'
@@ -2083,13 +2084,40 @@ async function salvarNovaTarefa() {
   const querAgenda = document.getElementById('nt-agenda')?.checked;
   try {
     const ordem = tarefasData.filter(t => t.status === 'media').length;
-    await sbPost('tarefas', { titulo, tecnico_nome, cliente_nome, data_agenda, status: 'media', ordem, origem: 'manual', criado_por: ME.nome });
+    const [nova] = await sbPost('tarefas', { titulo, tecnico_nome, cliente_nome, data_agenda, status: 'media', ordem, origem: 'manual', criado_por: ME.nome });
     fecharModal('m-nova-tarefa');
     toast(tr('tarefa_criada'), 'ok');
-    if (querAgenda && data_agenda) toast(tr('tarefa_add_agenda_em_breve'), 'ok');
     tarefasData = await sbGet('tarefas?order=ordem.asc');
     renderTarefasBoard();
+    if (querAgenda && data_agenda && nova) {
+      criarEventoAgenda(nova.id, titulo, cliente_nome, data_agenda, tecnico_nome);
+    }
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function criarEventoAgenda(tarefaId, titulo, cliente_nome, data_agenda, tecnico_nome) {
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/criar-evento-agenda', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({
+        titulo,
+        descricao: cliente_nome ? ('Cliente: ' + cliente_nome) : '',
+        data: data_agenda,
+        tecnico_nome
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    await sbPatch('tarefas?id=eq.' + tarefaId, { calendar_event_id: d.event_id || null });
+    const t = tarefasData.find(x => x.id === tarefaId);
+    if (t) t.calendar_event_id = d.event_id;
+    toast(tr('tarefa_agenda_sucesso'), 'ok');
+    renderTarefasBoard();
+  } catch(e) {
+    console.error('criar-evento-agenda falhou:', e);
+    toast(tr('tarefa_agenda_erro') + ': ' + e.message, 'err');
+  }
 }
 
 function abrirNovaOSDeTarefa(tarefaId) {
@@ -2294,7 +2322,7 @@ function conectarGoogle() {
   const url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GID
     + '&redirect_uri=' + encodeURIComponent(window.location.origin + window.location.pathname)
     + '&response_type=code&access_type=offline&prompt=consent'
-    + '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file');
+    + '&scope=' + encodeURIComponent('https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events');
   window.location.href = url;
 }
 
