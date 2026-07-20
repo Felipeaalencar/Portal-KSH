@@ -1128,7 +1128,7 @@ async function abrirOS(id) {
         <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
         <label style="padding:5px 12px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;cursor:pointer;color:#555;background:#fff">
           ${tr('os_adicionar_foto')}
-          <input type="file" accept="image/*" capture="environment" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
+          <input type="file" accept="image/*" multiple style="display:none" onchange="uploadFotos(event,'${id}')">
         </label>
       </div>
       <div id="fotos-${id}" class="fotos-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
