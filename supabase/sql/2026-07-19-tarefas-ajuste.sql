@@ -1,0 +1,10 @@
+alter table tarefas add column if not exists tecnicos text[] not null default '{}';
+alter table tarefas alter column status set default 'pendente';
+alter table tarefas alter column prioridade set default 'media';
+alter table tarefas alter column recorrencia set default 'nenhuma';
+alter table tarefas alter column ciclos set default 0;
+alter table tarefas alter column historico set default '[]'::jsonb;
+alter table tarefas alter column responsavel set default '';
+alter table tarefas alter column atualizado_em set default now();
+alter table tarefas drop column if exists data_agenda;
+alter table tarefas drop column if exists tecnico_nome;

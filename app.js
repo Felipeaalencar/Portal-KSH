@@ -1915,6 +1915,7 @@ let tarefaNotasAbertas = {};
 let tarefaNotasCache = {};
 let tarefaArrastando = null;
 let tarefaOrigemOS = null;
+let ntTecnicosSelecionados = [];
 
 const TAREFA_COLS = [
   { id: 'media', key: 'tarefas_col_media', color: '#666', bg: '#f1f1ee' },
@@ -1922,6 +1923,8 @@ const TAREFA_COLS = [
   { id: 'urgente', key: 'tarefas_col_urgente', color: '#991b1b', bg: '#fef2f2' },
   { id: 'concluido', key: 'tarefas_col_concluido', color: '#166534', bg: '#f0fdf4' },
 ];
+
+function tarefaColuna(t) { return t.status === 'concluida' ? 'concluido' : (t.prioridade || 'media'); }
 
 async function renderTarefas() {
   const el = document.getElementById('mod-content');
@@ -1931,7 +1934,7 @@ async function renderTarefas() {
       sbGet('tarefas?order=ordem.asc'),
       sbGet('tecnicos?ativo=eq.true&order=nome')
     ]);
-    tarefasData = tarefas;
+    tarefasData = tarefas.map(t => ({ ...t, tecnicos: Array.isArray(t.tecnicos) ? t.tecnicos : [] }));
     tarefasTecnicosLista = tecnicos;
   } catch(e) {
     el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
@@ -1941,17 +1944,18 @@ async function renderTarefas() {
   renderTarefasBoard();
 }
 
-function tarefaTecnicoOpts(sel) {
-  let opts = '<option value=""' + (!sel ? ' selected' : '') + '>' + tr('tarefa_sem_tecnico') + '</option>';
-  opts += tarefasTecnicosLista.map(t => '<option value="' + String(t.nome).replace(/"/g,'&quot;') + '"' + (t.nome === sel ? ' selected' : '') + '>' + t.nome + '</option>').join('');
-  return opts;
+function tarefaTecnicoChipsHTML(t) {
+  return tarefasTecnicosLista.map(tec => {
+    const sel = (t.tecnicos || []).includes(tec.nome);
+    return '<span onclick="toggleTecnicoTarefa(\'' + t.id + '\',' + JSON.stringify(tec.nome) + ')" style="font-size:10px;padding:3px 8px;border-radius:99px;cursor:pointer;border:1px solid ' + (sel?'#1a1a1a':'#e8e8e5') + ';background:' + (sel?'#1a1a1a':'#fff') + ';color:' + (sel?'#fff':'#555') + '">' + tec.nome + '</span>';
+  }).join('');
 }
 
 function renderTarefasBoard() {
   const board = document.getElementById('tarefas-board');
   if (!board) return;
   board.innerHTML = TAREFA_COLS.map(col => {
-    const itens = tarefasData.filter(t => t.status === col.id).sort((a,b) => (a.ordem||0) - (b.ordem||0));
+    const itens = tarefasData.filter(t => tarefaColuna(t) === col.id).sort((a,b) => (a.ordem||0) - (b.ordem||0));
     return '<div style="min-width:0">'
       + '<div style="background:' + col.bg + ';color:' + col.color + ';border-radius:8px 8px 0 0;padding:8px 10px;font-size:12px;font-weight:600;display:flex;justify-content:space-between">'
       + '<span>' + tr(col.key) + '</span><span>' + itens.length + '</span></div>'
@@ -1970,14 +1974,15 @@ function tarefaCardHTML(t) {
     + '<button onclick="excluirTarefa(\'' + t.id + '\')" title="' + tr('tarefa_excluir') + '" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;line-height:1;padding:0">×</button>'
     + '</div>'
     + (t.os_gerada_numero ? '<div style="font-size:10px;color:#166534;margin-top:4px">' + tr('tarefa_os_gerada_badge').replace('NUM', t.os_gerada_numero) + '</div>' : '')
-    + (t.data_agenda ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.data_agenda + (t.calendar_event_id ? ' ✓' : '') + '</div>' : '')
+    + (t.prazo ? '<div style="font-size:11px;color:#888;margin-top:4px">📅 ' + t.prazo + (t.calendar_event_id ? ' ✓' : '') + '</div>' : '')
     + (t.cliente_nome ? '<div style="font-size:11px;color:#888;margin-top:2px">' + t.cliente_nome + '</div>' : '')
     + '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;margin:6px 0">'
     + '<button onclick="toggleTarefaNotas(\'' + t.id + '\')" style="font-size:10px;padding:2px 6px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer">📝 ' + notasCount + '</button>'
     + (!t.os_gerada_numero ? '<button onclick="abrirNovaOSDeTarefa(\'' + t.id + '\')" style="font-size:10px;padding:2px 8px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;cursor:pointer">' + tr('tarefa_gerar_os') + '</button>' : '')
     + '</div>'
-    + '<select onchange="mudarTecnicoTarefa(\'' + t.id + '\',this.value)" style="width:100%;font-size:11px;padding:4px 6px;border:1px solid #e8e8e5;border-radius:6px;margin-bottom:' + (abertas?'6':'0') + 'px">'
-    + tarefaTecnicoOpts(t.tecnico_nome) + '</select>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:' + (abertas?'6':'0') + 'px">'
+    + (tarefasTecnicosLista.length ? tarefaTecnicoChipsHTML(t) : '<span style="font-size:10px;color:#bbb">' + tr('tarefa_sem_tecnico') + '</span>')
+    + '</div>'
     + (abertas ? tarefaNotasHTML(t.id) : '')
     + '</div>';
 }
@@ -2014,43 +2019,52 @@ async function addTarefaNota(id) {
 
 function tarefaDragStart(ev, id) { tarefaArrastando = id; }
 
+function tarefaAplicarColuna(t, colId) {
+  if (colId === 'concluido') { t.status = 'concluida'; }
+  else { t.status = 'pendente'; t.prioridade = colId; }
+}
+
 async function tarefaDropCard(ev, destId) {
   if (!tarefaArrastando || tarefaArrastando === destId) return;
   const origem = tarefasData.find(t => t.id === tarefaArrastando);
   const destino = tarefasData.find(t => t.id === destId);
   if (!origem || !destino) return;
-  origem.status = destino.status;
+  const colDestino = tarefaColuna(destino);
+  tarefaAplicarColuna(origem, colDestino);
   const semOrigem = tarefasData.filter(t => t.id !== origem.id);
   const idxDestino = semOrigem.findIndex(t => t.id === destId);
   semOrigem.splice(idxDestino, 0, origem);
   tarefasData = semOrigem;
   tarefaArrastando = null;
   renderTarefasBoard();
-  await persistirOrdemColuna(origem.status);
+  await persistirOrdemColuna(colDestino);
 }
 
-async function tarefaDropColuna(ev, destStatus) {
+async function tarefaDropColuna(ev, destColId) {
   if (!tarefaArrastando) return;
   const origem = tarefasData.find(t => t.id === tarefaArrastando);
   if (!origem) return;
-  origem.status = destStatus;
+  tarefaAplicarColuna(origem, destColId);
   tarefaArrastando = null;
   renderTarefasBoard();
-  await persistirOrdemColuna(destStatus);
+  await persistirOrdemColuna(destColId);
 }
 
-async function persistirOrdemColuna(status) {
-  const itens = tarefasData.filter(t => t.status === status);
+async function persistirOrdemColuna(colId) {
+  const itens = tarefasData.filter(t => tarefaColuna(t) === colId);
   await Promise.all(itens.map((t, i) => {
     t.ordem = i;
-    return sbPatch('tarefas?id=eq.' + t.id, { status: t.status, ordem: i }).catch(() => {});
+    return sbPatch('tarefas?id=eq.' + t.id, { status: t.status, prioridade: t.prioridade, ordem: i }).catch(() => {});
   }));
 }
 
-async function mudarTecnicoTarefa(id, nome) {
+async function toggleTecnicoTarefa(id, nome) {
   const t = tarefasData.find(x => x.id === id);
-  if (t) t.tecnico_nome = nome || null;
-  try { await sbPatch('tarefas?id=eq.' + id, { tecnico_nome: nome || null }); }
+  if (!t) return;
+  const atual = t.tecnicos || [];
+  t.tecnicos = atual.includes(nome) ? atual.filter(n => n !== nome) : [...atual, nome];
+  renderTarefasBoard();
+  try { await sbPatch('tarefas?id=eq.' + id, { tecnicos: t.tecnicos, responsavel: t.tecnicos.join(', ') || '' }); }
   catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
@@ -2065,12 +2079,30 @@ async function excluirTarefa(id) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+function renderNtTecnicosChips() {
+  const el = document.getElementById('nt-tecnicos-chips');
+  if (!el) return;
+  el.innerHTML = tarefasTecnicosLista.map(tec => {
+    const sel = ntTecnicosSelecionados.includes(tec.nome);
+    return '<span onclick="toggleNtTecnico(' + JSON.stringify(tec.nome) + ')" style="font-size:12px;padding:5px 10px;border-radius:99px;cursor:pointer;border:1px solid ' + (sel?'#1a1a1a':'#e8e8e5') + ';background:' + (sel?'#1a1a1a':'#fff') + ';color:' + (sel?'#fff':'#555') + '">' + tec.nome + '</span>';
+  }).join('');
+}
+
+function toggleNtTecnico(nome) {
+  ntTecnicosSelecionados = ntTecnicosSelecionados.includes(nome) ? ntTecnicosSelecionados.filter(n => n !== nome) : [...ntTecnicosSelecionados, nome];
+  renderNtTecnicosChips();
+}
+
 async function abrirNovaTarefa() {
   document.getElementById('nt-titulo').value = '';
   document.getElementById('nt-cliente').value = '';
   document.getElementById('nt-data').value = '';
   document.getElementById('nt-agenda').checked = false;
-  await popularSelectTecnicos('nt-tecnico', '');
+  ntTecnicosSelecionados = [];
+  if (!tarefasTecnicosLista.length) {
+    try { tarefasTecnicosLista = await sbGet('tecnicos?ativo=eq.true&order=nome'); } catch(e) {}
+  }
+  renderNtTecnicosChips();
   abrirModal('m-nova-tarefa');
   setTimeout(() => document.getElementById('nt-titulo')?.focus(), 100);
 }
@@ -2078,24 +2110,29 @@ async function abrirNovaTarefa() {
 async function salvarNovaTarefa() {
   const titulo = document.getElementById('nt-titulo')?.value.trim();
   if (!titulo) { toast(tr('tarefa_titulo_obrigatorio'), 'err'); return; }
-  const tecnico_nome = document.getElementById('nt-tecnico')?.value.trim() || null;
+  const tecnicos = ntTecnicosSelecionados.slice();
   const cliente_nome = document.getElementById('nt-cliente')?.value.trim() || null;
-  const data_agenda = document.getElementById('nt-data')?.value || null;
+  const prazo = document.getElementById('nt-data')?.value || null;
   const querAgenda = document.getElementById('nt-agenda')?.checked;
   try {
-    const ordem = tarefasData.filter(t => t.status === 'media').length;
-    const [nova] = await sbPost('tarefas', { titulo, tecnico_nome, cliente_nome, data_agenda, status: 'media', ordem, origem: 'manual', criado_por: ME.nome });
+    const ordem = tarefasData.filter(t => tarefaColuna(t) === 'media').length;
+    const [nova] = await sbPost('tarefas', {
+      titulo, tecnicos, responsavel: tecnicos.join(', ') || '',
+      cliente_nome, prazo, status: 'pendente', prioridade: 'media', ordem,
+      origem: 'manual', criado_por: ME.nome
+    });
     fecharModal('m-nova-tarefa');
     toast(tr('tarefa_criada'), 'ok');
     tarefasData = await sbGet('tarefas?order=ordem.asc');
+    tarefasData = tarefasData.map(t => ({ ...t, tecnicos: Array.isArray(t.tecnicos) ? t.tecnicos : [] }));
     renderTarefasBoard();
-    if (querAgenda && data_agenda && nova) {
-      criarEventoAgenda(nova.id, titulo, cliente_nome, data_agenda, tecnico_nome);
+    if (querAgenda && prazo && nova) {
+      criarEventoAgenda(nova.id, titulo, cliente_nome, prazo, tecnicos.join(', '));
     }
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
-async function criarEventoAgenda(tarefaId, titulo, cliente_nome, data_agenda, tecnico_nome) {
+async function criarEventoAgenda(tarefaId, titulo, cliente_nome, prazo, tecnicosTexto) {
   try {
     const r = await fetch(SB_URL + '/functions/v1/criar-evento-agenda', {
       method: 'POST',
@@ -2103,8 +2140,8 @@ async function criarEventoAgenda(tarefaId, titulo, cliente_nome, data_agenda, te
       body: JSON.stringify({
         titulo,
         descricao: cliente_nome ? ('Cliente: ' + cliente_nome) : '',
-        data: data_agenda,
-        tecnico_nome
+        data: prazo,
+        tecnico_nome: tecnicosTexto
       })
     });
     const d = await r.json();
@@ -2126,7 +2163,7 @@ function abrirNovaOSDeTarefa(tarefaId) {
   abrirNovaOS();
   tarefaOrigemOS = tarefaId;
   document.getElementById('os-titulo').value = t.titulo;
-  if (t.tecnico_nome) popularSelectTecnicos('os-tecnico', t.tecnico_nome);
+  if (t.tecnicos && t.tecnicos.length) popularSelectTecnicos('os-tecnico', t.tecnicos.join(', '));
   if (t.cliente_nome) {
     document.getElementById('os-cli-busca').value = t.cliente_nome;
     buscarClienteOS(t.cliente_nome);
