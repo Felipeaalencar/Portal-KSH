@@ -178,6 +178,14 @@ const I18N = {
   os_dias_label: { en: 'Work days', pt: 'Dias de trabalho' },
   os_gastos_label: { en: 'Expenses', pt: 'Gastos' },
   resumo_valores_label: { en: 'Value summary', pt: 'Resumo de valores' },
+  resumo_custo_real: { en: 'Real cost', pt: 'Custo real' },
+  resumo_margem: { en: 'Margin', pt: 'Margem' },
+  label_valor_orcado: { en: 'Quoted value', pt: 'Valor orçado' },
+  valor_orcado_ph: { en: 'Ex: 2400.00', pt: 'Ex: 2400.00' },
+  resumo_orcado_salvo: { en: 'Quoted value saved', pt: 'Valor orçado salvo' },
+  resumo_cobranca_label: { en: 'Billing:', pt: 'Cobrança:' },
+  resumo_a_cobrar: { en: 'To bill', pt: 'A cobrar' },
+  resumo_cobrado: { en: 'Billed', pt: 'Cobrado' },
   resumo_mao_obra: { en: 'Labor', pt: 'Mão de obra' },
   resumo_sem_valor_hora: { en: 'no hourly rate set', pt: 'sem valor/hora cadastrado' },
   resumo_sem_dias: { en: 'No work day logged yet', pt: 'Nenhum dia de trabalho registrado ainda' },
@@ -1140,7 +1148,7 @@ async function abrirOS(id) {
     </div>
     <div style="margin-bottom:16px">
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('resumo_valores_label')}</div>
-      ${resumoValoresHTML(resumoValores, id)}
+      ${resumoValoresHTML(resumoValores, id, os)}
     </div>
     ${os.resumo_ia ? '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('resumo_trabalho_label')+'</div><div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;font-size:12px;white-space:pre-wrap">'+os.resumo_ia+'</div></div>' : ''}
     <div style="margin-bottom:16px">
@@ -1213,12 +1221,19 @@ function calcularResumoValores(dias, gastos, tecnicosLista) {
   };
 }
 
-function resumoValoresHTML(r, id) {
+function resumoValoresHTML(r, id, os) {
   const linhasTec = r.porTecnico.length
     ? r.porTecnico.map(t => '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">'
         + '<span>' + tr('resumo_mao_obra') + ' — ' + t.nome + ' (' + t.horas.toFixed(1) + 'h' + (t.valorHora != null ? ' × $' + t.valorHora.toFixed(2) : ' · ' + tr('resumo_sem_valor_hora')) + ')</span>'
         + '<span>' + (t.valorHora != null ? '$' + t.subtotal.toFixed(2) : '—') + '</span></div>').join('')
     : '<div style="font-size:12px;color:#bbb">' + tr('resumo_sem_dias') + '</div>';
+
+  const orcado = os && os.valor_orcado != null ? Number(os.valor_orcado) : null;
+  const margem = orcado != null ? (orcado - r.totalGeral) : null;
+  const margemPct = (orcado != null && orcado > 0) ? (margem / orcado * 100) : null;
+  const corMargem = margem != null ? (margem >= 0 ? '#166534' : '#991b1b') : '#888';
+  const bgMargem = margem != null ? (margem >= 0 ? '#f0fdf4' : '#fef2f2') : '#f5f5f3';
+  const cobranca = (os && os.status_cobranca) || 'a_cobrar';
 
   return '<div style="background:#f9f9f7;border-radius:8px;padding:12px 14px">'
     + linhasTec
@@ -1226,13 +1241,50 @@ function resumoValoresHTML(r, id) {
       + '<span>' + tr('os_gastos_label') + (r.qtdGastosPendentes ? ' <span style="color:#92400e">(' + r.qtdGastosPendentes + ' ' + tr('resumo_pendentes') + ')</span>' : '') + '</span>'
       + '<span>$' + r.totalGastos.toFixed(2) + '</span></div>'
     + '<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;padding-top:8px;margin-top:6px;border-top:1px solid #e8e8e5">'
-      + '<span>' + tr('resumo_total') + '</span><span>$' + r.totalGeral.toFixed(2) + '</span></div>'
+      + '<span>' + (orcado != null ? tr('resumo_custo_real') : tr('resumo_total')) + '</span><span>$' + r.totalGeral.toFixed(2) + '</span></div>'
+    + '</div>'
+    + '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      + '<label style="font-size:11px;color:#888">' + tr('label_valor_orcado') + '</label>'
+      + '<input type="number" step="0.01" id="resumo-orcado-' + id + '" value="' + (orcado != null ? orcado : '') + '" placeholder="0.00" oninput="document.getElementById(\'resumo-orcado-save-' + id + '\').style.display=\'inline-block\'" style="width:110px;padding:5px 8px;border:1px solid #e8e8e5;border-radius:6px;font-size:12px;font-family:inherit">'
+      + '<button id="resumo-orcado-save-' + id + '" onclick="salvarValorOrcadoOS(\''+id+'\')" style="display:none;padding:5px 10px;border:none;border-radius:6px;background:#1a1a1a;color:#fff;font-size:11px;cursor:pointer">' + tr('os_salvar_alteracoes') + '</button>'
+    + '</div>'
+    + (orcado != null
+        ? '<div style="background:' + bgMargem + ';border-radius:8px;padding:10px 12px;margin-top:8px;display:flex;justify-content:space-between;align-items:center">'
+          + '<span style="font-size:12px;font-weight:600;color:' + corMargem + '">' + tr('resumo_margem') + '</span>'
+          + '<span style="font-size:14px;font-weight:700;color:' + corMargem + '">$' + margem.toFixed(2) + (margemPct != null ? ' (' + margemPct.toFixed(0) + '%)' : '') + '</span>'
+          + '</div>'
+        : '')
+    + '<div style="margin-top:10px;display:flex;align-items:center;gap:6px">'
+      + '<span style="font-size:11px;color:#888">' + tr('resumo_cobranca_label') + '</span>'
+      + '<button onclick="alterarStatusCobranca(\''+id+'\',\'a_cobrar\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='a_cobrar'?'#92400e':'#e8e8e5') + ';background:' + (cobranca==='a_cobrar'?'#fffbeb':'#fff') + ';color:' + (cobranca==='a_cobrar'?'#92400e':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='a_cobrar'?'600':'400') + '">' + tr('resumo_a_cobrar') + '</button>'
+      + '<button onclick="alterarStatusCobranca(\''+id+'\',\'cobrado\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='cobrado'?'#166534':'#e8e8e5') + ';background:' + (cobranca==='cobrado'?'#f0fdf4':'#fff') + ';color:' + (cobranca==='cobrado'?'#166534':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='cobrado'?'600':'400') + '">' + tr('resumo_cobrado') + '</button>'
     + '</div>'
     + '<div style="margin-top:10px">'
       + '<button onclick="gerarResumoTrabalhoOS(\''+id+'\')" style="font-size:12px;padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;cursor:pointer;font-family:inherit;color:#333">🎙️ ' + tr('resumo_gerar_ia') + '</button>'
       + '<div id="resumo-ia-status-' + id + '" style="display:none;font-size:11px;color:#2563eb;margin-top:6px"></div>'
     + '</div>'
     + '<div id="resumo-ia-preview-' + id + '" style="display:none;margin-top:8px"></div>';
+}
+
+async function salvarValorOrcadoOS(osId) {
+  const el = document.getElementById('resumo-orcado-' + osId);
+  const valor = el?.value ? parseFloat(el.value) : null;
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { valor_orcado: valor });
+    const os = osData.find(o => o.id === osId);
+    if (os) os.valor_orcado = valor;
+    toast(tr('resumo_orcado_salvo'), 'ok');
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function alterarStatusCobranca(osId, status) {
+  try {
+    await sbPatch('ordens_servico?id=eq.' + osId, { status_cobranca: status });
+    const os = osData.find(o => o.id === osId);
+    if (os) os.status_cobranca = status;
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 function diaTrabalhoCardHTML(d, osId) {
@@ -3347,6 +3399,7 @@ async function salvarNovaOS() {
       tecnico_nome: osTecnicosSelecionados.join(', ')||null,
       tecnicos: osTecnicosSelecionados,
       descricao: document.getElementById('os-desc')?.value.trim()||null,
+      valor_orcado: document.getElementById('os-valor-orcado')?.value ? parseFloat(document.getElementById('os-valor-orcado').value) : null,
       status: 'aberta', origem: 'manual', criado_por: ME.nome
     });
     fecharModal('m-nova-os');
@@ -3390,6 +3443,7 @@ async function editarOS(id) {
   await garantirTecnicosAtivosCache();
   renderEditOsTecnicoChips();
   document.getElementById('edit-os-desc').value = os.descricao||'';
+  document.getElementById('edit-os-valor-orcado').value = os.valor_orcado != null ? os.valor_orcado : '';
   document.getElementById('edit-os-cli-info').textContent = tr('cliente_colon') + (os.cliente_nome||os.cliente||'—');
   abrirModal('m-edit-os');
 }
@@ -3404,7 +3458,8 @@ async function salvarEditOS() {
       titulo, status: statusNovo,
       tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
       tecnicos: editOsTecnicosSelecionados,
-      descricao: document.getElementById('edit-os-desc').value.trim()||null
+      descricao: document.getElementById('edit-os-desc').value.trim()||null,
+      valor_orcado: document.getElementById('edit-os-valor-orcado')?.value ? parseFloat(document.getElementById('edit-os-valor-orcado').value) : null
     });
     if (statusNovo === 'concluida') {
       try { await sbPatch('tarefas?os_gerada_id=eq.' + id, { status: 'concluida' }); } catch(e2) {}
