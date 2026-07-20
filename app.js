@@ -40,6 +40,8 @@ const I18N = {
   sec_comercial: { en: 'SALES', pt: 'COMERCIAL' },
   sec_financeiro: { en: 'FINANCE', pt: 'FINANCEIRO' },
   sec_operacoes: { en: 'OPERATIONS', pt: 'OPERAÇÕES' },
+  sec_pessoas: { en: 'PEOPLE MANAGEMENT', pt: 'GESTÃO DE PESSOAS' },
+  sec_registros: { en: 'RECORDS', pt: 'REGISTROS' },
 
   // Sidebar nav items
   nav_inicio: { en: 'Home', pt: 'Início' },
@@ -418,6 +420,7 @@ const I18N = {
   pt_desp_lancar: { en: 'Log Expense', pt: 'Lançar Despesa' },
   pt_desp_aprovar: { en: 'Approve Expenses', pt: 'Aprovar Despesas' },
   pt_fin_frota: { en: 'Fleet Control', pt: 'Controle de Frota' },
+  nav_veiculos: { en: 'Vehicles', pt: 'Veículos' },
   pt_fin_cadastros: { en: 'Records', pt: 'Cadastros' },
   pt_kshcam: { en: 'Work Order', pt: 'Ordem de Serviço' },
   pt_tecnicos: { en: 'Technicians', pt: 'Técnicos' },
@@ -743,6 +746,7 @@ function getSubtitle(id) {
     'tarefas': tr('sub_tarefas'),
     'agenda': tr('agenda_subtitle'),
     'ferramentas': tr('sub_ferramentas'),
+    'fin-veiculos': LANG==='pt' ? 'Cadastro de veículos da frota' : 'Fleet vehicle registry',
     'documentos': tr('sub_documentos'),
     'fin-rentabilidade': tr('rentabilidade_subtitle'),
   };

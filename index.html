@@ -233,7 +233,11 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
         <button class="sb-item" onclick="goPage(this,'fin-indicadores','Indicadores','Financeiro')" data-i18n="nav_indicadores">Indicadores</button>
         <button class="sb-item" onclick="goPage(this,'fin-analise','Análise CR/CP','Financeiro')" data-i18n="nav_analise_crcp">Análise CR/CP</button>
         <button class="sb-item" onclick="goPage(this,'fin-fluxo','Fluxo de Caixa','Financeiro')" data-i18n="nav_fluxo_caixa">Fluxo de Caixa</button>
-        <button class="sb-item" onclick="goPage(this,'fin-patrimonio','Gestão Patrimônio','Financeiro')" data-i18n="nav_gestao_patrimonio">Gestão Patrimônio</button>
+        <div class="sb-grp-hd" onclick="toggleGrp('grp-patrimonio',this)"><span data-i18n="nav_gestao_patrimonio">Gestão Patrimônio</span> <span class="sb-grp-arr">›</span></div>
+        <div class="sb-grp-body" id="grp-patrimonio">
+          <button class="sb-child" onclick="goPage(this,'ferramentas','Ferramentas','Financeiro / Gestão Patrimônio')" data-i18n="nav_ferramentas">Ferramentas</button>
+          <button class="sb-child" onclick="goPage(this,'fin-veiculos','Veículos','Financeiro / Gestão Patrimônio')" data-i18n="nav_veiculos">Veículos</button>
+        </div>
         <button class="sb-item" onclick="goPage(this,'fin-custeio','Custeio','Financeiro')" data-i18n="nav_custeio">Custeio</button>
         <button class="sb-item" onclick="goPage(this,'fin-rentabilidade','Rentabilidade por OS','Financeiro')" data-i18n="nav_rentabilidade">Rentabilidade por OS</button>
         <div class="sb-grp-hd" onclick="toggleGrp('grp-desp',this)"><span data-i18n="nav_despesas_group">Despesas</span> <span class="sb-grp-arr">›</span></div>
@@ -247,11 +251,16 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <div class="sb-sec" onclick="toggleSec('ops',this)"><span data-i18n="sec_operacoes">OPERAÇÕES</span> <span class="sb-sec-arr">−</span></div>
       <div class="sb-sec-body" id="sec-ops" style="max-height:500px">
         <button class="sb-item" onclick="goPage(this,'kshcam','Ordem de Serviço','Operações')" data-i18n="nav_ordem_servico">Ordem de Serviço</button>
-        <button class="sb-item" onclick="goPage(this,'tecnicos','Técnicos','Operações')" data-i18n="nav_tecnicos">Técnicos</button>
         <button class="sb-item" onclick="goPage(this,'tarefas','Tarefas','Operações')" data-i18n="nav_tarefas">Tarefas</button>
         <button class="sb-item" onclick="goPage(this,'agenda','Agenda','Operações')" data-i18n="nav_agenda">Agenda</button>
-        <button class="sb-item" onclick="goPage(this,'ferramentas','Ferramentas','Operações')" data-i18n="nav_ferramentas">Ferramentas</button>
-        <button class="sb-item" onclick="goPage(this,'documentos','Documentos','Operações')" data-i18n="nav_documentos">Documentos</button>
+      </div>
+      <div class="sb-sec" onclick="toggleSec('pessoas',this)"><span data-i18n="sec_pessoas">GESTÃO DE PESSOAS</span> <span class="sb-sec-arr">−</span></div>
+      <div class="sb-sec-body" id="sec-pessoas" style="max-height:500px">
+        <button class="sb-item" onclick="goPage(this,'tecnicos','Técnicos','Gestão de Pessoas')" data-i18n="nav_tecnicos">Técnicos</button>
+      </div>
+      <div class="sb-sec" onclick="toggleSec('registros',this)"><span data-i18n="sec_registros">REGISTROS</span> <span class="sb-sec-arr">−</span></div>
+      <div class="sb-sec-body" id="sec-registros" style="max-height:500px">
+        <button class="sb-item" onclick="goPage(this,'documentos','Documentos','Registros')" data-i18n="nav_documentos">Documentos</button>
       </div>
     </nav>
     <div class="sb-lang">
