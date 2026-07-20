@@ -181,6 +181,8 @@ const I18N = {
   os_notepad_ph: { en: 'Free notes about this job (internal use, not shown to the client)...', pt: 'Anotações livres sobre este serviço (uso interno, não aparece pro cliente)...' },
   os_notepad_salvar: { en: 'Save notepad', pt: 'Salvar bloco de notas' },
   os_notepad_salvo: { en: 'Notepad saved', pt: 'Bloco de notas salvo' },
+  os_notepad_resumir: { en: '🎙️ Summarize with AI', pt: '🎙️ Resumir com IA' },
+  notepad_trecho_adicionado: { en: 'Voice note added to the notepad', pt: 'Trecho de voz adicionado ao bloco de notas' },
   foto_marcar_privada: { en: 'Mark as private (hidden from client)', pt: 'Marcar como privada (não aparece pro cliente)' },
   foto_marcar_publica: { en: 'Mark as visible to client', pt: 'Marcar como visível pro cliente' },
   foto_privada_badge: { en: 'Private', pt: 'Privada' },
@@ -973,7 +975,15 @@ async function abrirOS(id) {
         <div style="font-size:13px;font-weight:600">${tr('os_notepad_label')}</div>
         <button id="notepad-save-${id}" onclick="salvarNotepad('${id}')" style="display:none;padding:5px 12px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:11px;cursor:pointer;font-family:inherit">${tr('os_notepad_salvar')}</button>
       </div>
-      <textarea id="os-notepad-${id}" placeholder="${tr('os_notepad_ph')}" oninput="document.getElementById('notepad-save-${id}').style.display='inline-block'" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:vertical;background:#fffdf7">${os.notepad||''}</textarea>
+      <div id="notepad-form-${id}">
+        <textarea id="os-notepad-${id}" placeholder="${tr('os_notepad_ph')}" oninput="document.getElementById('notepad-save-${id}').style.display='inline-block'" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none;resize:vertical;background:#fffdf7">${os.notepad||''}</textarea>
+        <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">
+          <button id="notepad-mic-${id}" onclick="toggleGravacaoNotepad('${id}')" title="${tr('nota_gravar_title')}" style="padding:7px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;color:#555;font-size:14px;cursor:pointer;font-family:inherit">🎤</button>
+          <button id="notepad-resumir-${id}" onclick="resumirNotepad('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_notepad_resumir')}</button>
+          <div id="notepad-rec-status-${id}" style="display:none;font-size:11px;color:#e74c3c"></div>
+        </div>
+      </div>
+      <div id="notepad-previa-${id}" style="display:none;margin-top:8px"></div>
     </div>
     <div style="margin-bottom:16px">
       <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:8px">${tr('os_status_label')}</div>
@@ -1698,6 +1708,160 @@ async function confirmarNota(osId) {
   if (!texto) return;
   cancelarPreviaNota(osId);
   await salvarNotaDireta(osId, texto);
+}
+
+// ── Bloco de notas: gravação por voz acumulativa + resumo sob demanda ──
+async function toggleGravacaoNotepad(osId) {
+  const chave = 'np-' + osId;
+  const ativa = gravacoesAtivas[chave];
+  if (ativa) {
+    ativa.recorder.stop();
+    return;
+  }
+
+  if (!navigator.mediaDevices || !window.MediaRecorder) {
+    toast(tr('nota_erro_microfone'), 'err');
+    return;
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch(e) {
+    toast(tr('nota_erro_microfone'), 'err');
+    return;
+  }
+
+  const candidatos = ['audio/webm', 'audio/mp4', 'audio/ogg'];
+  const mime = candidatos.find(m => window.MediaRecorder.isTypeSupported && window.MediaRecorder.isTypeSupported(m)) || '';
+  const recorder = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+
+  const micBtn = document.getElementById('notepad-mic-' + osId);
+  const statusEl = document.getElementById('notepad-rec-status-' + osId);
+  const inicioEm = Date.now();
+  let timerId = null;
+
+  function atualizarTimer() {
+    if (!statusEl) return;
+    const seg = Math.floor((Date.now() - inicioEm) / 1000);
+    const m = String(Math.floor(seg / 60)).padStart(2, '0');
+    const s = String(seg % 60).padStart(2, '0');
+    statusEl.textContent = '● ' + tr('nota_gravando') + ' (' + m + ':' + s + ')';
+  }
+
+  recorder.onstop = async () => {
+    clearInterval(timerId);
+    stream.getTracks().forEach(t => t.stop());
+    delete gravacoesAtivas[chave];
+    if (micBtn) { micBtn.textContent = '🎤'; micBtn.style.background = '#fff'; micBtn.style.color = '#555'; }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#2563eb'; statusEl.textContent = tr('nota_transcrevendo'); }
+
+    const blob = new Blob(chunks, { type: mime || 'audio/webm' });
+    if (!blob.size) { if (statusEl) statusEl.style.display = 'none'; return; }
+
+    try {
+      const audio_base64 = await blobParaBase64(blob);
+      const r = await fetch(SB_URL + '/functions/v1/bright-processor', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+        body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'Erro');
+      const texto = (d.texto || '').trim();
+      if (statusEl) statusEl.style.display = 'none';
+      if (!texto) { toast(tr('nota_audio_vazio'), 'err'); return; }
+
+      const ta = document.getElementById('os-notepad-' + osId);
+      if (ta) {
+        ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/, '') + '\n' + texto) : texto;
+      }
+      await salvarNotepad(osId);
+    } catch(e) {
+      if (statusEl) statusEl.style.display = 'none';
+      console.error('transcrever-audio (notepad) falhou:', e);
+      toast(tr('nota_erro_transcricao') + ': ' + e.message, 'err');
+    }
+  };
+
+  recorder.start();
+  gravacoesAtivas[chave] = { recorder };
+  if (micBtn) { micBtn.textContent = '⏹'; micBtn.style.background = '#e74c3c'; micBtn.style.color = '#fff'; }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; }
+  atualizarTimer();
+  timerId = setInterval(atualizarTimer, 1000);
+}
+
+async function resumirNotepad(osId) {
+  const ta = document.getElementById('os-notepad-' + osId);
+  const texto = ta?.value.trim();
+  if (!texto) return;
+  const btn = document.getElementById('notepad-resumir-' + osId);
+  if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
+  try {
+    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ texto })
+    });
+    if (!r.ok) {
+      let detalhe = '';
+      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
+      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
+    }
+    const d = await r.json();
+    mostrarPreviaNotepad(osId, d.resumo || texto);
+  } catch(e) {
+    console.error('resumo-nota (notepad) falhou:', e);
+    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
+  } finally {
+    if (btn) { btn.textContent = tr('os_notepad_resumir'); btn.disabled = false; }
+  }
+}
+
+function mostrarPreviaNotepad(osId, resumo) {
+  document.getElementById('notepad-form-' + osId).style.display = 'none';
+  const wrap = document.getElementById('notepad-previa-' + osId);
+  wrap.style.display = 'block';
+  wrap.innerHTML = `
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px">
+      <div style="font-size:10px;color:#166534;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:600">${tr('os_resumo_ia')}</div>
+      <div id="notepad-texto-ia-${osId}" contenteditable="false" style="font-size:12px;background:#fff;border:1.5px solid #e8e8e5;border-radius:7px;padding:9px 11px;margin-bottom:8px;outline:none;white-space:pre-wrap">${resumo}</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button onclick="cancelarPreviaNotepad('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">${tr('btn_cancelar')}</button>
+        <button id="notepad-editbtn-${osId}" onclick="toggleEditarPreviaNotepad('${osId}')" style="padding:6px 12px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#555">${tr('os_editar_nota')}</button>
+        <button onclick="confirmarNotepad('${osId}')" style="padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_confirmar')}</button>
+      </div>
+    </div>`;
+}
+
+function toggleEditarPreviaNotepad(osId) {
+  const el = document.getElementById('notepad-texto-ia-' + osId);
+  const btn = document.getElementById('notepad-editbtn-' + osId);
+  const editing = el.getAttribute('contenteditable') === 'true';
+  el.setAttribute('contenteditable', editing ? 'false' : 'true');
+  el.style.borderColor = editing ? '#e8e8e5' : '#1a1a1a';
+  btn.textContent = editing ? tr('os_editar_nota') : tr('os_concluir_edicao');
+  if (!editing) el.focus();
+}
+
+function cancelarPreviaNotepad(osId) {
+  const wrap = document.getElementById('notepad-previa-' + osId);
+  wrap.style.display = 'none';
+  wrap.innerHTML = '';
+  document.getElementById('notepad-form-' + osId).style.display = 'block';
+}
+
+async function confirmarNotepad(osId) {
+  const el = document.getElementById('notepad-texto-ia-' + osId);
+  const texto = el?.innerText.trim();
+  if (!texto) return;
+  cancelarPreviaNotepad(osId);
+  const ta = document.getElementById('os-notepad-' + osId);
+  if (ta) ta.value = texto;
+  await salvarNotepad(osId);
 }
 
 // Nova OS
