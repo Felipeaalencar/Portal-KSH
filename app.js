@@ -365,6 +365,7 @@ const I18N = {
   gasto_ia_lendo: { en: 'Reading receipt...', pt: 'Lendo a nota...' },
   gasto_ia_sucesso: { en: 'Data filled in — check before saving', pt: 'Dados preenchidos — confira antes de salvar' },
   gasto_ia_erro: { en: "Couldn't read the receipt", pt: 'Não consegui ler a nota' },
+  gasto_ia_vazio: { en: "Couldn't identify any data in this photo — try a clearer photo or fill in manually", pt: 'Não consegui identificar dados nessa foto — tente uma foto mais nítida ou preencha manualmente' },
   gasto_valor_obrigatorio: { en: 'Enter a value', pt: 'Preencha o valor' },
   gasto_salvo: { en: 'Expense saved', pt: 'Despesa salva' },
   gasto_excluir_confirm: { en: 'Delete this expense?', pt: 'Excluir essa despesa?' },
@@ -586,6 +587,7 @@ const I18N = {
   doc_ia_lendo: { en: 'Reading document with AI…', pt: 'Lendo documento com IA…' },
   doc_ia_sucesso: { en: 'Fields filled! Review before saving.', pt: 'Dados preenchidos! Confira antes de salvar.' },
   doc_ia_erro: { en: 'Could not read the document', pt: 'Não consegui ler o documento' },
+  doc_ia_vazio: { en: "Couldn't identify any data in this photo — try a clearer photo or fill in manually", pt: 'Não consegui identificar dados nessa foto — tente uma foto mais nítida ou preencha manualmente' },
   doc_titulo_obrigatorio: { en: 'Title is required', pt: 'Título é obrigatório' },
   doc_salvo: { en: 'Document saved', pt: 'Documento salvo' },
   doc_excluir_confirm: { en: 'Delete this document?', pt: 'Excluir este documento?' },
@@ -2722,8 +2724,11 @@ async function preencherGastoComIA() {
   const btn = document.getElementById('ng-preencher-ia-btn');
   const statusEl = document.getElementById('ng-ia-status');
   if (btn) { btn.disabled = true; }
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('gasto_ia_lendo'); }
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('gasto_ia_lendo'); }
   try {
+    // Garante que o token ainda é válido antes de chamar a Edge Function
+    // (esta chamada não passa por sbGet/sbPost, então precisa renovar sozinha)
+    await garantirSessao();
     const imagem_base64 = await blobParaBase64(ngFotoFile);
     const r = await fetch(SB_URL + '/functions/v1/extrair-gasto', {
       method: 'POST',
@@ -2741,10 +2746,16 @@ async function preencherGastoComIA() {
       document.getElementById('ng-qtd').value = d.quantidade && d.quantidade > 0 ? d.quantidade : 1;
       document.getElementById('ng-valor').value = Number(d.valor).toFixed(2);
     }
-    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('gasto_ia_sucesso'); }
-    toast(tr('gasto_ia_sucesso'), 'ok');
+    const nadaEncontrado = !d.fornecedor && !d.descricao && !d.valor && !d.data;
+    if (nadaEncontrado) {
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#92400e'; statusEl.textContent = tr('gasto_ia_vazio'); }
+      toast(tr('gasto_ia_vazio'), 'err');
+    } else {
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('gasto_ia_sucesso'); }
+      toast(tr('gasto_ia_sucesso'), 'ok');
+    }
   } catch(e) {
-    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('gasto_ia_erro'); }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('gasto_ia_erro') + (e.message ? ' (' + e.message + ')' : ''); }
     toast(tr('erro_prefix') + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
@@ -5209,6 +5220,8 @@ async function preencherDocumentoComIA() {
   if (btn) btn.disabled = true;
   if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('doc_ia_lendo'); }
   try {
+    // Garante que o token ainda é válido antes de chamar a Edge Function
+    await garantirSessao();
     const imagem_base64 = await blobParaBase64(ndocArquivoFile);
     const r = await fetch(SB_URL + '/functions/v1/extrair-documento', {
       method: 'POST',
@@ -5223,10 +5236,16 @@ async function preencherDocumentoComIA() {
     if (d.numero_documento) document.getElementById('nd2-numero').value = d.numero_documento;
     if (d.data_emissao) document.getElementById('nd2-data-emissao').value = d.data_emissao;
     if (d.data_validade) document.getElementById('nd2-data-validade').value = d.data_validade;
-    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('doc_ia_sucesso'); }
-    toast(tr('doc_ia_sucesso'), 'ok');
+    const nadaEncontrado = !d.titulo && !d.orgao_emissor && !d.numero_documento && !d.data_emissao && !d.data_validade;
+    if (nadaEncontrado) {
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#92400e'; statusEl.textContent = tr('doc_ia_vazio'); }
+      toast(tr('doc_ia_vazio'), 'err');
+    } else {
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#166534'; statusEl.textContent = tr('doc_ia_sucesso'); }
+      toast(tr('doc_ia_sucesso'), 'ok');
+    }
   } catch(e) {
-    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('doc_ia_erro'); }
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('doc_ia_erro') + (e.message ? ' (' + e.message + ')' : ''); }
     toast(tr('erro_prefix') + e.message, 'err');
   } finally {
     if (btn) btn.disabled = false;
