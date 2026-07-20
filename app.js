@@ -155,6 +155,11 @@ const I18N = {
   perm_salvo: { en: 'Permissions saved', pt: 'Permissões salvas' },
   acesso_negado: { en: 'You do not have access to this page', pt: 'Você não tem permissão para acessar essa página' },
   label_modulos_liberados: { en: 'Modules released in the Portal', pt: 'Módulos liberados no Portal' },
+  dia_status_agendado: { en: 'Scheduled', pt: 'Agendado' },
+  dia_marcar_executado: { en: 'Mark as done', pt: 'Marcar como executado' },
+  label_dia_executado: { en: 'Work has already been done', pt: 'Trabalho já foi executado' },
+  resumo_dias_agendados_aviso: { en: 'scheduled day(s) not yet counted in the total', pt: 'dia(s) agendado(s) ainda não contabilizado(s) no total' },
+
 
 
   // Ordem de Serviço / KSHCam
@@ -1407,6 +1412,7 @@ function calcularResumoValores(dias, gastos, tecnicosLista) {
 
   const porTecnico = {};
   (dias || []).forEach(d => {
+    if (d.executado === false) return;
     const horas = horasDoDia(d);
     (Array.isArray(d.tecnicos) ? d.tecnicos : []).forEach(nome => {
       if (!porTecnico[nome]) porTecnico[nome] = { nome, horas: 0, valorHora: valorHoraPorNome[nome] != null ? valorHoraPorNome[nome] : null, subtotal: 0 };
@@ -1425,7 +1431,8 @@ function calcularResumoValores(dias, gastos, tecnicosLista) {
     totalMaoObra,
     totalGastos,
     totalGeral: totalMaoObra + totalGastos,
-    qtdGastosPendentes: (gastos || []).filter(g => g.status === 'pendente').length
+    qtdGastosPendentes: (gastos || []).filter(g => g.status === 'pendente').length,
+    qtdDiasAgendados: (dias || []).filter(d => d.executado === false).length
   };
 }
 
@@ -1443,7 +1450,12 @@ function resumoValoresHTML(r, id, os) {
   const bgMargem = margem != null ? (margem >= 0 ? '#f0fdf4' : '#fef2f2') : '#f5f5f3';
   const cobranca = (os && os.status_cobranca) || 'a_cobrar';
 
+  const avisoAgendados = r.qtdDiasAgendados
+    ? '<div style="font-size:11px;color:#92400e;background:#fffbeb;border-radius:6px;padding:6px 9px;margin-bottom:8px">⚠ ' + r.qtdDiasAgendados + ' ' + tr('resumo_dias_agendados_aviso') + '</div>'
+    : '';
+
   return '<div style="background:#f9f9f7;border-radius:8px;padding:12px 14px">'
+    + avisoAgendados
     + linhasTec
     + '<div style="display:flex;justify-content:space-between;font-size:12px;padding:2px 0">'
       + '<span>' + tr('os_gastos_label') + (r.qtdGastosPendentes ? ' <span style="color:#92400e">(' + r.qtdGastosPendentes + ' ' + tr('resumo_pendentes') + ')</span>' : '') + '</span>'
@@ -1498,16 +1510,26 @@ async function alterarStatusCobranca(osId, status) {
 function diaTrabalhoCardHTML(d, osId) {
   const horaTxt = d.hora_inicio ? String(d.hora_inicio).slice(0,5) + (d.hora_fim ? ' - ' + String(d.hora_fim).slice(0,5) : '') : '';
   const tecs = Array.isArray(d.tecnicos) ? d.tecnicos.join(', ') : '';
-  return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px">'
+  const agendado = d.executado === false;
+  return '<div style="background:' + (agendado ? '#fffbeb' : '#f9f9f7') + ';border-radius:8px;padding:10px 12px">'
     + '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px">'
     + '<div style="font-size:12px;font-weight:600">' + (d.data||'') + (horaTxt ? ' · ' + horaTxt : '') + '</div>'
-    + '<span style="display:flex;gap:8px;flex-shrink:0">'
+    + '<span style="display:flex;gap:8px;flex-shrink:0;align-items:center">'
+    + (agendado ? '<span style="font-size:9px;padding:2px 7px;border-radius:99px;background:#fef3c7;color:#92400e">' + tr('dia_status_agendado') + '</span>' : '')
     + '<button onclick="abrirEditarDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:12px;padding:0">✎</button>'
     + '<button onclick="excluirDiaTrabalho(\'' + d.id + '\',\'' + osId + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:13px;padding:0">×</button>'
     + '</span></div>'
     + (tecs ? '<div style="font-size:11px;color:#888;margin-top:2px">' + tecs + '</div>' : '')
     + (d.observacao ? '<div style="font-size:11px;color:#555;margin-top:4px">' + d.observacao + '</div>' : '')
+    + (agendado ? '<button onclick="marcarDiaExecutado(\'' + d.id + '\',\'' + osId + '\')" style="margin-top:8px;font-size:11px;padding:4px 10px;border:1px solid #fde68a;border-radius:6px;background:#fff;color:#92400e;cursor:pointer">✓ ' + tr('dia_marcar_executado') + '</button>' : '')
     + '</div>';
+}
+
+async function marcarDiaExecutado(diaId, osId) {
+  try {
+    await sbPatch('os_dias?id=eq.' + diaId, { executado: true });
+    abrirOS(osId);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 let ndTecnicosSelecionados = [];
@@ -1523,6 +1545,7 @@ async function abrirNovoDiaTrabalho(osId) {
   document.getElementById('nd-hora-inicio').value = '';
   document.getElementById('nd-hora-fim').value = '';
   document.getElementById('nd-observacao').value = '';
+  document.getElementById('nd-executado').checked = true;
   ndTecnicosSelecionados = [];
   await garantirTecnicosAtivosCache();
   renderNdTecnicosChips();
@@ -1543,6 +1566,7 @@ async function abrirEditarDiaTrabalho(diaId, osId) {
     document.getElementById('nd-hora-inicio').value = d.hora_inicio ? String(d.hora_inicio).slice(0,5) : '';
     document.getElementById('nd-hora-fim').value = d.hora_fim ? String(d.hora_fim).slice(0,5) : '';
     document.getElementById('nd-observacao').value = d.observacao || '';
+    document.getElementById('nd-executado').checked = d.executado !== false;
     ndTecnicosSelecionados = Array.isArray(d.tecnicos) ? d.tecnicos.slice() : [];
     await garantirTecnicosAtivosCache();
     renderNdTecnicosChips();
@@ -1569,11 +1593,12 @@ async function salvarDiaTrabalho() {
   const hora_fim = document.getElementById('nd-hora-fim').value || null;
   const observacao = document.getElementById('nd-observacao').value.trim();
   const tecnicos = ndTecnicosSelecionados.slice();
+  const executado = document.getElementById('nd-executado')?.checked !== false;
   try {
     if (ndDiaEditandoId) {
-      await sbPatch('os_dias?id=eq.' + ndDiaEditandoId, { data, hora_inicio, hora_fim, observacao, tecnicos });
+      await sbPatch('os_dias?id=eq.' + ndDiaEditandoId, { data, hora_inicio, hora_fim, observacao, tecnicos, executado });
     } else {
-      await sbPost('os_dias', { os_id: osId, data, hora_inicio, hora_fim, observacao, tecnicos });
+      await sbPost('os_dias', { os_id: osId, data, hora_inicio, hora_fim, observacao, tecnicos, executado });
     }
     fecharModal('m-dia-trabalho');
     toast(tr('dia_salvo'), 'ok');
@@ -3293,7 +3318,8 @@ async function escolherAnexarOS() {
       hora_inicio: t.hora || null,
       hora_fim: t.hora_fim || null,
       observacao: t.descricao || '',
-      tarefa_origem_id: t.id
+      tarefa_origem_id: t.id,
+      executado: false
     });
     await sbPatch('tarefas?id=eq.' + tarefaId, { os_gerada_numero: os.numero, os_gerada_id: os.id });
     t.os_gerada_numero = os.numero;
@@ -3856,7 +3882,8 @@ async function salvarNovaOS() {
               hora_inicio: t.hora || null,
               hora_fim: t.hora_fim || null,
               observacao: t.descricao || '',
-              tarefa_origem_id: t.id
+              tarefa_origem_id: t.id,
+              executado: false
             });
           } catch(e2) {}
         }
