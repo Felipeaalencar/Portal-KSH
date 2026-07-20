@@ -164,7 +164,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="app.js?v=1784600000" defer></script>
+<script src="app.js?v=1784610000" defer></script>
 </head>
 <body>
 
@@ -349,7 +349,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <!-- Modal Nova Tarefa -->
 <div class="modal-bg" id="m-nova-tarefa">
   <div class="modal-box">
-    <div class="modal-hd"><span class="modal-hd-title" data-i18n="tarefa_nova_title">Nova tarefa</span><button class="modal-close" onclick="fecharModal('m-nova-tarefa')">×</button></div>
+    <div class="modal-hd"><span class="modal-hd-title" id="nt-modal-title" data-i18n="tarefa_nova_title">Nova tarefa</span><button class="modal-close" onclick="fecharModal('m-nova-tarefa')">×</button></div>
     <label class="f-lbl" data-i18n="label_titulo">Título *</label>
     <input class="f-inp" id="nt-titulo" data-i18n-placeholder="tarefa_titulo_ph" placeholder="Ex: Ligar pro cliente da Aqua Vista">
     <label class="f-lbl" data-i18n="label_cliente_opcional">Cliente (opcional)</label>
@@ -364,7 +364,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     </label>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-nova-tarefa')" data-i18n="btn_cancelar">Cancelar</button>
-      <button class="btn-pri" onclick="salvarNovaTarefa()" data-i18n="btn_criar_tarefa">Criar tarefa</button>
+      <button class="btn-pri" id="nt-modal-btn" onclick="salvarNovaTarefa()" data-i18n="btn_criar_tarefa">Criar tarefa</button>
     </div>
   </div>
 </div>
