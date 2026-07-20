@@ -148,6 +148,13 @@ const I18N = {
   funcao_adicionar_nova: { en: '+ Add new role...', pt: '+ Adicionar nova função...' },
   funcao_prompt_nome: { en: 'New role name:', pt: 'Nome da nova função:' },
   funcao_criada: { en: 'Role added', pt: 'Função adicionada' },
+  btn_permissoes: { en: 'Permissions', pt: 'Permissões' },
+  perm_sem_email: { en: 'This employee has no email on file, so permissions cannot be managed.', pt: 'Este funcionário não tem email cadastrado, não é possível gerenciar permissões.' },
+  perm_sem_login: { en: 'This employee does not have a Portal login yet.', pt: 'Este funcionário ainda não tem login no Portal.' },
+  perm_acesso_total: { en: 'Manager — full access, cannot be restricted', pt: 'Gestor — acesso total, não pode ser restringido' },
+  perm_salvo: { en: 'Permissions saved', pt: 'Permissões salvas' },
+  acesso_negado: { en: 'You do not have access to this page', pt: 'Você não tem permissão para acessar essa página' },
+
 
   // Ordem de Serviço / KSHCam
   os_subtitle: { en: 'Work orders generated from approved quotes or created manually by technicians', pt: 'OS geradas por orçamentos aprovados ou criadas manualmente pelos técnicos' },
@@ -661,6 +668,7 @@ async function login() {
     const p = Array.isArray(ps) && ps[0] ? ps[0] : {};
     ME = {
       email: d.user.email, nome: p.nome || email.split('@')[0], funcao: p.funcao || 'Gestor',
+      paginas_permitidas: Array.isArray(p.paginas_permitidas) ? p.paginas_permitidas : [],
       ini: (p.nome || email).substring(0,2).toUpperCase(),
       token: d.access_token, refresh_token: d.refresh_token,
       expiraEm: Date.now() + Math.max((d.expires_in || 3600) - 60, 60) * 1000
@@ -698,6 +706,7 @@ function iniciarApp() {
   document.getElementById('sb-role').textContent = ME.funcao;
   document.getElementById('wb-nome').textContent = tr('home_welcome') + ME.nome.split(' ')[0] + '! 👋';
   carregarStats();
+  aplicarPermissoesSidebar();
   goPage(document.getElementById('nav-inicio'), 'inicio', tr('nav_inicio'), '');
 }
 
@@ -735,6 +744,7 @@ function pageTitle(id) {
 }
 
 function goPage(btn, pageId, title, section) {
+  if (!temPermissao(pageId)) { toast(tr('acesso_negado'), 'err'); return; }
   if (window.innerWidth <= 860) {
     document.querySelector('.sb')?.classList.remove('open');
     document.getElementById('sb-overlay')?.classList.remove('on');
@@ -987,7 +997,7 @@ function renderTabelaTecnicos(lista) {
     <td>${t.email||'—'}</td>
     <td>${t.telefone||'—'}</td>
     <td>${t.valor_hora != null ? '$' + Number(t.valor_hora).toFixed(2) : '—'}</td>
-    <td><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button></td>
+    <td style="display:flex;gap:6px"><button onclick="editarTecnico('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_editar')}</button><button onclick="abrirPermissoesFuncionario('${t.id}')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">${tr('btn_permissoes')}</button></td>
   </tr>`).join('');
 }
 
@@ -4258,6 +4268,146 @@ async function excluirDocumento(id) {
     toast(tr('doc_excluido'), 'ok');
     renderDocumentos();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+
+// ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
+const PERMISSOES_ESTRUTURA = [
+  { label: 'Comercial', itens: [
+      { id: 'acomp-vendas', label: 'Acomp. de vendas' },
+      { id: 'contratos', label: 'Contratos' },
+      { id: 'fat-consolidado', label: 'Fat. consolidado' },
+      { id: 'crm-clientes', label: 'Clientes' },
+      { id: 'crm-orcamentos', label: 'Orçamentos' },
+      { id: 'crm-followups', label: 'Follow-ups' },
+      { id: 'crm-comissoes', label: 'Comissões' },
+      { id: 'crm-consultores', label: 'Consultores' },
+      { id: 'crm-reprovacao', label: 'Motivos de reprovação' }
+  ]},
+  { label: 'Financeiro', itens: [
+      { id: 'fin-banco', label: 'Banco' },
+      { id: 'fin-dre', label: 'DRE' },
+      { id: 'fin-indicadores', label: 'Indicadores' },
+      { id: 'fin-analise', label: 'Análise CR/CP' },
+      { id: 'fin-fluxo', label: 'Fluxo de caixa' },
+      { id: 'ferramentas', label: 'Gestão patrimônio · Ferramentas' },
+      { id: 'fin-veiculos', label: 'Gestão patrimônio · Veículos' },
+      { id: 'fin-custeio', label: 'Custeio' },
+      { id: 'fin-rentabilidade', label: 'Rentabilidade por OS' },
+      { id: 'desp-lancar', label: 'Despesas · Lançar' },
+      { id: 'desp-aprovar', label: 'Despesas · Aprovar' },
+      { id: 'fin-frota', label: 'Controle de frota' },
+      { id: 'fin-cadastros', label: 'Cadastros' }
+  ]},
+  { label: 'Operações', itens: [
+      { id: 'kshcam', label: 'Ordem de serviço' },
+      { id: 'tarefas', label: 'Tarefas' },
+      { id: 'agenda', label: 'Agenda' }
+  ]},
+  { label: 'Gestão de Pessoas', itens: [ { id: 'tecnicos', label: 'Funcionários' } ] },
+  { label: 'Registros', itens: [ { id: 'documentos', label: 'Documentos' } ] }
+];
+
+let permEditandoEmail = null;
+let permEditandoEstado = {};
+
+function temPermissao(pageId) {
+  if (pageId === 'inicio') return true;
+  if (!ME) return true;
+  if (ME.funcao === 'Gestor') return true;
+  return Array.isArray(ME.paginas_permitidas) && ME.paginas_permitidas.includes(pageId);
+}
+
+function aplicarPermissoesSidebar() {
+  if (!ME || ME.funcao === 'Gestor') return;
+  document.querySelectorAll('.sb-item,.sb-child,.h-card').forEach(el => {
+    const m = (el.getAttribute('onclick') || '').match(/goPage\(([^,]+),\s*'([^']+)'/);
+    if (!m) return;
+    const pageId = m[2];
+    if (pageId === 'inicio' || temPermissao(pageId)) return;
+    el.style.display = 'none';
+  });
+}
+
+async function abrirPermissoesFuncionario(tecId) {
+  const t = tecnicosData.find(x => x.id === tecId);
+  if (!t) return;
+  document.getElementById('perm-nome').textContent = t.nome;
+  const container = document.getElementById('perm-content');
+  const salvarBtn = document.getElementById('perm-salvar-btn');
+  container.innerHTML = '<div style="text-align:center;padding:30px;color:#bbb">' + tr('loading') + '</div>';
+  salvarBtn.style.display = 'none';
+  permEditandoEmail = null;
+  abrirModal('m-permissoes');
+
+  if (!t.email) {
+    container.innerHTML = '<div style="padding:16px 4px;color:#888;font-size:13px">' + tr('perm_sem_email') + '</div>';
+    return;
+  }
+  try {
+    const rows = await sbGet('usuarios?email=eq.' + encodeURIComponent(t.email) + '&limit=1');
+    const u = rows[0];
+    if (!u) {
+      container.innerHTML = '<div style="padding:16px 4px;color:#888;font-size:13px">' + tr('perm_sem_login') + '</div>';
+      return;
+    }
+    if (u.funcao === 'Gestor') {
+      container.innerHTML = '<div style="padding:12px 14px;background:#eff6ff;border-radius:8px;color:#1d4ed8;font-size:13px">🔒 ' + tr('perm_acesso_total') + '</div>';
+      return;
+    }
+    permEditandoEmail = t.email;
+    permEditandoEstado = {};
+    const permitidas = Array.isArray(u.paginas_permitidas) ? u.paginas_permitidas : [];
+    PERMISSOES_ESTRUTURA.forEach(sec => sec.itens.forEach(it => { permEditandoEstado[it.id] = permitidas.includes(it.id); }));
+    salvarBtn.style.display = 'inline-block';
+    renderArvorePermissoes();
+  } catch(e) {
+    container.innerHTML = '<div style="padding:16px 4px;color:#e74c3c;font-size:13px">' + e.message + '</div>';
+  }
+}
+
+function renderArvorePermissoes() {
+  const container = document.getElementById('perm-content');
+  container.innerHTML = PERMISSOES_ESTRUTURA.map(sec => {
+    const ligados = sec.itens.filter(it => permEditandoEstado[it.id]).length;
+    const total = sec.itens.length;
+    return '<div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;margin-bottom:8px">'
+      + '<div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="togglePermSecao(\'' + sec.label + '\')">'
+      + '<input type="checkbox" ' + (ligados === total ? 'checked' : '') + ' onclick="event.stopPropagation();togglePermSecao(\'' + sec.label + '\')">'
+      + '<span style="font-size:12px;font-weight:600;flex:1">' + sec.label + '</span>'
+      + '<span style="font-size:11px;color:#999">' + ligados + '/' + total + '</span>'
+      + '</div>'
+      + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:2px 10px;margin-top:8px;padding-left:2px">'
+      + sec.itens.map(it => '<label style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:#555;padding:2px 0;cursor:pointer">'
+          + '<input type="checkbox" ' + (permEditandoEstado[it.id] ? 'checked' : '') + ' onchange="togglePermItem(\'' + it.id + '\')">' + it.label + '</label>').join('')
+      + '</div></div>';
+  }).join('');
+}
+
+function togglePermItem(id) {
+  permEditandoEstado[id] = !permEditandoEstado[id];
+  renderArvorePermissoes();
+}
+
+function togglePermSecao(label) {
+  const sec = PERMISSOES_ESTRUTURA.find(s => s.label === label);
+  if (!sec) return;
+  const todosOn = sec.itens.every(it => permEditandoEstado[it.id]);
+  sec.itens.forEach(it => { permEditandoEstado[it.id] = !todosOn; });
+  renderArvorePermissoes();
+}
+
+async function salvarPermissoes() {
+  if (!permEditandoEmail) return;
+  const paginas = Object.keys(permEditandoEstado).filter(id => permEditandoEstado[id]);
+  const btn = document.getElementById('perm-salvar-btn');
+  if (btn) { btn.disabled = true; btn.textContent = tr('os_gerando'); }
+  try {
+    await sbPatch('usuarios?email=eq.' + encodeURIComponent(permEditandoEmail), { paginas_permitidas: paginas });
+    toast(tr('perm_salvo'), 'ok');
+    fecharModal('m-permissoes');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = tr('btn_salvar'); } }
 }
 
 // ── INIT ──────────────────────────────────────────────────────
