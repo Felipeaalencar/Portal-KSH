@@ -169,7 +169,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
-<script src="app.js?v=1784664760" defer></script>
+<script src="app.js?v=1784665637" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -976,6 +976,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button type="button" class="btn-pri" onclick="abrirBibliotecaIcones()" data-i18n="planta_escolher_dispositivo_btn">Escolher dispositivo</button>
       <button type="button" id="planta-relatorio-btn" onclick="gerarRelatorioPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_gerar_relatorio_btn">Gerar relatório PDF</button>
+      <button type="button" onclick="abrirEnviarPlantaOS()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="rack_enviar_os_btn">Enviar para OS</button>
       <a id="planta-ver-pdf-btn" href="#" target="_blank" style="display:none;padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-decoration:none;color:inherit" data-i18n="planta_ver_pdf_original_btn">Ver PDF original</a>
     </div>
     <div id="planta-relatorio-status" style="display:none;font-size:12px;margin-top:8px"></div>
@@ -1019,6 +1020,36 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <button class="btn-sec" onclick="excluirMarcadorPlantaAtual()" style="border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
       <button class="btn-sec" onclick="fecharModal('m-planta-obs')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarObsPlanta()" data-i18n="btn_salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Enviar Planta para OS -->
+<div class="modal-bg" id="m-planta-enviar-os">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="planta_enviar_os_titulo">Enviar planta para OS</span><button class="modal-close" onclick="fecharModal('m-planta-enviar-os')">×</button></div>
+    <label class="f-lbl" data-i18n="label_buscar_os">Buscar OS aberta</label>
+    <input class="f-inp" id="peos-busca" oninput="filtrarOSParaPlanta(this.value)" data-i18n-placeholder="rack_os_busca_ph" placeholder="Nome do cliente ou número da OS">
+    <div id="peos-lista" style="max-height:320px;overflow-y:auto;margin-top:8px;border:1px solid #e8e8e5;border-radius:8px"></div>
+    <div id="peos-status" style="display:none;font-size:12px;margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-planta-enviar-os')" data-i18n="btn_cancelar">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Preview (somente leitura) da Planta vinculada a uma OS -->
+<div class="modal-bg" id="m-planta-preview">
+  <div class="modal-box" style="width:560px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-preview-titulo" data-i18n="planta_preview_title">Planta</span><button class="modal-close" onclick="fecharModal('m-planta-preview')">×</button></div>
+    <div style="position:relative;width:100%;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;background:#f4f4f2">
+      <img id="planta-preview-img" style="display:block;width:100%;height:auto">
+      <div id="planta-preview-marcadores" style="position:absolute;inset:0"></div>
+    </div>
+    <div id="planta-preview-contagem" style="font-size:12px;color:#888;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-planta-preview')" data-i18n="btn_fechar">Fechar</button>
+      <button class="btn-pri" id="planta-preview-abrir-btn" data-i18n="rack_abrir">Abrir</button>
     </div>
   </div>
 </div>

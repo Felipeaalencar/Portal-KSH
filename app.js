@@ -873,6 +873,11 @@ const I18N = {
   planta_relatorio_col_dispositivo: { en: 'Device', pt: 'Dispositivo' },
   planta_relatorio_col_qtd: { en: 'Qty', pt: 'Qtd' },
   planta_relatorio_croqui_legenda: { en: 'Numbers match the detailed list below', pt: 'Os números batem com a lista detalhada a seguir' },
+  planta_enviar_os_titulo: { en: 'Send floor plan to Work Order', pt: 'Enviar planta para OS' },
+  planta_enviando_os: { en: 'Sending to work order...', pt: 'Enviando pra OS...' },
+  planta_enviado_os_sucesso: { en: 'Floor plan linked to the work order', pt: 'Planta vinculada à OS' },
+  planta_preview_title: { en: 'Floor plan', pt: 'Planta' },
+  planta_vinculada_label: { en: 'Linked floor plan', pt: 'Planta vinculada' },
 };
 
 function tr(key) {
@@ -2970,14 +2975,15 @@ async function abrirOS(id, opts) {
     return fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w400') : '';
   }
 
-  let fotos = [], notas = [], dias = [], gastos = [], racksVinculados = [];
+  let fotos = [], notas = [], dias = [], gastos = [], racksVinculados = [], plantasVinculadas = [];
   try {
-    [fotos, notas, dias, gastos, racksVinculados] = await Promise.all([
+    [fotos, notas, dias, gastos, racksVinculados, plantasVinculadas] = await Promise.all([
       sbGet('os_fotos?os_id=eq.' + id + '&order=criado_em.desc'),
       sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc'),
       sbGet('os_dias?os_id=eq.' + id + '&order=data.asc'),
       sbGet('os_gastos?os_id=eq.' + id + '&order=criado_em.desc'),
-      sbGet('projetos_racks?os_id=eq.' + id)
+      sbGet('projetos_racks?os_id=eq.' + id),
+      sbGet('projetos_plantas?os_id=eq.' + id)
     ]);
   } catch(e) {}
   await garantirTecnicosAtivosCache();
@@ -3084,6 +3090,7 @@ async function abrirOS(id, opts) {
     </div>
     <div id="os-tab-anotacoes-${id}" style="display:none">
     ${racksVinculados.length?'<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('rack_vinculado_label')+'</div>'+racksVinculados.map(r=>'<div onclick="abrirPreviewRackDaOS(\''+r.id+'\')" style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:10px 12px;background:#f9f9f7;border-radius:8px;cursor:pointer;margin-bottom:6px"><span style="font-weight:600">'+r.nome+' — '+r.tamanho_u+'U</span><span style="font-size:11px;color:#888">'+tr('rack_ver_preview')+' →</span></div>').join('')+'</div>':''}
+    ${plantasVinculadas.length?'<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('planta_vinculada_label')+'</div>'+plantasVinculadas.map(p=>'<div onclick="abrirPreviewPlantaDaOS(\''+p.id+'\')" style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:10px 12px;background:#f9f9f7;border-radius:8px;cursor:pointer;margin-bottom:6px"><span style="font-weight:600">'+p.nome+'</span><span style="font-size:11px;color:#888">'+tr('rack_ver_preview')+' →</span></div>').join('')+'</div>':''}
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('os_anotacoes_label')} (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
@@ -7899,6 +7906,217 @@ function hexParaRgbPlanta(hex) {
 // Relatorio em PDF da planta: capa, resumo por tipo de dispositivo (com quantidade),
 // croqui com a planta e os marcadores numerados, e lista detalhada com as observacoes
 // de cada um - serve tanto de referencia pra equipe (croqui) quanto pra mandar pro cliente.
+// Monta o PDF do relatorio da planta e devolve o objeto jsPDF pronto (ja numerado),
+// sem salvar/baixar - quem chama decide se baixa (gerarRelatorioPlanta) ou sobe pro
+// Drive de uma OS (selecionarOSParaPlanta), igual ao gerarRackPDFBlob do Rack.
+async function construirRelatorioPlantaPDF() {
+  if (!plantaAtual.imagem_drive_id) throw new Error(tr('planta_relatorio_erro_imagem'));
+  const conectado = await garantirTokenDrive();
+  if (!conectado) throw new Error(tr('drive_conecte_primeiro'));
+
+  // Baixa a imagem de fundo autenticada via API do Drive (evita problema de CORS
+  // que o link publico de compartilhamento teria dentro de um <canvas>/jsPDF).
+  const imgResp = await fetch('https://www.googleapis.com/drive/v3/files/' + plantaAtual.imagem_drive_id + '?alt=media', {
+    headers: { 'Authorization': 'Bearer ' + googleToken }
+  });
+  if (!imgResp.ok) throw new Error(tr('planta_relatorio_erro_imagem'));
+  const imgBlob = await imgResp.blob();
+  const imgDataUrl = await new Promise(function(resolve, reject) {
+    const reader = new FileReader();
+    reader.onload = function() { resolve(reader.result); };
+    reader.onerror = reject;
+    reader.readAsDataURL(imgBlob);
+  });
+  const dims = await new Promise(function(resolve, reject) {
+    const im = new Image();
+    im.onload = function() { resolve({ w: im.naturalWidth, h: im.naturalHeight }); };
+    im.onerror = reject;
+    im.src = imgDataUrl;
+  });
+
+  const marcadores = (plantaAtual.marcadores || []).slice();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  const dataHoje = new Date().toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+  let y = 0;
+
+  function garantirEspaco(altura, tituloContinuacao) {
+    if (y + altura > pageH - 60) {
+      doc.addPage();
+      y = desenharCabecalhoLevePDF(doc, tituloContinuacao || plantaAtual.nome) + 14;
+    }
+  }
+
+  // ── Capa: barra da empresa + titulo do documento + nome da planta ──
+  const alturaBarra = await desenharCabecalhoPDF(doc, tr('planta_relatorio_pdf_titulo'));
+  y = alturaBarra + 38;
+  doc.setFontSize(10.5);
+  doc.setTextColor(150);
+  doc.text(tr('planta_relatorio_pdf_titulo').toUpperCase(), margin, y);
+  y += 20;
+  doc.setTextColor(20, 20, 20);
+  doc.setFontSize(19);
+  doc.text(plantaAtual.nome, margin, y);
+  y += 18;
+  doc.setFontSize(9.5);
+  doc.setTextColor(140);
+  doc.text(tr('planta_relatorio_data') + ': ' + dataHoje + '   ·   ' + tr('planta_relatorio_total_dispositivos') + ': ' + marcadores.length, margin, y);
+  y += 34;
+
+  // ── Resumo por tipo (tabela com listras, quantidade alinhada a direita) ──
+  doc.setFontSize(13);
+  doc.setTextColor(20, 20, 20);
+  doc.text(tr('planta_relatorio_resumo_titulo'), margin, y);
+  y += 20;
+
+  if (!marcadores.length) {
+    doc.setFillColor(247, 247, 245);
+    doc.roundedRect(margin, y, pageW - margin * 2, 40, 6, 6, 'F');
+    doc.setFontSize(10.5);
+    doc.setTextColor(140);
+    doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
+    y += 56;
+  } else {
+    const contagem = {};
+    marcadores.forEach(function(m) {
+      const key = m.nome;
+      if (!contagem[key]) contagem[key] = { nome: m.nome, cor: m.cor, qtd: 0 };
+      contagem[key].qtd++;
+    });
+    const resumo = Object.values(contagem).sort(function(a, b) { return b.qtd - a.qtd; });
+    const linhaAltura = 24;
+    const tabelaW = pageW - margin * 2;
+
+    // cabecalho da tabela
+    doc.setFontSize(8.5);
+    doc.setTextColor(150);
+    doc.text(tr('planta_relatorio_col_dispositivo').toUpperCase(), margin + 18, y);
+    doc.text(tr('planta_relatorio_col_qtd').toUpperCase(), pageW - margin, y, { align: 'right' });
+    y += 8;
+    doc.setDrawColor(225, 225, 220);
+    doc.setLineWidth(1);
+    doc.line(margin, y, pageW - margin, y);
+    y += linhaAltura - 8;
+
+    resumo.forEach(function(item, i) {
+      garantirEspaco(linhaAltura, plantaAtual.nome);
+      if (i % 2 === 0) {
+        doc.setFillColor(249, 249, 247);
+        doc.rect(margin, y - 16, tabelaW, linhaAltura, 'F');
+      }
+      const cor = PLANTA_CORES[item.cor] || PLANTA_CORES.gray;
+      const rgb = hexParaRgbPlanta(cor.text);
+      doc.setFillColor(rgb.r, rgb.g, rgb.b);
+      doc.circle(margin + 9, y - 5, 5, 'F');
+      doc.setFontSize(10.5);
+      doc.setTextColor(30);
+      doc.text(item.nome, margin + 22, y);
+      doc.setFontSize(10.5);
+      doc.setTextColor(20, 20, 20);
+      const qtdTxt = String(item.qtd) + ' ' + (item.qtd === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
+      doc.text(qtdTxt, pageW - margin, y, { align: 'right' });
+      y += linhaAltura;
+    });
+    y += 14;
+  }
+
+  // ── Croqui: planta com marcadores numerados (referencia visual pra equipe) ──
+  doc.addPage();
+  y = desenharCabecalhoLevePDF(doc, plantaAtual.nome);
+  y += 16;
+  doc.setFontSize(13);
+  doc.setTextColor(20, 20, 20);
+  doc.text(tr('planta_relatorio_croqui_titulo'), margin, y);
+  y += 10;
+  doc.setFontSize(9);
+  doc.setTextColor(140);
+  doc.text(tr('planta_relatorio_croqui_legenda'), margin, y + 12);
+  y += 26;
+
+  const maxW = pageW - margin * 2;
+  const maxH = pageH - y - 60;
+  let drawW = maxW;
+  let drawH = drawW * (dims.h / dims.w);
+  if (drawH > maxH) { drawH = maxH; drawW = drawH * (dims.w / dims.h); }
+  const imgX = margin + (maxW - drawW) / 2;
+  const imgY = y;
+
+  doc.setDrawColor(225, 225, 220);
+  doc.setLineWidth(1);
+  doc.rect(imgX - 1, imgY - 1, drawW + 2, drawH + 2);
+  doc.addImage(imgDataUrl, 'PNG', imgX, imgY, drawW, drawH);
+
+  marcadores.forEach(function(m, idx) {
+    const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+    const rgb = hexParaRgbPlanta(cor.text);
+    const px = imgX + (m.x_pct / 100) * drawW;
+    const py = imgY + (m.y_pct / 100) * drawH;
+    doc.setFillColor(rgb.r, rgb.g, rgb.b);
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(1.2);
+    doc.circle(px, py, 9, 'FD');
+    doc.setFontSize(8);
+    doc.setTextColor(255, 255, 255);
+    doc.text(String(idx + 1), px, py + 2.8, { align: 'center' });
+  });
+
+  // ── Lista detalhada: cada dispositivo num "card" proprio, numeracao bate com o croqui ──
+  doc.addPage();
+  y = desenharCabecalhoLevePDF(doc, plantaAtual.nome);
+  y += 16;
+  doc.setFontSize(13);
+  doc.setTextColor(20, 20, 20);
+  doc.text(tr('planta_relatorio_lista_titulo'), margin, y);
+  y += 24;
+
+  if (!marcadores.length) {
+    doc.setFillColor(247, 247, 245);
+    doc.roundedRect(margin, y, pageW - margin * 2, 40, 6, 6, 'F');
+    doc.setFontSize(10.5);
+    doc.setTextColor(140);
+    doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
+  } else {
+    const larguraCard = pageW - margin * 2;
+    marcadores.forEach(function(m, idx) {
+      const obsTexto = (m.observacoes && m.observacoes.trim()) ? m.observacoes.trim() : tr('planta_relatorio_sem_obs');
+      const linhas = doc.splitTextToSize(obsTexto, larguraCard - 34);
+      const alturaCard = 22 + linhas.length * 12 + 14;
+      garantirEspaco(alturaCard + 8, plantaAtual.nome);
+
+      const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+      const rgb = hexParaRgbPlanta(cor.text);
+
+      doc.setFillColor(249, 249, 247);
+      doc.roundedRect(margin, y - 16, larguraCard, alturaCard, 6, 6, 'F');
+
+      doc.setFillColor(rgb.r, rgb.g, rgb.b);
+      doc.circle(margin + 17, y - 3, 9, 'F');
+      doc.setFontSize(9);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(idx + 1), margin + 17, y, { align: 'center' });
+
+      doc.setFontSize(11.5);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(20, 20, 20);
+      doc.text(m.nome, margin + 34, y);
+      doc.setFont(undefined, 'normal');
+
+      doc.setFontSize(9.5);
+      doc.setTextColor(m.observacoes && m.observacoes.trim() ? 90 : 165);
+      doc.text(linhas, margin + 34, y + 16);
+
+      y += alturaCard + 8;
+    });
+  }
+
+  numerarPaginasPDF(doc);
+  return doc;
+}
+
 async function gerarRelatorioPlanta() {
   if (!plantaAtual) return;
   const btn = document.getElementById('planta-relatorio-btn');
@@ -7906,210 +8124,7 @@ async function gerarRelatorioPlanta() {
   if (btn) btn.disabled = true;
   if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('planta_relatorio_gerando'); }
   try {
-    if (!plantaAtual.imagem_drive_id) throw new Error(tr('planta_relatorio_erro_imagem'));
-    const conectado = await garantirTokenDrive();
-    if (!conectado) throw new Error(tr('drive_conecte_primeiro'));
-
-    // Baixa a imagem de fundo autenticada via API do Drive (evita problema de CORS
-    // que o link publico de compartilhamento teria dentro de um <canvas>/jsPDF).
-    const imgResp = await fetch('https://www.googleapis.com/drive/v3/files/' + plantaAtual.imagem_drive_id + '?alt=media', {
-      headers: { 'Authorization': 'Bearer ' + googleToken }
-    });
-    if (!imgResp.ok) throw new Error(tr('planta_relatorio_erro_imagem'));
-    const imgBlob = await imgResp.blob();
-    const imgDataUrl = await new Promise(function(resolve, reject) {
-      const reader = new FileReader();
-      reader.onload = function() { resolve(reader.result); };
-      reader.onerror = reject;
-      reader.readAsDataURL(imgBlob);
-    });
-    const dims = await new Promise(function(resolve, reject) {
-      const im = new Image();
-      im.onload = function() { resolve({ w: im.naturalWidth, h: im.naturalHeight }); };
-      im.onerror = reject;
-      im.src = imgDataUrl;
-    });
-
-    const marcadores = (plantaAtual.marcadores || []).slice();
-
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    const pageW = doc.internal.pageSize.getWidth();
-    const pageH = doc.internal.pageSize.getHeight();
-    const margin = 48;
-    const dataHoje = new Date().toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US');
-    let y = 0;
-
-    function garantirEspaco(altura, tituloContinuacao) {
-      if (y + altura > pageH - 60) {
-        doc.addPage();
-        y = desenharCabecalhoLevePDF(doc, tituloContinuacao || plantaAtual.nome) + 14;
-      }
-    }
-
-    // ── Capa: barra da empresa + titulo do documento + nome da planta ──
-    const alturaBarra = await desenharCabecalhoPDF(doc, tr('planta_relatorio_pdf_titulo'));
-    y = alturaBarra + 38;
-    doc.setFontSize(10.5);
-    doc.setTextColor(150);
-    doc.text(tr('planta_relatorio_pdf_titulo').toUpperCase(), margin, y);
-    y += 20;
-    doc.setTextColor(20, 20, 20);
-    doc.setFontSize(19);
-    doc.text(plantaAtual.nome, margin, y);
-    y += 18;
-    doc.setFontSize(9.5);
-    doc.setTextColor(140);
-    doc.text(tr('planta_relatorio_data') + ': ' + dataHoje + '   ·   ' + tr('planta_relatorio_total_dispositivos') + ': ' + marcadores.length, margin, y);
-    y += 34;
-
-    // ── Resumo por tipo (tabela com listras, quantidade alinhada a direita) ──
-    doc.setFontSize(13);
-    doc.setTextColor(20, 20, 20);
-    doc.text(tr('planta_relatorio_resumo_titulo'), margin, y);
-    y += 20;
-
-    if (!marcadores.length) {
-      doc.setFillColor(247, 247, 245);
-      doc.roundedRect(margin, y, pageW - margin * 2, 40, 6, 6, 'F');
-      doc.setFontSize(10.5);
-      doc.setTextColor(140);
-      doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
-      y += 56;
-    } else {
-      const contagem = {};
-      marcadores.forEach(function(m) {
-        const key = m.nome;
-        if (!contagem[key]) contagem[key] = { nome: m.nome, cor: m.cor, qtd: 0 };
-        contagem[key].qtd++;
-      });
-      const resumo = Object.values(contagem).sort(function(a, b) { return b.qtd - a.qtd; });
-      const linhaAltura = 24;
-      const tabelaW = pageW - margin * 2;
-
-      // cabecalho da tabela
-      doc.setFontSize(8.5);
-      doc.setTextColor(150);
-      doc.text(tr('planta_relatorio_col_dispositivo').toUpperCase(), margin + 18, y);
-      doc.text(tr('planta_relatorio_col_qtd').toUpperCase(), pageW - margin, y, { align: 'right' });
-      y += 8;
-      doc.setDrawColor(225, 225, 220);
-      doc.setLineWidth(1);
-      doc.line(margin, y, pageW - margin, y);
-      y += linhaAltura - 8;
-
-      resumo.forEach(function(item, i) {
-        garantirEspaco(linhaAltura, plantaAtual.nome);
-        if (i % 2 === 0) {
-          doc.setFillColor(249, 249, 247);
-          doc.rect(margin, y - 16, tabelaW, linhaAltura, 'F');
-        }
-        const cor = PLANTA_CORES[item.cor] || PLANTA_CORES.gray;
-        const rgb = hexParaRgbPlanta(cor.text);
-        doc.setFillColor(rgb.r, rgb.g, rgb.b);
-        doc.circle(margin + 9, y - 5, 5, 'F');
-        doc.setFontSize(10.5);
-        doc.setTextColor(30);
-        doc.text(item.nome, margin + 22, y);
-        doc.setFontSize(10.5);
-        doc.setTextColor(20, 20, 20);
-        const qtdTxt = String(item.qtd) + ' ' + (item.qtd === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
-        doc.text(qtdTxt, pageW - margin, y, { align: 'right' });
-        y += linhaAltura;
-      });
-      y += 14;
-    }
-
-    // ── Croqui: planta com marcadores numerados (referencia visual pra equipe) ──
-    doc.addPage();
-    y = desenharCabecalhoLevePDF(doc, plantaAtual.nome);
-    y += 16;
-    doc.setFontSize(13);
-    doc.setTextColor(20, 20, 20);
-    doc.text(tr('planta_relatorio_croqui_titulo'), margin, y);
-    y += 10;
-    doc.setFontSize(9);
-    doc.setTextColor(140);
-    doc.text(tr('planta_relatorio_croqui_legenda'), margin, y + 12);
-    y += 26;
-
-    const maxW = pageW - margin * 2;
-    const maxH = pageH - y - 60;
-    let drawW = maxW;
-    let drawH = drawW * (dims.h / dims.w);
-    if (drawH > maxH) { drawH = maxH; drawW = drawH * (dims.w / dims.h); }
-    const imgX = margin + (maxW - drawW) / 2;
-    const imgY = y;
-
-    doc.setDrawColor(225, 225, 220);
-    doc.setLineWidth(1);
-    doc.rect(imgX - 1, imgY - 1, drawW + 2, drawH + 2);
-    doc.addImage(imgDataUrl, 'PNG', imgX, imgY, drawW, drawH);
-
-    marcadores.forEach(function(m, idx) {
-      const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
-      const rgb = hexParaRgbPlanta(cor.text);
-      const px = imgX + (m.x_pct / 100) * drawW;
-      const py = imgY + (m.y_pct / 100) * drawH;
-      doc.setFillColor(rgb.r, rgb.g, rgb.b);
-      doc.setDrawColor(255, 255, 255);
-      doc.setLineWidth(1.2);
-      doc.circle(px, py, 9, 'FD');
-      doc.setFontSize(8);
-      doc.setTextColor(255, 255, 255);
-      doc.text(String(idx + 1), px, py + 2.8, { align: 'center' });
-    });
-
-    // ── Lista detalhada: cada dispositivo num "card" proprio, numeracao bate com o croqui ──
-    doc.addPage();
-    y = desenharCabecalhoLevePDF(doc, plantaAtual.nome);
-    y += 16;
-    doc.setFontSize(13);
-    doc.setTextColor(20, 20, 20);
-    doc.text(tr('planta_relatorio_lista_titulo'), margin, y);
-    y += 24;
-
-    if (!marcadores.length) {
-      doc.setFillColor(247, 247, 245);
-      doc.roundedRect(margin, y, pageW - margin * 2, 40, 6, 6, 'F');
-      doc.setFontSize(10.5);
-      doc.setTextColor(140);
-      doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
-    } else {
-      const larguraCard = pageW - margin * 2;
-      marcadores.forEach(function(m, idx) {
-        const obsTexto = (m.observacoes && m.observacoes.trim()) ? m.observacoes.trim() : tr('planta_relatorio_sem_obs');
-        const linhas = doc.splitTextToSize(obsTexto, larguraCard - 34);
-        const alturaCard = 22 + linhas.length * 12 + 14;
-        garantirEspaco(alturaCard + 8, plantaAtual.nome);
-
-        const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
-        const rgb = hexParaRgbPlanta(cor.text);
-
-        doc.setFillColor(249, 249, 247);
-        doc.roundedRect(margin, y - 16, larguraCard, alturaCard, 6, 6, 'F');
-
-        doc.setFillColor(rgb.r, rgb.g, rgb.b);
-        doc.circle(margin + 17, y - 3, 9, 'F');
-        doc.setFontSize(9);
-        doc.setTextColor(255, 255, 255);
-        doc.text(String(idx + 1), margin + 17, y, { align: 'center' });
-
-        doc.setFontSize(11.5);
-        doc.setFont(undefined, 'bold');
-        doc.setTextColor(20, 20, 20);
-        doc.text(m.nome, margin + 34, y);
-        doc.setFont(undefined, 'normal');
-
-        doc.setFontSize(9.5);
-        doc.setTextColor(m.observacoes && m.observacoes.trim() ? 90 : 165);
-        doc.text(linhas, margin + 34, y + 16);
-
-        y += alturaCard + 8;
-      });
-    }
-
-    numerarPaginasPDF(doc);
+    const doc = await construirRelatorioPlantaPDF();
     doc.save((plantaAtual.nome || 'planta').replace(/[^a-z0-9 _-]/gi, '') + ' - Relatorio.pdf');
     if (statusEl) statusEl.style.display = 'none';
     toast(tr('planta_relatorio_gerado'), 'ok');
@@ -8120,6 +8135,105 @@ async function gerarRelatorioPlanta() {
     if (btn) btn.disabled = false;
   }
 }
+let plantaOSListaCache = null;
+
+async function abrirEnviarPlantaOS() {
+  if (!plantaAtual) return;
+  document.getElementById('peos-busca').value = '';
+  document.getElementById('peos-lista').innerHTML = '<div style="padding:14px;text-align:center;color:#bbb;font-size:12px">' + tr('loading') + '</div>';
+  document.getElementById('peos-status').style.display = 'none';
+  abrirModal('m-planta-enviar-os');
+  try {
+    plantaOSListaCache = await sbGet('ordens_servico?status=in.(aberta,agendada,em_campo)&order=created_at.desc');
+  } catch(e) {
+    plantaOSListaCache = [];
+  }
+  renderizarListaOSParaPlanta(plantaOSListaCache);
+}
+
+function filtrarOSParaPlanta(q) {
+  if (!plantaOSListaCache) return;
+  const termo = (q || '').toLowerCase();
+  const filtrada = plantaOSListaCache.filter(function(o) {
+    return (o.cliente_nome || '').toLowerCase().includes(termo) || String(o.numero || '').toLowerCase().includes(termo);
+  });
+  renderizarListaOSParaPlanta(filtrada);
+}
+
+function renderizarListaOSParaPlanta(lista) {
+  const cont = document.getElementById('peos-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="padding:14px;text-align:center;color:#bbb;font-size:12px">' + tr('rack_os_nenhuma_aberta') + '</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(function(o) {
+    return '<div onclick="selecionarOSParaPlanta(\'' + o.id + '\')" style="padding:10px 14px;border-bottom:1px solid #f0f0ed;cursor:pointer;font-size:13px" onmouseover="this.style.background=\'#f9f9f7\'" onmouseout="this.style.background=\'\'">'
+      + '<div style="font-weight:500">' + (o.cliente_nome || '') + '</div>'
+      + '<div style="font-size:11px;color:#888">' + tr('rack_os_numero_label') + ' ' + (o.numero || o.id.slice(0,8)) + ' · ' + tr('status_' + o.status) + '</div>'
+    + '</div>';
+  }).join('');
+}
+
+async function selecionarOSParaPlanta(osId) {
+  if (!plantaAtual) return;
+  const statusEl = document.getElementById('peos-status');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#555';
+  statusEl.textContent = tr('planta_enviando_os');
+  try {
+    const os = plantaOSListaCache.find(function(o) { return o.id === osId; });
+    const folderId = await getOuCriarPastaOS(osId, os);
+    if (!folderId) { statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('drive_erro_pasta'); return; }
+    const doc = await construirRelatorioPlantaPDF();
+    const blob = doc.output('blob');
+    const nomeArquivo = 'Planta - ' + plantaAtual.nome + '.pdf';
+    const arquivo = new File([blob], nomeArquivo, { type: 'application/pdf' });
+    const d = await uploadDrive(arquivo, folderId);
+    if (!d.id) throw new Error('upload');
+    await sbPatch('projetos_plantas?id=eq.' + plantaAtual.id, { os_id: osId });
+    plantaAtual.os_id = osId;
+    statusEl.style.color = '#166534';
+    statusEl.textContent = tr('planta_enviado_os_sucesso');
+    toast(tr('planta_enviado_os_sucesso'), 'ok');
+    setTimeout(function() { fecharModal('m-planta-enviar-os'); }, 900);
+  } catch(e) {
+    statusEl.style.color = '#e74c3c';
+    statusEl.textContent = tr('erro_prefix') + e.message;
+  }
+}
+
+async function abrirPreviewPlantaDaOS(plantaId) {
+  try {
+    const rows = await sbGet('projetos_plantas?id=eq.' + plantaId);
+    const p = rows[0];
+    if (!p) { toast(tr('planta_nao_encontrada'), 'err'); return; }
+    let marcadores = [];
+    try { marcadores = await sbGet('projetos_planta_marcadores?planta_id=eq.' + plantaId + '&order=criado_em.asc'); } catch(e) {}
+    document.getElementById('planta-preview-titulo').textContent = p.nome;
+    document.getElementById('planta-preview-img').src = p.imagem_url;
+    const cont = document.getElementById('planta-preview-marcadores');
+    cont.innerHTML = '';
+    marcadores.forEach(function(m, idx) {
+      const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+      const dot = document.createElement('div');
+      dot.style.cssText = 'position:absolute;left:' + m.x_pct + '%;top:' + m.y_pct + '%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:' + cor.text + ';border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:600';
+      dot.textContent = String(idx + 1);
+      dot.title = m.nome + (m.observacoes ? ' — ' + m.observacoes : '');
+      cont.appendChild(dot);
+    });
+    document.getElementById('planta-preview-contagem').textContent = marcadores.length + ' ' + (marcadores.length === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
+    const abrirBtn = document.getElementById('planta-preview-abrir-btn');
+    abrirBtn.onclick = function () { fecharModal('m-planta-preview'); abrirPlantaDaOS(plantaId); };
+    abrirModal('m-planta-preview');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirPlantaDaOS(plantaId) {
+  fecharOSDetalhe();
+  goPage(null, 'projetos-planta', 'Planta', 'Projetos');
+  await abrirEditorPlanta(plantaId);
+}
+
 
 
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
