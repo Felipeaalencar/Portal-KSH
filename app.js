@@ -6392,6 +6392,19 @@ async function salvarNovoRack() {
 async function excluirRack(id) {
   if (!confirm(tr('rack_excluir_confirm'))) return;
   try {
+    const r = racksData.find(x => x.id === id);
+    if (r && r.foto_original_drive_id) {
+      try {
+        const conectado = await garantirTokenDrive();
+        if (conectado) {
+          await fetch('https://www.googleapis.com/drive/v3/files/' + r.foto_original_drive_id, {
+            method: 'PATCH',
+            headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trashed: true })
+          });
+        }
+      } catch(e) {}
+    }
     await sbDelete('projetos_racks?id=eq.' + id);
     toast(tr('rack_excluido'), 'ok');
     renderRacks();
