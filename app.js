@@ -2070,7 +2070,10 @@ function osTabBarHTML(osId, ativa) {
   return OS_TABS.map(t => '<button onclick="mudarAbaOS(\'' + osId + '\',\'' + t.id + '\')" data-os-tab="' + t.id + '" style="flex-shrink:0;padding:6px 12px;border-radius:99px;font-size:11px;border:1px solid ' + (ativa===t.id?'#1a1a1a':'#e8e8e5') + ';background:' + (ativa===t.id?'#1a1a1a':'#fff') + ';color:' + (ativa===t.id?'#fff':'#555') + ';cursor:pointer;font-family:inherit;white-space:nowrap">' + t.icon + ' ' + tr(t.key) + '</button>').join('');
 }
 
+let osAbaAtual = {};
+
 function mudarAbaOS(osId, tabId) {
+  osAbaAtual[osId] = tabId;
   OS_TABS.forEach(t => {
     const pane = document.getElementById('os-tab-' + t.id + '-' + osId);
     if (pane) pane.style.display = (t.id === tabId) ? 'block' : 'none';
@@ -2079,13 +2082,52 @@ function mudarAbaOS(osId, tabId) {
   if (bar) bar.innerHTML = osTabBarHTML(osId, tabId);
 }
 
+// ── Auto-atualizacao da OS aberta (poll leve, sem precisar apertar Atualizar) ──
+let osPollingTimer = null;
+let osPollingId = null;
 
-async function abrirOS(id) {
+function pararPollingOS() {
+  if (osPollingTimer) { clearInterval(osPollingTimer); osPollingTimer = null; }
+  osPollingId = null;
+}
+
+function iniciarPollingOS(id) {
+  if (osPollingId === id) return;
+  pararPollingOS();
+  osPollingId = id;
+  osPollingTimer = setInterval(async () => {
+    if (osPollingId !== id) return;
+    const modal = document.getElementById('m-det-os');
+    if (!modal || modal.style.display === 'none') { pararPollingOS(); return; }
+    if (osTemEdicaoPendente(id)) return;
+    try { await abrirOS(id, { silencioso: true }); } catch(e) {}
+  }, 25000);
+}
+
+function osTemEdicaoPendente(id) {
+  const idsBotaoSalvar = ['notepad-save-' + id, 'status-save-' + id, 'servico-save-' + id];
+  if (idsBotaoSalvar.some(elId => { const el = document.getElementById(elId); return el && el.style.display !== 'none'; })) return true;
+  const notaInput = document.getElementById('nota-input-' + id);
+  if (notaInput && notaInput.value.trim()) return true;
+  return false;
+}
+
+function fecharOSDetalhe() {
+  pararPollingOS();
+  fecharModal('m-det-os');
+}
+
+
+async function abrirOS(id, opts) {
+  const silencioso = !!(opts && opts.silencioso);
   const os = osData.find(o => o.id === id);
   if (!os) return;
   const content = document.getElementById('m-det-os-content');
-  content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">' + tr('loading') + '</div>';
-  abrirModal('m-det-os');
+  const scrollAnterior = content.scrollTop;
+  if (!silencioso) {
+    content.innerHTML = '<div style="padding:40px;text-align:center;color:#bbb">' + tr('loading') + '</div>';
+    abrirModal('m-det-os');
+  }
 
   function driveFileId(url) {
     const m = (url || '').match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -2115,7 +2157,7 @@ async function abrirOS(id) {
       <div style="font-size:11px;color:#888;margin-bottom:1px">${tr('os_prefix')}${os.numero||'—'} · <span id="os-status-header-${id}" style="color:${S_COLOR[os.status]||'#888'}">${S_LABEL[os.status]||os.status}</span></div>
       <div style="font-size:16px;font-weight:700">${os.titulo||tr('os_sem_titulo')}</div>
     </div>
-    <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
+    <button onclick="fecharOSDetalhe()" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
   </div>
   <div id="os-tabbar-${id}" style="display:flex;gap:6px;padding:10px 20px;border-bottom:1px solid #e8e8e5;overflow-x:auto">${osTabBarHTML(id,'geral')}</div>
   <div style="padding:18px 20px">
@@ -2239,6 +2281,9 @@ async function abrirOS(id) {
       <button id="pdf-btn-${id}" onclick="gerarResumoPDF('${id}')" style="padding:7px 14px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit;color:#333">${tr('os_gerar_pdf')}</button>
     </div>
   </div>`;
+  mudarAbaOS(id, osAbaAtual[id] || 'geral');
+  content.scrollTop = scrollAnterior;
+  if (!silencioso) iniciarPollingOS(id);
 }
 
 function calcularResumoValores(dias, gastos, tecnicosLista) {
