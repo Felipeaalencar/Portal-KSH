@@ -165,7 +165,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784650803" defer></script>
+<script src="app.js?v=1784651738" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -797,6 +797,16 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <button class="btn-sec" onclick="fecharModal('m-novo-rack')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarNovoRack()" data-i18n="btn_cadastrar">Cadastrar</button>
     </div>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0 12px">
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+      <span style="font-size:11px;color:#aaa" data-i18n="rack_ou_label">ou</span>
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+    </div>
+    <input type="file" id="rack-nova-foto-input" accept="image/*" style="display:none" onchange="selecionarFotoNovoRack(event)">
+    <button type="button" onclick="document.getElementById('rack-nova-foto-input').click()" style="width:100%;padding:9px 14px;border:1px dashed #d4d4d0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:6px" data-i18n="rack_montar_foto_btn">Montar automaticamente a partir de uma foto</button>
+    <div id="rack-nova-foto-nome" style="font-size:11px;color:#888;margin-bottom:6px"></div>
+    <button type="button" id="rack-nova-ler-ia-btn" onclick="criarRackDeFoto()" style="display:none;width:100%;padding:9px 14px;border:1px solid #333;border-radius:8px;background:#333;color:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="rack_ler_foto_btn">Ler foto e preencher</button>
+    <div id="rack-nova-ia-status" style="display:none;font-size:11px;margin-top:8px"></div>
   </div>
 </div>
 
@@ -839,13 +849,15 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <div class="modal-bg" id="m-rack-item">
   <div class="modal-box" style="width:380px">
     <div class="modal-hd"><span class="modal-hd-title" id="rack-item-titulo" data-i18n="rack_item_add_title">Adicionar Item</span><button class="modal-close" onclick="fecharModal('m-rack-item')">×</button></div>
+    <input type="hidden" id="ri-item-id">
     <label class="f-lbl" data-i18n="label_nome_item_rack">Nome do produto</label>
     <input class="f-inp" id="ri-nome" data-i18n-placeholder="rack_item_nome_ph" placeholder="Ex: Switch UniFi USW-24-G2">
     <label class="f-lbl" data-i18n="label_altura_u">Altura (U)</label>
     <input class="f-inp" type="number" min="1" id="ri-altura" value="1">
     <div class="modal-btns">
+      <button class="btn-sec" id="ri-excluir-btn" onclick="excluirItemRackModal()" style="display:none;border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
       <button class="btn-sec" onclick="fecharModal('m-rack-item')" data-i18n="btn_cancelar">Cancelar</button>
-      <button class="btn-pri" onclick="salvarItemRack()" data-i18n="btn_add">Adicionar</button>
+      <button class="btn-pri" id="ri-salvar-btn" onclick="salvarItemRack()" data-i18n="btn_add">Adicionar</button>
     </div>
   </div>
 </div>

@@ -338,6 +338,10 @@ const I18N = {
   rack_ia_erro: { en: 'Error reading the photo', pt: 'Erro ao ler a foto' },
   rack_ia_itens_adicionados: { en: 'items added', pt: 'itens adicionados' },
   rack_ia_itens_ignorados: { en: 'items skipped (overlapping space)', pt: 'itens ignorados (espaço já ocupado)' },
+  rack_ou_label: { en: 'or', pt: 'ou' },
+  rack_montar_foto_btn: { en: 'Build automatically from a photo', pt: 'Montar automaticamente a partir de uma foto' },
+  rack_editar_item_title: { en: 'Edit Item', pt: 'Editar Item' },
+  rack_nome_padrao_importado: { en: 'Imported rack', pt: 'Rack importado' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -6304,6 +6308,15 @@ function abrirNovoRack() {
   } else {
     sel.value = '21';
   }
+  rackNovaFotoFile = null;
+  const fotoNomeEl = document.getElementById('rack-nova-foto-nome');
+  if (fotoNomeEl) fotoNomeEl.textContent = '';
+  const fotoInputEl = document.getElementById('rack-nova-foto-input');
+  if (fotoInputEl) fotoInputEl.value = '';
+  const lerBtn = document.getElementById('rack-nova-ler-ia-btn');
+  if (lerBtn) { lerBtn.style.display = 'none'; lerBtn.disabled = false; }
+  const statusEl = document.getElementById('rack-nova-ia-status');
+  if (statusEl) statusEl.style.display = 'none';
   abrirModal('m-novo-rack');
 }
 
@@ -6367,9 +6380,11 @@ function renderRackEditor() {
         const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + topU : '');
         const div = document.createElement('div');
         div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;cursor:pointer;font-size:11.5px;font-weight:500;background:' + cor.fill + ';color:' + cor.text;
-        div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + '</span><span aria-hidden="true" style="opacity:.7">&times;</span>';
-        div.title = tr('rack_remover_item');
-        div.onclick = function () { removerItemRack(item.id); };
+        div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + '</span><span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px">&times;</span>';
+        div.title = tr('rack_editar_item_title');
+        div.onclick = function () { abrirEditarItemRack(item.id); };
+        const xSpan = div.querySelector('.rack-item-x');
+        if (xSpan) xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
         body.appendChild(div);
       }
       u -= item.u_altura;
@@ -6397,21 +6412,64 @@ function renderRackEditor() {
 
 function abrirNovoItemRack(topU, maxAltura) {
   rackItemSlotAlvo = { topU: topU, maxAltura: maxAltura };
+  document.getElementById('ri-item-id').value = '';
   document.getElementById('ri-nome').value = '';
   const alturaInput = document.getElementById('ri-altura');
   alturaInput.value = '1';
   alturaInput.max = String(maxAltura);
   document.getElementById('rack-item-titulo').textContent = tr('rack_item_add_title') + ' — U' + topU;
+  document.getElementById('ri-excluir-btn').style.display = 'none';
+  document.getElementById('ri-salvar-btn').textContent = tr('btn_add');
+  abrirModal('m-rack-item');
+}
+
+function abrirEditarItemRack(itemId) {
+  if (!rackAtual) return;
+  const item = rackAtual.itens.find(it => it.id === itemId);
+  if (!item) return;
+  const topU = item.u_inicio + item.u_altura - 1;
+  const ocupado = {};
+  rackAtual.itens.forEach(it => { if (it.id !== itemId) for (let x = it.u_inicio; x <= it.u_inicio + it.u_altura - 1; x++) ocupado[x] = true; });
+  let livre = 0, u = topU + 1;
+  while (u <= rackAtual.tamanho_u && !ocupado[u]) { livre++; u++; }
+  const maxAltura = item.u_altura + livre;
+  rackItemSlotAlvo = null;
+  document.getElementById('ri-item-id').value = item.id;
+  document.getElementById('ri-nome').value = item.nome;
+  const alturaInput = document.getElementById('ri-altura');
+  alturaInput.value = item.u_altura;
+  alturaInput.max = String(maxAltura);
+  document.getElementById('rack-item-titulo').textContent = tr('rack_editar_item_title') + ' — U' + item.u_inicio + (item.u_altura > 1 ? '-U' + topU : '');
+  document.getElementById('ri-excluir-btn').style.display = 'inline-block';
+  document.getElementById('ri-salvar-btn').textContent = tr('btn_salvar');
   abrirModal('m-rack-item');
 }
 
 async function salvarItemRack() {
-  if (!rackItemSlotAlvo || !rackAtual) return;
+  if (!rackAtual) return;
+  const itemId = document.getElementById('ri-item-id')?.value;
   const nomeDigitado = document.getElementById('ri-nome')?.value.trim();
   if (!nomeDigitado) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
   const nome = normalizarNomeItem(nomeDigitado);
-  let altura = parseInt(document.getElementById('ri-altura')?.value, 10) || 1;
-  altura = Math.max(1, Math.min(altura, rackItemSlotAlvo.maxAltura));
+  const alturaInput = document.getElementById('ri-altura');
+  let altura = parseInt(alturaInput?.value, 10) || 1;
+  const alturaMax = parseInt(alturaInput?.max, 10) || altura;
+  altura = Math.max(1, Math.min(altura, alturaMax));
+
+  if (itemId) {
+    const item = rackAtual.itens.find(it => it.id === itemId);
+    if (!item) return;
+    try {
+      await sbPatch('projetos_rack_itens?id=eq.' + itemId, { nome: nome, u_altura: altura });
+      item.nome = nome;
+      item.u_altura = altura;
+      fecharModal('m-rack-item');
+      renderRackEditor();
+    } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+    return;
+  }
+
+  if (!rackItemSlotAlvo) return;
   const uInicio = rackItemSlotAlvo.topU - altura + 1;
   const corIdx = rackAtual.itens.length % RACK_CORES.length;
   try {
@@ -6420,6 +6478,18 @@ async function salvarItemRack() {
       cor_idx: corIdx, ordem: rackAtual.itens.length
     });
     rackAtual.itens.push(novo);
+    fecharModal('m-rack-item');
+    renderRackEditor();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirItemRackModal() {
+  const itemId = document.getElementById('ri-item-id')?.value;
+  if (!itemId || !rackAtual) return;
+  if (!confirm(tr('rack_item_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_rack_itens?id=eq.' + itemId);
+    rackAtual.itens = rackAtual.itens.filter(it => it.id !== itemId);
     fecharModal('m-rack-item');
     renderRackEditor();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
@@ -6435,6 +6505,18 @@ async function removerItemRack(itemId) {
 }
 
 let rackFotoFile = null;
+let rackNovaFotoFile = null;
+
+const RACK_PALAVRAS_VAZIO = [
+  'espaco livre', 'espaço livre', 'livre', 'vazio', 'vazia',
+  'expansao', 'expansão', 'free space', 'empty', 'unused', 'available', 'n/a'
+];
+
+function ehEspacoVazioNome(nome) {
+  const n = (nome || '').trim().toLowerCase();
+  if (!n) return true;
+  return RACK_PALAVRAS_VAZIO.some(p => n.includes(p));
+}
 
 function selecionarFotoRack(event) {
   const file = event.target.files[0];
@@ -6479,6 +6561,7 @@ async function importarRackDeFoto() {
       let conflita = false;
       for (let u = uInicio; u <= uInicio + uAltura - 1; u++) { if (ocupado[u]) { conflita = true; break; } }
       if (conflita) { ignorados++; continue; }
+      if (ehEspacoVazioNome(det.nome)) { ignorados++; continue; }
       const nome = normalizarNomeItem(det.nome || '');
       if (!nome) { ignorados++; continue; }
       const corIdx = rackAtual.itens.length % RACK_CORES.length;
@@ -6502,6 +6585,86 @@ async function importarRackDeFoto() {
       statusEl.textContent = adicionados + ' ' + tr('rack_ia_itens_adicionados') + (ignorados ? ' · ' + ignorados + ' ' + tr('rack_ia_itens_ignorados') : '');
     }
     if (adicionados) toast(tr('rack_ia_sucesso'), 'ok');
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('rack_ia_erro') + (e.message ? ' (' + e.message + ')' : ''); }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function selecionarFotoNovoRack(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  rackNovaFotoFile = file;
+  document.getElementById('rack-nova-foto-nome').textContent = file.name;
+  const btn = document.getElementById('rack-nova-ler-ia-btn');
+  if (btn) btn.style.display = 'block';
+}
+
+async function criarRackDeFoto() {
+  if (!rackNovaFotoFile) return;
+  const btn = document.getElementById('rack-nova-ler-ia-btn');
+  const statusEl = document.getElementById('rack-nova-ia-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('rack_ia_lendo'); }
+  try {
+    await garantirSessao();
+    const imagem_base64 = await blobParaBase64(rackNovaFotoFile);
+    const r = await fetch(SB_URL + '/functions/v1/extrair-rack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ imagem_base64, mime_type: rackNovaFotoFile.type || 'image/jpeg' })
+    });
+    const d = await r.json();
+    console.log('[extrair-rack] resposta da IA (novo rack):', d);
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    const itensDetectados = (Array.isArray(d.itens) ? d.itens : []).filter(it => !ehEspacoVazioNome(it.nome));
+
+    const nomeDigitado = document.getElementById('rack-nome')?.value.trim();
+    const nome = nomeDigitado || tr('rack_nome_padrao_importado');
+    let tamanho = (typeof d.tamanho_u === 'number' && d.tamanho_u > 0) ? Math.round(d.tamanho_u) : 0;
+    if (!tamanho) {
+      const maxU = itensDetectados.reduce((m, it) => Math.max(m, (it.u_inicio || 0) + (it.u_altura || 1) - 1), 0);
+      tamanho = maxU > 0 ? maxU : 21;
+    }
+    tamanho = Math.max(1, Math.min(tamanho, 60));
+
+    const [novoRack] = await sbPost('projetos_racks', { nome, tamanho_u: tamanho, criado_por: ME.nome });
+
+    const ocupado = {};
+    const itensFinal = [];
+    let ordem = 0;
+    for (const det of itensDetectados) {
+      let uInicio = Math.max(1, Math.min(det.u_inicio || 0, tamanho));
+      let uAltura = Math.max(1, det.u_altura || 1);
+      if (uInicio + uAltura - 1 > tamanho) uAltura = tamanho - uInicio + 1;
+      if (uAltura < 1) continue;
+      let conflita = false;
+      for (let u = uInicio; u <= uInicio + uAltura - 1; u++) { if (ocupado[u]) { conflita = true; break; } }
+      if (conflita) continue;
+      const nomeItem = normalizarNomeItem(det.nome || '');
+      if (!nomeItem) continue;
+      const corIdx = itensFinal.length % RACK_CORES.length;
+      try {
+        const [criado] = await sbPost('projetos_rack_itens', {
+          rack_id: novoRack.id, nome: nomeItem, u_inicio: uInicio, u_altura: uAltura,
+          cor_idx: corIdx, ordem: ordem++
+        });
+        itensFinal.push(criado);
+        for (let u = uInicio; u <= uInicio + uAltura - 1; u++) ocupado[u] = true;
+      } catch(e) {}
+    }
+
+    rackNovaFotoFile = null;
+    fecharModal('m-novo-rack');
+    toast(tr('rack_ia_sucesso'), 'ok');
+    renderRacks();
+    rackEditandoId = novoRack.id;
+    rackAtual = { ...novoRack, itens: itensFinal };
+    document.getElementById('rack-editor-titulo').textContent = novoRack.nome;
+    renderRackEditor();
+    abrirModal('m-rack-editor');
   } catch(e) {
     if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('rack_ia_erro') + (e.message ? ' (' + e.message + ')' : ''); }
     toast(tr('erro_prefix') + e.message, 'err');
