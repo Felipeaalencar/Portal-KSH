@@ -169,7 +169,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
-<script src="app.js?v=1784665637" defer></script>
+<script src="app.js?v=1784667588" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -970,11 +970,18 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div id="planta-editor-scroll" style="width:100%;max-height:62vh;overflow:auto;border:1px solid #e8e8e5;border-radius:8px;background:#f4f4f2;-webkit-overflow-scrolling:touch">
       <div style="position:relative;width:100%;touch-action:pan-x pan-y" id="planta-editor-canvas">
         <img id="planta-editor-img" style="display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none" draggable="false">
+        <svg id="planta-editor-linhas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg>
         <div id="planta-editor-marcadores" style="position:absolute;inset:0"></div>
+        <div id="planta-editor-pontos" style="position:absolute;inset:0"></div>
       </div>
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button type="button" class="btn-pri" onclick="abrirBibliotecaIcones()" data-i18n="planta_escolher_dispositivo_btn">Escolher dispositivo</button>
+      <button type="button" onclick="abrirNovoPontoPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_novo_ponto_btn">+ Novo ponto</button>
+      <button type="button" id="planta-toggle-linhas-btn" onclick="toggleLinhasPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_ocultar_linhas_btn">Ocultar linhas</button>
+    </div>
+    <div id="planta-roteamento-painel" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
       <button type="button" id="planta-relatorio-btn" onclick="gerarRelatorioPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_gerar_relatorio_btn">Gerar relatório PDF</button>
       <button type="button" onclick="abrirEnviarPlantaOS()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="rack_enviar_os_btn">Enviar para OS</button>
       <a id="planta-ver-pdf-btn" href="#" target="_blank" style="display:none;padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-decoration:none;color:inherit" data-i18n="planta_ver_pdf_original_btn">Ver PDF original</a>
@@ -1050,6 +1057,20 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-planta-preview')" data-i18n="btn_fechar">Fechar</button>
       <button class="btn-pri" id="planta-preview-abrir-btn" data-i18n="rack_abrir">Abrir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nome/Renomear Ponto de Equipamento da Planta -->
+<div class="modal-bg" id="m-planta-ponto-nome">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-ponto-nome-titulo" data-i18n="planta_ponto_novo_title">Novo ponto</span><button class="modal-close" onclick="fecharModal('m-planta-ponto-nome')">×</button></div>
+    <label class="f-lbl" data-i18n="label_nome_ponto">Nome do ponto</label>
+    <input class="f-inp" id="ponto-nome-input" data-i18n-placeholder="planta_ponto_nome_ph" placeholder="Ex: Rack de rede, Central de som, DVR câmeras">
+    <div class="modal-btns">
+      <button class="btn-sec" id="ponto-excluir-btn" onclick="excluirPontoPlantaModal()" style="display:none;border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
+      <button class="btn-sec" onclick="fecharModal('m-planta-ponto-nome')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarNomePontoPlanta()" data-i18n="btn_salvar">Salvar</button>
     </div>
   </div>
 </div>

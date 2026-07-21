@@ -878,6 +878,19 @@ const I18N = {
   planta_enviado_os_sucesso: { en: 'Floor plan linked to the work order', pt: 'Planta vinculada à OS' },
   planta_preview_title: { en: 'Floor plan', pt: 'Planta' },
   planta_vinculada_label: { en: 'Linked floor plan', pt: 'Planta vinculada' },
+  planta_novo_ponto_btn: { en: '+ New point', pt: '+ Novo ponto' },
+  planta_ocultar_linhas_btn: { en: 'Hide lines', pt: 'Ocultar linhas' },
+  planta_mostrar_linhas_btn: { en: 'Show lines', pt: 'Mostrar linhas' },
+  planta_hint_marcar_ponto: { en: 'Tap the floor plan to place the equipment point (rack, sound rack, DVR...)', pt: 'Toque na planta para posicionar o ponto de equipamento (rack, central de som, DVR...)' },
+  planta_ponto_novo_title: { en: 'New point', pt: 'Novo ponto' },
+  planta_ponto_renomear_title: { en: 'Rename point', pt: 'Renomear ponto' },
+  label_nome_ponto: { en: 'Point name', pt: 'Nome do ponto' },
+  planta_ponto_nome_ph: { en: 'Ex: Network rack, Sound rack, Camera DVR', pt: 'Ex: Rack de rede, Central de som, DVR câmeras' },
+  planta_ponto_nome_obrigatorio: { en: 'Enter a name for the point', pt: 'Informe um nome para o ponto' },
+  planta_ponto_salvo: { en: 'Point saved', pt: 'Ponto salvo' },
+  planta_ponto_excluir_confirm: { en: 'Delete this equipment point? Devices routed to it will stay without a route.', pt: 'Excluir este ponto de equipamento? Os dispositivos direcionados a ele ficarão sem rota.' },
+  planta_ponto_excluido: { en: 'Point deleted', pt: 'Ponto excluído' },
+  planta_roteamento_titulo: { en: 'Cable routing — direct each device category to a point', pt: 'Roteamento de cabeamento — direcione cada categoria de dispositivo para um ponto' },
 };
 
 function tr(key) {
@@ -7381,18 +7394,18 @@ const PLANTA_CORES = {
 const PLANTA_ICONES_PADRAO = [
   { chave: 'camera', nome: 'Câmera CFTV', emoji: '📷', cor: 'blue', kw: 'camera cftv ip analogica seguranca video vigilancia circuito fechado' },
   { chave: 'dvr_nvr', nome: 'Gravador CFTV (DVR/NVR)', emoji: '🖥️', cor: 'gray', kw: 'dvr nvr gravador cftv storage armazenamento video servidor' },
-  { chave: 'central_alarme', nome: 'Central de alarme', emoji: '🛡️', cor: 'coral', kw: 'central alarme painel seguranca monitoramento' },
+  { chave: 'central_alarme', nome: 'Central de alarme', emoji: '🛡️', cor: 'red', kw: 'central alarme painel seguranca monitoramento' },
   { chave: 'teclado_alarme', nome: 'Teclado de alarme', emoji: '🔢', cor: 'coral', kw: 'teclado alarme keypad painel senha codigo' },
   { chave: 'sirene', nome: 'Sirene', emoji: '📢', cor: 'coral', kw: 'sirene alarme sonoro alerta strobe' },
   { chave: 'quebra_vidro', nome: 'Sensor de quebra de vidro', emoji: '🔨', cor: 'coral', kw: 'quebra vidro sensor seguranca janela' },
   { chave: 'panico', nome: 'Botão de pânico', emoji: '🆘', cor: 'red', kw: 'panico emergencia botao sos assalto' },
-  { chave: 'acesso', nome: 'Controle de acesso', emoji: '🪪', cor: 'teal', kw: 'acesso controle cartao biometria catraca leitora proximidade' },
+  { chave: 'acesso', nome: 'Controle de acesso', emoji: '🪪', cor: 'green', kw: 'acesso controle cartao biometria catraca leitora proximidade' },
   { chave: 'fechadura', nome: 'Fechadura digital', emoji: '🔑', cor: 'coral', kw: 'fechadura porta digital trava smart lock eletronica' },
   { chave: 'presenca', nome: 'Sensor de presença', emoji: '🚶', cor: 'teal', kw: 'sensor presenca movimento pir infravermelho' },
   { chave: 'abertura', nome: 'Sensor de abertura', emoji: '🚪', cor: 'teal', kw: 'sensor porta janela abertura contato magnetico' },
   { chave: 'som', nome: 'Caixa de som', emoji: '🔊', cor: 'purple', kw: 'som audio caixa speaker gesso embutida musica' },
   { chave: 'interruptor', nome: 'Interruptor inteligente', emoji: '💡', cor: 'amber', kw: 'interruptor luz switch iluminacao dimmer' },
-  { chave: 'wifi', nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'blue', kw: 'wifi ap access point rede sem fio roteador' },
+  { chave: 'wifi', nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'teal', kw: 'wifi ap access point rede sem fio roteador' },
   { chave: 'rack_rede', nome: 'Rack de rede', emoji: '🗄️', cor: 'gray', kw: 'rack rede switch servidor patch' },
   { chave: 'ar_condicionado', nome: 'Ar-condicionado', emoji: '❄️', cor: 'blue', kw: 'termostato ar condicionado climatizacao hvac' },
   { chave: 'cortina', nome: 'Cortina motorizada', emoji: '🪟', cor: 'amber', kw: 'cortina persiana motorizada automacao' },
@@ -7404,8 +7417,8 @@ const PLANTA_ICONES_PADRAO = [
   { chave: 'fumaca', nome: 'Detector de fumaça', emoji: '🔥', cor: 'red', kw: 'fumaca incendio detector alarme incendio' },
   { chave: 'vazamento', nome: 'Detector de vazamento', emoji: '💧', cor: 'blue', kw: 'agua vazamento sensor de agua' },
   { chave: 'nobreak', nome: 'Nobreak / UPS', emoji: '🔋', cor: 'green', kw: 'nobreak ups bateria energia' },
-  { chave: 'ponto_rede', nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'gray', kw: 'ponto de rede rj45 cabo ethernet' },
-  { chave: 'repetidor', nome: 'Repetidor de sinal', emoji: '📡', cor: 'blue', kw: 'repetidor sinal antena extensor' },
+  { chave: 'ponto_rede', nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'amber', kw: 'ponto de rede rj45 cabo ethernet' },
+  { chave: 'repetidor', nome: 'Repetidor de sinal', emoji: '📡', cor: 'amber', kw: 'repetidor sinal antena extensor' },
   { chave: 'spot', nome: 'Spot / trilho', emoji: '💡', cor: 'amber', kw: 'spot trilho iluminacao luminaria' },
   { chave: 'cofre', nome: 'Cofre', emoji: '🔐', cor: 'gray', kw: 'cofre seguranca protecao' },
   { chave: 'portao', nome: 'Portão automático', emoji: '🚧', cor: 'coral', kw: 'portao automatico motor de portao' },
@@ -7428,6 +7441,10 @@ const PLANTA_ZOOM_MIN = 100;
 const PLANTA_ZOOM_MAX = 400;
 let plantaZoomPct = 100;
 let plantaPinch = null;
+let plantaArmandoPonto = false;
+let plantaPontoEditandoId = null;
+let plantaPontoNovoXY = null;
+let plantaLinhasVisiveis = true;
 
 async function renderPlantas() {
   const el = document.getElementById('mod-content');
@@ -7555,27 +7572,40 @@ async function abrirEditorPlanta(id) {
     planta = rows[0];
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); return; }
   if (!planta) { toast(tr('planta_nao_encontrada'), 'err'); return; }
-  let marcadores = [];
-  try { marcadores = await sbGet('projetos_planta_marcadores?planta_id=eq.' + id + '&order=criado_em.asc'); } catch(e) {}
+  let marcadores = [], pontosEquip = [];
+  try {
+    [marcadores, pontosEquip] = await Promise.all([
+      sbGet('projetos_planta_marcadores?planta_id=eq.' + id + '&order=criado_em.asc'),
+      sbGet('projetos_planta_pontos?planta_id=eq.' + id + '&order=criado_em.asc')
+    ]);
+  } catch(e) {}
   if (!plantaTiposCarregados) {
     try { plantaTiposCustom = await sbGet('projetos_planta_tipos_icone?order=criado_em.asc'); } catch(e) {}
     plantaTiposCarregados = true;
   }
   plantaEditandoId = id;
-  plantaAtual = { ...planta, marcadores };
+  plantaAtual = { ...planta, marcadores, pontos: pontosEquip, roteamento_padrao: planta.roteamento_padrao || {} };
   document.getElementById('planta-editor-titulo').textContent = planta.nome;
-  document.getElementById('planta-editor-img').src = planta.imagem_url;
+  const imgEl = document.getElementById('planta-editor-img');
+  imgEl.onload = function() { renderLinhasPlanta(); };
+  imgEl.src = planta.imagem_url;
   const pdfBtn = document.getElementById('planta-ver-pdf-btn');
   if (pdfBtn) {
     if (planta.pdf_drive_url) { pdfBtn.style.display = 'inline-block'; pdfBtn.href = planta.pdf_drive_url; }
     else pdfBtn.style.display = 'none';
   }
+  plantaArmandoPonto = false;
+  plantaLinhasVisiveis = true;
+  atualizarBotaoLinhasPlanta();
   desarmarTipoPlanta();
   plantaZoomPct = 100;
   aplicarZoomPlanta();
   configurarCanvasPlanta();
   configurarZoomPlanta();
   renderMarcadoresPlanta();
+  renderPontosPlanta();
+  renderPainelRoteamentoPlanta();
+  if (imgEl.complete) renderLinhasPlanta();
   abrirModal('m-planta-editor');
 }
 
@@ -7669,40 +7699,336 @@ function configurarCanvasPlanta() {
   if (!canvasEl) return;
   canvasEl.onclick = function(e) {
     if (Date.now() - plantaUltimoToquePlantaMs < 200) return;
-    if (!plantaTipoArmado) { toast(tr('planta_escolha_icone_primeiro'), 'err'); return; }
     if (!plantaAtual) return;
     const rect = canvasEl.getBoundingClientRect();
     const x = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
     const y = Math.max(1, Math.min(99, ((e.clientY - rect.top) / rect.height) * 100));
+    if (plantaArmandoPonto) {
+      plantaArmandoPonto = false;
+      atualizarHintPlanta();
+      abrirNomePontoPlanta(null, x, y);
+      return;
+    }
+    if (!plantaTipoArmado) { toast(tr('planta_escolha_icone_primeiro'), 'err'); return; }
     criarMarcadorPlanta(x, y);
   };
 }
 
+// Decide o que mostrar na faixa de dica no topo do editor, de acordo com o modo
+// atual: marcando ponto de equipamento, com um tipo de dispositivo armado, ou padrao.
+function atualizarHintPlanta() {
+  const hint = document.getElementById('planta-editor-hint');
+  if (!hint) return;
+  if (plantaArmandoPonto) {
+    hint.textContent = tr('planta_hint_marcar_ponto');
+    hint.style.background = '#eef6ff';
+  } else if (plantaTipoArmado) {
+    hint.textContent = tr('planta_hint_armado_prefix') + ' ' + plantaTipoArmado.emoji + ' ' + plantaTipoArmado.nome;
+    hint.style.background = '#f9f9f7';
+  } else {
+    hint.textContent = tr('planta_hint_padrao');
+    hint.style.background = '#f9f9f7';
+  }
+}
+
 function armarTipoPlanta(tipo) {
   plantaTipoArmado = tipo;
-  const hint = document.getElementById('planta-editor-hint');
-  if (hint) hint.textContent = tr('planta_hint_armado_prefix') + ' ' + tipo.emoji + ' ' + tipo.nome;
+  plantaArmandoPonto = false;
+  atualizarHintPlanta();
   fecharModal('m-planta-biblioteca');
 }
 
 function desarmarTipoPlanta() {
   plantaTipoArmado = null;
-  const hint = document.getElementById('planta-editor-hint');
-  if (hint) hint.textContent = tr('planta_hint_padrao');
+  plantaArmandoPonto = false;
+  atualizarHintPlanta();
+}
+
+function abrirNovoPontoPlanta() {
+  plantaArmandoPonto = true;
+  plantaTipoArmado = null;
+  atualizarHintPlanta();
 }
 
 async function criarMarcadorPlanta(x, y) {
   const tipo = plantaTipoArmado;
   if (!tipo) return;
   try {
+    // Se essa categoria ainda nao tem um ponto de equipamento padrao definido e
+    // ja existe pelo menos um ponto na planta, assume o primeiro como padrao -
+    // assim, se for tudo centralizado (so um rack), ja funciona sem precisar
+    // configurar nada; se tiver mais de um ponto, da pra trocar no painel depois.
+    const rot = plantaAtual.roteamento_padrao || (plantaAtual.roteamento_padrao = {});
+    if (!rot[tipo.nome] && (plantaAtual.pontos || []).length) {
+      rot[tipo.nome] = plantaAtual.pontos[0].id;
+      sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    }
+    const pontoId = rot[tipo.nome] || null;
     const [criado] = await sbPost('projetos_planta_marcadores', {
       planta_id: plantaEditandoId, nome: tipo.nome, cor: tipo.cor,
       icone_chave: tipo.chave || '', emoji: tipo.chave ? '' : (tipo.emoji || ''),
+      ponto_id: pontoId,
       x_pct: x, y_pct: y, observacoes: '', criado_por: ME.nome
     });
     plantaAtual.marcadores.push(criado);
     criarElementoMarcadorPlanta(criado, document.getElementById('planta-editor-marcadores'));
+    renderLinhasPlanta();
+    renderPainelRoteamentoPlanta();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// Ponto de equipamento: liga/desliga o texto do botao de mostrar/ocultar linhas.
+function atualizarBotaoLinhasPlanta() {
+  const btn = document.getElementById('planta-toggle-linhas-btn');
+  if (!btn) return;
+  btn.textContent = plantaLinhasVisiveis ? tr('planta_ocultar_linhas_btn') : tr('planta_mostrar_linhas_btn');
+}
+
+function iniciaisPonto(nome) {
+  const partes = (nome || '').trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return '?';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[1][0]).toUpperCase();
+}
+
+function renderPontosPlanta() {
+  const cont = document.getElementById('planta-editor-pontos');
+  if (!cont) return;
+  cont.innerHTML = '';
+  (plantaAtual.pontos || []).forEach(function(p) { criarElementoPontoPlanta(p, cont); });
+}
+
+// Badge arrastavel de um ponto de equipamento (rack, central de som, DVR...).
+// Tocar sem arrastar abre o modal de renomear; arrastar persiste a nova posicao.
+function criarElementoPontoPlanta(ponto, cont) {
+  if (!cont) return;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:' + ponto.x_pct + '%;top:' + ponto.y_pct + '%;transform:translate(-50%,-50%);z-index:2';
+
+  const badge = document.createElement('div');
+  badge.style.cssText = 'min-width:34px;height:34px;padding:0 7px;border-radius:9px;background:#1a1a1a;color:#fff;display:flex;align-items:center;justify-content:center;cursor:grab;font-size:11px;font-weight:700;letter-spacing:.2px;box-shadow:0 2px 6px rgba(0,0,0,.3);touch-action:none;border:2px solid #fff';
+  badge.textContent = iniciaisPonto(ponto.nome);
+  badge.title = ponto.nome;
+
+  wrap.appendChild(badge);
+  cont.appendChild(wrap);
+
+  let moveu = false;
+  badge.addEventListener('pointerdown', function(e) {
+    e.stopPropagation();
+    moveu = false;
+    const canvasEl = document.getElementById('planta-editor-canvas');
+    const rect = canvasEl.getBoundingClientRect();
+    function mover(ev) {
+      moveu = true;
+      let x = ((ev.clientX - rect.left) / rect.width) * 100;
+      let y = ((ev.clientY - rect.top) / rect.height) * 100;
+      x = Math.max(1, Math.min(99, x));
+      y = Math.max(1, Math.min(99, y));
+      wrap.style.left = x + '%';
+      wrap.style.top = y + '%';
+      ponto.x_pct = x; ponto.y_pct = y;
+      renderLinhasPlanta();
+    }
+    function soltar() {
+      document.removeEventListener('pointermove', mover);
+      document.removeEventListener('pointerup', soltar);
+      plantaUltimoToquePlantaMs = Date.now();
+      if (moveu) {
+        sbPatch('projetos_planta_pontos?id=eq.' + ponto.id, { x_pct: ponto.x_pct, y_pct: ponto.y_pct }).catch(function(){});
+      } else {
+        abrirNomePontoPlanta(ponto);
+      }
+    }
+    document.addEventListener('pointermove', mover);
+    document.addEventListener('pointerup', soltar);
+  });
+  badge.addEventListener('click', function(e) { e.stopPropagation(); });
+}
+
+// Modal de nome do ponto serve tanto para criar (ponto null, com x/y do toque no
+// canvas) quanto para renomear (ponto existente, sem x/y).
+function abrirNomePontoPlanta(ponto, x, y) {
+  plantaPontoEditandoId = ponto ? ponto.id : null;
+  plantaPontoNovoXY = ponto ? null : { x: x, y: y };
+  document.getElementById('planta-ponto-nome-titulo').textContent = ponto ? tr('planta_ponto_renomear_title') : tr('planta_ponto_novo_title');
+  document.getElementById('ponto-nome-input').value = ponto ? ponto.nome : '';
+  const excluirBtn = document.getElementById('ponto-excluir-btn');
+  if (excluirBtn) excluirBtn.style.display = ponto ? 'inline-block' : 'none';
+  abrirModal('m-planta-ponto-nome');
+}
+
+async function salvarNomePontoPlanta() {
+  const nome = (document.getElementById('ponto-nome-input')?.value || '').trim();
+  if (!nome) { toast(tr('planta_ponto_nome_obrigatorio'), 'err'); return; }
+  try {
+    if (plantaPontoEditandoId) {
+      await sbPatch('projetos_planta_pontos?id=eq.' + plantaPontoEditandoId, { nome: nome });
+      const ponto = (plantaAtual.pontos || []).find(function(p) { return p.id === plantaPontoEditandoId; });
+      if (ponto) ponto.nome = nome;
+    } else {
+      const [criado] = await sbPost('projetos_planta_pontos', {
+        planta_id: plantaEditandoId, nome: nome,
+        x_pct: plantaPontoNovoXY.x, y_pct: plantaPontoNovoXY.y, criado_por: ME.nome
+      });
+      plantaAtual.pontos = plantaAtual.pontos || [];
+      plantaAtual.pontos.push(criado);
+    }
+    fecharModal('m-planta-ponto-nome');
+    renderPontosPlanta();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirPontoPlantaModal() {
+  if (!plantaPontoEditandoId) return;
+  if (!confirm(tr('planta_ponto_excluir_confirm'))) return;
+  const id = plantaPontoEditandoId;
+  try {
+    await sbDelete('projetos_planta_pontos?id=eq.' + id);
+    plantaAtual.pontos = (plantaAtual.pontos || []).filter(function(p) { return p.id !== id; });
+    (plantaAtual.marcadores || []).forEach(function(m) { if (m.ponto_id === id) m.ponto_id = null; });
+    const rot = plantaAtual.roteamento_padrao || {};
+    Object.keys(rot).forEach(function(k) { if (rot[k] === id) delete rot[k]; });
+    sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    fecharModal('m-planta-ponto-nome');
+    renderPontosPlanta();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// Painel com uma linha por categoria de dispositivo ja colocada na planta, cada
+// uma com um <select> pra escolher pra qual ponto de equipamento ela vai. So
+// aparece quando ja existe pelo menos um ponto criado.
+function renderPainelRoteamentoPlanta() {
+  const cont = document.getElementById('planta-roteamento-painel');
+  if (!cont) return;
+  cont.innerHTML = '';
+  const pontos = plantaAtual.pontos || [];
+  if (!pontos.length) return;
+  const categorias = {};
+  (plantaAtual.marcadores || []).forEach(function(m) { if (!categorias[m.nome]) categorias[m.nome] = m.cor; });
+  const nomes = Object.keys(categorias);
+  if (!nomes.length) return;
+  const rot = plantaAtual.roteamento_padrao || {};
+  const titulo = document.createElement('div');
+  titulo.style.cssText = 'font-size:11.5px;color:#999;font-weight:600;margin-bottom:2px';
+  titulo.textContent = tr('planta_roteamento_titulo');
+  cont.appendChild(titulo);
+  nomes.forEach(function(nome) {
+    const cor = PLANTA_CORES[categorias[nome]] || PLANTA_CORES.gray;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:12.5px';
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + cor.text + ';flex-shrink:0';
+    const label = document.createElement('span');
+    label.style.cssText = 'flex:1';
+    label.textContent = nome;
+    const select = document.createElement('select');
+    select.style.cssText = 'padding:4px 8px;border:1px solid #e8e8e5;border-radius:6px;font-size:12px;background:#fff';
+    pontos.forEach(function(p) {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nome;
+      if (rot[nome] === p.id) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.onchange = function() { atribuirPontoCategoria(nome, select.value); };
+    row.appendChild(dot); row.appendChild(label); row.appendChild(select);
+    cont.appendChild(row);
+  });
+}
+
+// Muda o ponto de equipamento de destino de todos os marcadores de uma categoria
+// de uma vez (ex: todo mundo que for "Camera CFTV" passa a apontar pro novo rack).
+async function atribuirPontoCategoria(nome, pontoId) {
+  const rot = plantaAtual.roteamento_padrao || (plantaAtual.roteamento_padrao = {});
+  rot[nome] = pontoId;
+  (plantaAtual.marcadores || []).forEach(function(m) { if (m.nome === nome) m.ponto_id = pontoId; });
+  renderLinhasPlanta();
+  try {
+    await Promise.all([
+      sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }),
+      sbPatch('projetos_planta_marcadores?planta_id=eq.' + plantaEditandoId + '&nome=eq.' + encodeURIComponent(nome), { ponto_id: pontoId })
+    ]);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function toggleLinhasPlanta() {
+  plantaLinhasVisiveis = !plantaLinhasVisiveis;
+  atualizarBotaoLinhasPlanta();
+  renderLinhasPlanta();
+}
+
+// Desenha as linhas de roteamento de cabeamento em coordenadas de pixel reais
+// (viewBox do SVG casado com o tamanho do canvas), para o tracado nao distorcer
+// em plantas que nao sao quadradas. Cada dispositivo manda uma linha pontilhada
+// e cotovelada ate um ponto de fusao da sua categoria, perto do ponto de
+// equipamento designado - e dali sai um unico tronco ate o ponto, para nao
+// poluir com um monte de linhas soltas convergindo direto.
+function renderLinhasPlanta() {
+  const svg = document.getElementById('planta-editor-linhas');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!svg || !canvasEl) return;
+  svg.innerHTML = '';
+  if (!plantaLinhasVisiveis || !plantaAtual) return;
+  const pontos = plantaAtual.pontos || [];
+  const marcadores = (plantaAtual.marcadores || []).filter(function(m) { return m.ponto_id; });
+  if (!pontos.length || !marcadores.length) return;
+  const w = canvasEl.offsetWidth || 1;
+  const h = canvasEl.offsetHeight || 1;
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+  const pontosPorId = {};
+  pontos.forEach(function(p) { pontosPorId[p.id] = p; });
+
+  const grupos = {};
+  marcadores.forEach(function(m) {
+    if (!pontosPorId[m.ponto_id]) return;
+    if (!grupos[m.ponto_id]) grupos[m.ponto_id] = {};
+    if (!grupos[m.ponto_id][m.nome]) grupos[m.ponto_id][m.nome] = { cor: m.cor, marcadores: [] };
+    grupos[m.ponto_id][m.nome].marcadores.push(m);
+  });
+
+  const NS = 'http://www.w3.org/2000/svg';
+  Object.keys(grupos).forEach(function(pontoId) {
+    const ponto = pontosPorId[pontoId];
+    if (!ponto) return;
+    const px = (ponto.x_pct / 100) * w;
+    const py = (ponto.y_pct / 100) * h;
+    const categorias = Object.keys(grupos[pontoId]);
+    categorias.forEach(function(nome, idx) {
+      const info = grupos[pontoId][nome];
+      const cor = (PLANTA_CORES[info.cor] || PLANTA_CORES.gray).text;
+      const angulo = (-60 + idx * 40) * Math.PI / 180;
+      const raio = 24;
+      const mx = px + Math.cos(angulo) * raio;
+      const my = py + Math.sin(angulo) * raio;
+      info.marcadores.forEach(function(m) {
+        const dx = (m.x_pct / 100) * w;
+        const dy = (m.y_pct / 100) * h;
+        const linha = document.createElementNS(NS, 'polyline');
+        linha.setAttribute('points', dx + ',' + dy + ' ' + dx + ',' + my + ' ' + mx + ',' + my);
+        linha.setAttribute('fill', 'none');
+        linha.setAttribute('stroke', cor);
+        linha.setAttribute('stroke-width', '1.6');
+        linha.setAttribute('stroke-dasharray', '4,3');
+        linha.setAttribute('opacity', '0.75');
+        svg.appendChild(linha);
+      });
+      const tronco = document.createElementNS(NS, 'line');
+      tronco.setAttribute('x1', mx); tronco.setAttribute('y1', my);
+      tronco.setAttribute('x2', px); tronco.setAttribute('y2', py);
+      tronco.setAttribute('stroke', cor);
+      tronco.setAttribute('stroke-width', '2.4');
+      tronco.setAttribute('stroke-dasharray', '4,3');
+      svg.appendChild(tronco);
+    });
+  });
 }
 
 function renderMarcadoresPlanta() {
@@ -7753,6 +8079,7 @@ function criarElementoMarcadorPlanta(marcador, cont) {
       wrap.style.left = x + '%';
       wrap.style.top = y + '%';
       marcador.x_pct = x; marcador.y_pct = y;
+      renderLinhasPlanta();
     }
     function soltar() {
       document.removeEventListener('pointermove', mover);
@@ -7778,6 +8105,7 @@ async function excluirMarcadorPlanta(marcador, wrapEl) {
     await sbDelete('projetos_planta_marcadores?id=eq.' + marcador.id);
     plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
     wrapEl.remove();
+    renderLinhasPlanta();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
@@ -7808,6 +8136,7 @@ async function excluirMarcadorPlantaAtual() {
     plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
     fecharModal('m-planta-obs');
     renderMarcadoresPlanta();
+    renderLinhasPlanta();
     toast(tr('planta_marcador_excluido'), 'ok');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
@@ -8049,6 +8378,61 @@ async function construirRelatorioPlantaPDF() {
   doc.setLineWidth(1);
   doc.rect(imgX - 1, imgY - 1, drawW + 2, drawH + 2);
   doc.addImage(imgDataUrl, 'PNG', imgX, imgY, drawW, drawH);
+
+  // ── Rotas de cabeamento (linhas pontilhadas ate o ponto de equipamento) ──
+  // desenhadas ANTES dos circulos numerados, pra ficarem por baixo deles no croqui.
+  const pontosRelatorio = plantaAtual.pontos || [];
+  const marcadoresComPonto = marcadores.filter(function(m) { return m.ponto_id; });
+  if (pontosRelatorio.length && marcadoresComPonto.length) {
+    const pontosPorIdPdf = {};
+    pontosRelatorio.forEach(function(p) { pontosPorIdPdf[p.id] = p; });
+    const gruposPdf = {};
+    marcadoresComPonto.forEach(function(m) {
+      if (!pontosPorIdPdf[m.ponto_id]) return;
+      if (!gruposPdf[m.ponto_id]) gruposPdf[m.ponto_id] = {};
+      if (!gruposPdf[m.ponto_id][m.nome]) gruposPdf[m.ponto_id][m.nome] = { cor: m.cor, marcadores: [] };
+      gruposPdf[m.ponto_id][m.nome].marcadores.push(m);
+    });
+    doc.setLineDashPattern([2.2, 1.6], 0);
+    Object.keys(gruposPdf).forEach(function(pontoId) {
+      const ponto = pontosPorIdPdf[pontoId];
+      const px = imgX + (ponto.x_pct / 100) * drawW;
+      const py = imgY + (ponto.y_pct / 100) * drawH;
+      const categorias = Object.keys(gruposPdf[pontoId]);
+      categorias.forEach(function(nome, idx) {
+        const info = gruposPdf[pontoId][nome];
+        const cor = PLANTA_CORES[info.cor] || PLANTA_CORES.gray;
+        const rgb = hexParaRgbPlanta(cor.text);
+        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+        const angulo = (-60 + idx * 40) * Math.PI / 180;
+        const raio = 16;
+        const mx = px + Math.cos(angulo) * raio;
+        const my = py + Math.sin(angulo) * raio;
+        doc.setLineWidth(0.8);
+        info.marcadores.forEach(function(m) {
+          const dx = imgX + (m.x_pct / 100) * drawW;
+          const dy = imgY + (m.y_pct / 100) * drawH;
+          doc.line(dx, dy, dx, my);
+          doc.line(dx, my, mx, my);
+        });
+        doc.setLineWidth(1.3);
+        doc.line(mx, my, px, py);
+      });
+    });
+    doc.setLineDashPattern([], 0);
+
+    pontosRelatorio.forEach(function(p) {
+      const px = imgX + (p.x_pct / 100) * drawW;
+      const py = imgY + (p.y_pct / 100) * drawH;
+      doc.setFillColor(26, 26, 26);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1.2);
+      doc.roundedRect(px - 11, py - 11, 22, 22, 4, 4, 'FD');
+      doc.setFontSize(7.5);
+      doc.setTextColor(255, 255, 255);
+      doc.text(iniciaisPonto(p.nome), px, py + 2.6, { align: 'center' });
+    });
+  }
 
   marcadores.forEach(function(m, idx) {
     const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
