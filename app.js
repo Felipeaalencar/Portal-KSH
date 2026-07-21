@@ -852,6 +852,20 @@ const I18N = {
   planta_obs_salva: { en: 'Note saved', pt: 'Observação salva' },
   planta_marcador_excluir_confirm: { en: 'Remove this device from the floor plan?', pt: 'Remover este dispositivo da planta?' },
   planta_marcador_excluido: { en: 'Device removed', pt: 'Dispositivo removido' },
+  planta_gerar_relatorio_btn: { en: 'Generate PDF report', pt: 'Gerar relatório PDF' },
+  planta_relatorio_gerando: { en: 'Generating report...', pt: 'Gerando relatório...' },
+  planta_relatorio_gerado: { en: 'Report generated', pt: 'Relatório gerado' },
+  planta_relatorio_erro_imagem: { en: 'Could not load the floor plan image', pt: 'Não foi possível carregar a imagem da planta' },
+  planta_relatorio_pdf_titulo: { en: 'Device Report', pt: 'Relatório de Dispositivos' },
+  planta_relatorio_data: { en: 'Date', pt: 'Data' },
+  planta_relatorio_total_dispositivos: { en: 'Total devices', pt: 'Total de dispositivos' },
+  planta_relatorio_resumo_titulo: { en: 'Summary by device type', pt: 'Resumo por tipo de dispositivo' },
+  planta_relatorio_sem_dispositivos: { en: 'No devices placed yet', pt: 'Nenhum dispositivo posicionado ainda' },
+  planta_relatorio_unidade: { en: 'unit', pt: 'unidade' },
+  planta_relatorio_unidades: { en: 'units', pt: 'unidades' },
+  planta_relatorio_croqui_titulo: { en: 'Floor plan sketch (numbered)', pt: 'Croqui da planta (numerado)' },
+  planta_relatorio_lista_titulo: { en: 'Detailed device list', pt: 'Lista detalhada de dispositivos' },
+  planta_relatorio_sem_obs: { en: 'No notes', pt: 'Sem observações' },
 };
 
 function tr(key) {
@@ -7675,6 +7689,208 @@ async function salvarNovoTipoIcone() {
     toast(tr('planta_tipo_salvo'), 'ok');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
+
+function hexParaRgbPlanta(hex) {
+  const h = (hex || '#888888').replace('#', '');
+  return { r: parseInt(h.substring(0, 2), 16), g: parseInt(h.substring(2, 4), 16), b: parseInt(h.substring(4, 6), 16) };
+}
+
+// Relatorio em PDF da planta: capa, resumo por tipo de dispositivo (com quantidade),
+// croqui com a planta e os marcadores numerados, e lista detalhada com as observacoes
+// de cada um - serve tanto de referencia pra equipe (croqui) quanto pra mandar pro cliente.
+async function gerarRelatorioPlanta() {
+  if (!plantaAtual) return;
+  const btn = document.getElementById('planta-relatorio-btn');
+  const statusEl = document.getElementById('planta-relatorio-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('planta_relatorio_gerando'); }
+  try {
+    if (!plantaAtual.imagem_drive_id) throw new Error(tr('planta_relatorio_erro_imagem'));
+    const conectado = await garantirTokenDrive();
+    if (!conectado) throw new Error(tr('drive_conecte_primeiro'));
+
+    // Baixa a imagem de fundo autenticada via API do Drive (evita problema de CORS
+    // que o link publico de compartilhamento teria dentro de um <canvas>/jsPDF).
+    const imgResp = await fetch('https://www.googleapis.com/drive/v3/files/' + plantaAtual.imagem_drive_id + '?alt=media', {
+      headers: { 'Authorization': 'Bearer ' + googleToken }
+    });
+    if (!imgResp.ok) throw new Error(tr('planta_relatorio_erro_imagem'));
+    const imgBlob = await imgResp.blob();
+    const imgDataUrl = await new Promise(function(resolve, reject) {
+      const reader = new FileReader();
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(imgBlob);
+    });
+    const dims = await new Promise(function(resolve, reject) {
+      const im = new Image();
+      im.onload = function() { resolve({ w: im.naturalWidth, h: im.naturalHeight }); };
+      im.onerror = reject;
+      im.src = imgDataUrl;
+    });
+
+    const marcadores = (plantaAtual.marcadores || []).slice();
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 48;
+    const dataHoje = new Date().toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+    let y = 0;
+
+    function rodape() {
+      doc.setFontSize(8);
+      doc.setTextColor(160);
+      doc.text('Kilian Smart Homes © ' + new Date().getFullYear() + '  ·  ' + plantaAtual.nome, margin, pageH - 24);
+    }
+    function novaPagina() {
+      rodape();
+      doc.addPage();
+      y = 60;
+    }
+    function garantirEspaco(altura) {
+      if (y + altura > pageH - 60) novaPagina();
+    }
+
+    // ── Capa ──
+    doc.setFillColor(20, 20, 20);
+    doc.rect(0, 0, pageW, 130, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.text('KILIAN SMART HOMES', margin, 55);
+    doc.setFontSize(10);
+    doc.setTextColor(200, 200, 200);
+    doc.text('South Florida  ·  Smart Home & AV Integration', margin, 74);
+    doc.setFontSize(15);
+    doc.setTextColor(255, 255, 255);
+    doc.text(tr('planta_relatorio_pdf_titulo').toUpperCase(), margin, 108);
+
+    y = 165;
+    doc.setTextColor(20, 20, 20);
+    doc.setFontSize(17);
+    doc.text(plantaAtual.nome, margin, y);
+    y += 20;
+    doc.setFontSize(9);
+    doc.setTextColor(140);
+    doc.text(tr('planta_relatorio_data') + ': ' + dataHoje + '   ·   ' + tr('planta_relatorio_total_dispositivos') + ': ' + marcadores.length, margin, y);
+    y += 34;
+
+    // ── Resumo por tipo (legenda com quantidade) ──
+    doc.setFontSize(13);
+    doc.setTextColor(20, 20, 20);
+    doc.text(tr('planta_relatorio_resumo_titulo'), margin, y);
+    y += 22;
+
+    if (!marcadores.length) {
+      doc.setFontSize(11);
+      doc.setTextColor(140);
+      doc.text(tr('planta_relatorio_sem_dispositivos'), margin, y);
+      y += 20;
+    } else {
+      const contagem = {};
+      marcadores.forEach(function(m) {
+        const key = m.nome;
+        if (!contagem[key]) contagem[key] = { nome: m.nome, cor: m.cor, qtd: 0 };
+        contagem[key].qtd++;
+      });
+      const resumo = Object.values(contagem).sort(function(a, b) { return b.qtd - a.qtd; });
+      resumo.forEach(function(item) {
+        garantirEspaco(20);
+        const cor = PLANTA_CORES[item.cor] || PLANTA_CORES.gray;
+        const rgb = hexParaRgbPlanta(cor.text);
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.circle(margin + 5, y - 4, 5, 'F');
+        doc.setFontSize(11);
+        doc.setTextColor(30);
+        doc.text(item.nome, margin + 18, y);
+        doc.setTextColor(120);
+        const qtdTxt = String(item.qtd) + ' ' + (item.qtd === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
+        doc.text(qtdTxt, pageW - margin, y, { align: 'right' });
+        y += 19;
+      });
+    }
+
+    // ── Croqui: planta com marcadores numerados (referencia visual pra equipe) ──
+    rodape();
+    doc.addPage();
+    y = 60;
+    doc.setFontSize(13);
+    doc.setTextColor(20, 20, 20);
+    doc.text(tr('planta_relatorio_croqui_titulo'), margin, y);
+    y += 18;
+
+    const maxW = pageW - margin * 2;
+    const maxH = pageH - y - 60;
+    let drawW = maxW;
+    let drawH = drawW * (dims.h / dims.w);
+    if (drawH > maxH) { drawH = maxH; drawW = drawH * (dims.w / dims.h); }
+    const imgX = margin + (maxW - drawW) / 2;
+    const imgY = y;
+    doc.addImage(imgDataUrl, 'PNG', imgX, imgY, drawW, drawH);
+
+    marcadores.forEach(function(m, idx) {
+      const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+      const rgb = hexParaRgbPlanta(cor.text);
+      const px = imgX + (m.x_pct / 100) * drawW;
+      const py = imgY + (m.y_pct / 100) * drawH;
+      doc.setFillColor(rgb.r, rgb.g, rgb.b);
+      doc.setDrawColor(255, 255, 255);
+      doc.setLineWidth(1);
+      doc.circle(px, py, 9, 'FD');
+      doc.setFontSize(8);
+      doc.setTextColor(255, 255, 255);
+      doc.text(String(idx + 1), px, py + 2.8, { align: 'center' });
+    });
+
+    // ── Lista detalhada (numeracao bate com o croqui) ──
+    novaPagina();
+    doc.setFontSize(13);
+    doc.setTextColor(20, 20, 20);
+    doc.text(tr('planta_relatorio_lista_titulo'), margin, y);
+    y += 26;
+
+    if (!marcadores.length) {
+      doc.setFontSize(11);
+      doc.setTextColor(140);
+      doc.text(tr('planta_relatorio_sem_dispositivos'), margin, y);
+    } else {
+      marcadores.forEach(function(m, idx) {
+        garantirEspaco(34);
+        const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+        const rgb = hexParaRgbPlanta(cor.text);
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.circle(margin + 7, y - 4, 7, 'F');
+        doc.setFontSize(8);
+        doc.setTextColor(255, 255, 255);
+        doc.text(String(idx + 1), margin + 7, y - 1.2, { align: 'center' });
+        doc.setFontSize(12);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(20, 20, 20);
+        doc.text(m.nome, margin + 22, y);
+        doc.setFont(undefined, 'normal');
+        y += 15;
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const obsTexto = (m.observacoes && m.observacoes.trim()) ? m.observacoes.trim() : tr('planta_relatorio_sem_obs');
+        const linhas = doc.splitTextToSize(obsTexto, pageW - margin * 2 - 22);
+        doc.text(linhas, margin + 22, y);
+        y += linhas.length * 12 + 16;
+      });
+    }
+    rodape();
+
+    doc.save((plantaAtual.nome || 'planta').replace(/[^a-z0-9 _-]/gi, '') + ' - Relatorio.pdf');
+    if (statusEl) statusEl.style.display = 'none';
+    toast(tr('planta_relatorio_gerado'), 'ok');
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('erro_prefix') + e.message; }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
 const PERMISSOES_ESTRUTURA = [

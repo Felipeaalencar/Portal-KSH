@@ -169,7 +169,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
-<script src="app.js?v=1784663528" defer></script>
+<script src="app.js?v=1784663797" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -968,8 +968,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
       <button type="button" class="btn-pri" onclick="abrirBibliotecaIcones()" data-i18n="planta_escolher_dispositivo_btn">Escolher dispositivo</button>
+      <button type="button" id="planta-relatorio-btn" onclick="gerarRelatorioPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_gerar_relatorio_btn">Gerar relatório PDF</button>
       <a id="planta-ver-pdf-btn" href="#" target="_blank" style="display:none;padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-decoration:none;color:inherit" data-i18n="planta_ver_pdf_original_btn">Ver PDF original</a>
     </div>
+    <div id="planta-relatorio-status" style="display:none;font-size:12px;margin-top:8px"></div>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-planta-editor')" data-i18n="btn_fechar">Fechar</button>
     </div>
