@@ -866,6 +866,10 @@ const I18N = {
   planta_relatorio_croqui_titulo: { en: 'Floor plan sketch (numbered)', pt: 'Croqui da planta (numerado)' },
   planta_relatorio_lista_titulo: { en: 'Detailed device list', pt: 'Lista detalhada de dispositivos' },
   planta_relatorio_sem_obs: { en: 'No notes', pt: 'Sem observações' },
+  planta_zoom_menos_title: { en: 'Zoom out', pt: 'Diminuir zoom' },
+  planta_zoom_mais_title: { en: 'Zoom in', pt: 'Aumentar zoom' },
+  planta_zoom_ajustar_btn: { en: 'Fit', pt: 'Ajustar' },
+  planta_zoom_hint: { en: 'drag to pan when zoomed in', pt: 'arraste pra navegar quando der zoom' },
 };
 
 function tr(key) {
@@ -7308,6 +7312,8 @@ let plantaMarcadorAtual = null;
 let plantaNovaPdfFile = null;
 let plantaUltimoToquePlantaMs = 0;
 let plantaCorEscolhida = 'blue';
+const PLANTA_ZOOM_NIVEIS = [100, 130, 160, 200, 260, 320];
+let plantaZoomIdx = 0;
 
 async function renderPlantas() {
   const el = document.getElementById('mod-content');
@@ -7451,9 +7457,25 @@ async function abrirEditorPlanta(id) {
     else pdfBtn.style.display = 'none';
   }
   desarmarTipoPlanta();
+  plantaZoomIdx = 0;
+  aplicarZoomPlanta();
   configurarCanvasPlanta();
   renderMarcadoresPlanta();
   abrirModal('m-planta-editor');
+}
+
+function ajustarZoomPlanta(direcao) {
+  if (direcao === 0) plantaZoomIdx = 0;
+  else plantaZoomIdx = Math.max(0, Math.min(PLANTA_ZOOM_NIVEIS.length - 1, plantaZoomIdx + direcao));
+  aplicarZoomPlanta();
+}
+
+function aplicarZoomPlanta() {
+  const nivel = PLANTA_ZOOM_NIVEIS[plantaZoomIdx];
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  const label = document.getElementById('planta-zoom-label');
+  if (canvasEl) canvasEl.style.width = nivel + '%';
+  if (label) label.textContent = nivel + '%';
 }
 
 function configurarCanvasPlanta() {
