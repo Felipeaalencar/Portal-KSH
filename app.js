@@ -326,7 +326,10 @@ const I18N = {
   resumo_todos: { en: 'All', pt: 'Todos' },
   nav_rentabilidade: { en: 'Profitability by OS', pt: 'Rentabilidade por OS' },
   rentabilidade_subtitle: { en: 'Quoted value vs real cost, by work order', pt: 'Valor orçado x custo real, por ordem de serviço' },
-  rentabilidade_vazio: { en: 'No completed work order found for this filter', pt: 'Nenhuma OS concluída encontrada para esse filtro' },
+  rentabilidade_vazio: { en: 'No work order found for this filter', pt: 'Nenhuma OS encontrada para esse filtro' },
+  rent_status_todos: { en: 'All', pt: 'Todas' },
+  rent_status_andamento: { en: 'In progress', pt: 'Em andamento' },
+  rent_status_concluida: { en: 'Completed', pt: 'Concluídas' },
   rent_th_os: { en: 'OS', pt: 'OS' },
   rent_th_cliente: { en: 'Client', pt: 'Cliente' },
   rent_total_periodo: { en: 'Period total', pt: 'Total do período' },
@@ -4506,6 +4509,7 @@ function renderAgendaGrade() {
 let rentabilidadeData = { os: [], dias: [], gastos: [], tecnicos: [] };
 let rentFiltroCobranca = 'todos';
 let rentFiltroTecnico = 'todos';
+let rentFiltroStatus = 'todos';
 
 async function renderRentabilidadeOS() {
   const el = document.getElementById('mod-content');
@@ -4526,8 +4530,10 @@ async function renderRentabilidadeOS() {
 
   rentFiltroCobranca = 'todos';
   rentFiltroTecnico = 'todos';
+  rentFiltroStatus = 'todos';
 
   el.innerHTML = '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;align-items:center">'
+    + '<div id="rent-filtro-status" style="display:flex;gap:6px"></div>'
     + '<div id="rent-filtro-cobranca" style="display:flex;gap:6px"></div>'
     + '<div id="rent-filtro-tecnico" style="display:flex;gap:6px;flex-wrap:wrap"></div>'
     + '</div>'
@@ -4538,10 +4544,15 @@ async function renderRentabilidadeOS() {
 
 function rentToggleCobranca(v) { rentFiltroCobranca = v; renderRentabilidadeTabela(); }
 function rentToggleTecnico(nome) { rentFiltroTecnico = (rentFiltroTecnico === nome) ? 'todos' : nome; renderRentabilidadeTabela(); }
+function rentToggleStatus(v) { rentFiltroStatus = v; renderRentabilidadeTabela(); }
 
 function renderRentabilidadeTabela() {
   const { os, dias, gastos, tecnicos } = rentabilidadeData;
 
+  const filtroStatusEl = document.getElementById('rent-filtro-status');
+  if (filtroStatusEl) filtroStatusEl.innerHTML = ['todos','andamento','concluida'].map(v =>
+    chipTecnicoHTML(v, v==='todos'?tr('rent_status_todos'):(v==='andamento'?tr('rent_status_andamento'):tr('rent_status_concluida')), rentFiltroStatus===v, 'rentToggleStatus')
+  ).join('');
   const filtroEl = document.getElementById('rent-filtro-cobranca');
   if (filtroEl) filtroEl.innerHTML = ['todos','a_cobrar','cobrado'].map(v =>
     chipTecnicoHTML(v, v==='todos'?tr('resumo_todos'):(v==='a_cobrar'?tr('resumo_a_cobrar'):tr('resumo_cobrado')), rentFiltroCobranca===v, 'rentToggleCobranca')
@@ -4551,7 +4562,9 @@ function renderRentabilidadeTabela() {
     chipTecnicoHTML(t.nome, t.nome, rentFiltroTecnico===t.nome, 'rentToggleTecnico')
   ).join('');
 
-  let linhasOS = os.filter(o => o.status === 'concluida');
+  let linhasOS = os.slice();
+  if (rentFiltroStatus === 'andamento') linhasOS = linhasOS.filter(o => o.status !== 'concluida');
+  else if (rentFiltroStatus === 'concluida') linhasOS = linhasOS.filter(o => o.status === 'concluida');
   if (rentFiltroCobranca !== 'todos') linhasOS = linhasOS.filter(o => (o.status_cobranca||'a_cobrar') === rentFiltroCobranca);
 
   let linhas = linhasOS.map(o => {
@@ -4574,6 +4587,7 @@ function renderRentabilidadeTabela() {
   html += '<tr style="background:#f5f5f3;text-align:left">'
     + '<th style="padding:8px 10px">' + tr('rent_th_os') + '</th>'
     + '<th style="padding:8px 10px">' + tr('rent_th_cliente') + '</th>'
+    + '<th style="padding:8px 10px">' + tr('os_status_label') + '</th>'
     + '<th style="padding:8px 10px">' + tr('label_valor_orcado') + '</th>'
     + '<th style="padding:8px 10px">' + tr('resumo_custo_real') + '</th>'
     + '<th style="padding:8px 10px">' + tr('resumo_margem') + '</th>'
@@ -4592,6 +4606,7 @@ function renderRentabilidadeTabela() {
     html += '<tr style="border-top:1px solid #f0f0ee;cursor:pointer" onclick="abrirRelatorioFinanceiroOS(\''+l.os.id+'\')">'
       + '<td style="padding:8px 10px">#' + (l.os.numero||'—') + '</td>'
       + '<td style="padding:8px 10px">' + (l.os.cliente_nome||l.os.cliente||'—') + '</td>'
+      + '<td style="padding:8px 10px"><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:'+(S_BG[l.os.status]||'#f5f5f3')+';color:'+(S_COLOR[l.os.status]||'#888')+'">'+(S_LABEL[l.os.status]||l.os.status)+'</span></td>'
       + '<td style="padding:8px 10px">' + (orcado != null ? '$'+orcado.toFixed(2) : '—') + '</td>'
       + '<td style="padding:8px 10px">$' + custo.toFixed(2) + '</td>'
       + '<td style="padding:8px 10px;color:'+corMargem+';font-weight:600">' + (margem != null ? '$'+margem.toFixed(2) + (margemPct!=null?' ('+margemPct.toFixed(0)+'%)':'') : '—') + '</td>'
@@ -4602,7 +4617,7 @@ function renderRentabilidadeTabela() {
   const totalMargem = totalOrcado - totalCusto;
   const totalMargemPct = totalOrcado > 0 ? (totalMargem / totalOrcado * 100) : null;
   html += '<tr style="border-top:2px solid #e8e8e5;font-weight:700;background:#f9f9f7">'
-    + '<td style="padding:8px 10px" colspan="2">' + tr('rent_total_periodo') + '</td>'
+    + '<td style="padding:8px 10px" colspan="3">' + tr('rent_total_periodo') + '</td>'
     + '<td style="padding:8px 10px">$' + totalOrcado.toFixed(2) + '</td>'
     + '<td style="padding:8px 10px">$' + totalCusto.toFixed(2) + '</td>'
     + '<td style="padding:8px 10px;color:' + (totalMargem>=0?'#166534':'#991b1b') + '">$' + totalMargem.toFixed(2) + (totalMargemPct!=null?' ('+totalMargemPct.toFixed(0)+'%)':'') + '</td>'
