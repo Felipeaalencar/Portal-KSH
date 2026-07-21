@@ -253,6 +253,7 @@ const I18N = {
   label_item_catalogo: { en: 'Catalog item', pt: 'Item do catálogo' },
   orc_item_add_title: { en: 'Add Item', pt: 'Adicionar Item' },
   orc_item_manual_opcao: { en: '-- type a custom item --', pt: '-- digitar um item manual --' },
+  oi_busca_ph: { en: 'Search the catalog or type a custom item...', pt: 'Buscar no catálogo ou digitar item manual...' },
   orc_item_prompt_nome: { en: 'Item name:', pt: 'Nome do item:' },
   orc_item_nome_obrigatorio: { en: 'Enter a name for the item', pt: 'Informe um nome para o item' },
   label_imposto_pct: { en: 'Tax on materials (%)', pt: 'Imposto sobre material (%)' },
@@ -1886,36 +1887,67 @@ async function excluirAreaOrcamento(areaId) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+let oiItemSelecionado = null;
+let oiBuscaTimer = null;
+
 async function abrirNovoItemOrcamento(areaId) {
   orcItemAreaAlvo = areaId;
   await garantirCatalogoCache();
   document.getElementById('oi-tipo').value = 'material';
   document.getElementById('oi-qtd').value = 1;
   document.getElementById('oi-preco').value = '';
-  popularSelectCatalogoItem('material');
+  limparItemCatalogoModal();
   abrirModal('m-orc-item');
 }
 
-function popularSelectCatalogoItem(tipo) {
-  const sel = document.getElementById('oi-catalogo-sel');
-  if (!sel) return;
-  const lista = catalogoCache.filter(c => c.tipo === tipo);
-  sel.innerHTML = '<option value="">' + tr('orc_item_manual_opcao') + '</option>'
-    + lista.map(c => '<option value="' + c.id + '">' + c.nome + ' — $' + Number(c.preco_venda).toFixed(2) + '</option>').join('');
-  document.getElementById('oi-preco').value = '';
+function oiTipoAlterado() {
+  limparItemCatalogoModal();
 }
 
-function preencherItemDoCatalogo(selectEl) {
-  const c = catalogoCache.find(x => x.id === selectEl.value);
-  if (c) document.getElementById('oi-preco').value = c.preco_venda;
+function buscarItemCatalogoModal(q) {
+  clearTimeout(oiBuscaTimer);
+  const res = document.getElementById('oi-catalogo-res');
+  if (!res) return;
+  if (!q || q.trim().length < 2) { res.style.display = 'none'; return; }
+  oiBuscaTimer = setTimeout(() => {
+    const tipo = document.getElementById('oi-tipo')?.value || 'material';
+    const ql = q.trim().toLowerCase();
+    const lista = catalogoCache.filter(c => c.tipo === tipo && c.nome.toLowerCase().includes(ql)).slice(0, 8);
+    if (!lista.length) { res.style.display = 'none'; return; }
+    res.style.display = 'block';
+    res.innerHTML = lista.map(c => '<div onclick="selecionarItemCatalogoModal(\'' + c.id + '\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3"><div style="font-size:13px;font-weight:500">' + c.nome + '</div><div style="font-size:11px;color:#888">$' + Number(c.preco_venda).toFixed(2) + (c.descricao ? ' · ' + c.descricao : '') + '</div></div>').join('');
+  }, 200);
+}
+
+function selecionarItemCatalogoModal(id) {
+  const c = catalogoCache.find(x => x.id === id);
+  if (!c) return;
+  oiItemSelecionado = c;
+  document.getElementById('oi-busca').value = '';
+  document.getElementById('oi-catalogo-res').style.display = 'none';
+  document.getElementById('oi-catalogo-sel-box').style.display = 'flex';
+  document.getElementById('oi-catalogo-sel-nome').textContent = c.nome;
+  document.getElementById('oi-preco').value = c.preco_venda;
+}
+
+function limparItemCatalogoModal() {
+  oiItemSelecionado = null;
+  const busca = document.getElementById('oi-busca');
+  if (busca) busca.value = '';
+  const res = document.getElementById('oi-catalogo-res');
+  if (res) res.style.display = 'none';
+  const selBox = document.getElementById('oi-catalogo-sel-box');
+  if (selBox) selBox.style.display = 'none';
+  document.getElementById('oi-preco').value = '';
+  busca?.focus();
 }
 
 async function salvarItemOrcamento() {
   if (!orcItemAreaAlvo) return;
   const tipo = document.getElementById('oi-tipo')?.value || 'material';
-  const catalogoId = document.getElementById('oi-catalogo-sel')?.value || null;
-  const catalogoItem = catalogoId ? catalogoCache.find(c => c.id === catalogoId) : null;
-  const nomeDigitado = catalogoItem ? catalogoItem.nome : prompt(tr('orc_item_prompt_nome'));
+  const catalogoItem = oiItemSelecionado;
+  const catalogoId = catalogoItem?.id || null;
+  const nomeDigitado = catalogoItem ? catalogoItem.nome : document.getElementById('oi-busca')?.value.trim();
   if (!nomeDigitado || !nomeDigitado.trim()) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
   const nome = catalogoItem ? nomeDigitado : normalizarNomeItem(nomeDigitado);
   const qtd = parseFloat(document.getElementById('oi-qtd')?.value) || 1;
