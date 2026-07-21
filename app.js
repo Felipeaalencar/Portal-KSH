@@ -261,6 +261,22 @@ const I18N = {
   orc_subtotal: { en: 'Subtotal', pt: 'Subtotal' },
   orc_imposto: { en: 'Tax', pt: 'Imposto' },
   orc_total_proposta: { en: 'Proposal total', pt: 'Total da proposta' },
+
+  // Parcelamento (Payment Schedule)
+  orc_parcelamento_label: { en: 'Payment schedule', pt: 'Parcelamento' },
+  orc_add_parcela_btn: { en: '+ Payment', pt: '+ Parcela' },
+  orc_sem_parcelas: { en: 'No payments added yet', pt: 'Nenhuma parcela adicionada ainda' },
+  orc_parcela_excluir_confirm: { en: 'Delete this payment?', pt: 'Excluir esta parcela?' },
+  orc_parcela_add_title: { en: 'Add Payment', pt: 'Adicionar Parcela' },
+  orc_parcela_label: { en: 'Payment', pt: 'Parcela' },
+  label_parcela_percentual: { en: '% of total', pt: '% do total' },
+  label_parcela_condicao: { en: 'Payment condition', pt: 'Condição de pagamento' },
+  parcela_condicao_ph: { en: 'e.g. Due upon job start', pt: 'Ex: Início do projeto' },
+  orc_parcela_percentual_invalido: { en: 'Enter a percentage between 0 and 100', pt: 'Informe um percentual entre 0 e 100' },
+  orc_parcela_condicao_obrigatoria: { en: 'Enter the payment condition', pt: 'Informe a condição de pagamento' },
+  orc_parcelas_soma: { en: 'Total scheduled', pt: 'Total parcelado' },
+  orc_parcelas_soma_aviso: { en: '(should add up to 100%)', pt: '(deveria somar 100%)' },
+
   eu: { en: 'me', pt: 'eu' },
   btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
 
@@ -1677,6 +1693,7 @@ function abrirNovoOrcamento() {
   if (resBox) resBox.style.display = 'none';
   orcEditandoId = null;
   orcAreasData = [];
+  orcParcelasData = [];
   const valorInput = document.getElementById('orc-valor');
   if (valorInput) valorInput.readOnly = false;
   const propostaSection = document.getElementById('orc-proposta-section');
@@ -1785,6 +1802,7 @@ async function abrirEditarOrcamento(id) {
 
 // ── PROPOSTA DETALHADA (Areas / Itens dentro do Orçamento) ─────
 let orcAreasData = [];
+let orcParcelasData = [];
 let orcEditandoId = null;
 let orcItemAreaAlvo = null;
 let catalogoCache = [];
@@ -1797,15 +1815,18 @@ async function garantirCatalogoCache() {
 
 async function carregarPropostaOrcamento(orcId) {
   orcEditandoId = orcId;
-  let areas = [], itens = [];
+  let areas = [], itens = [], parcelas = [];
   try {
-    [areas, itens] = await Promise.all([
+    [areas, itens, parcelas] = await Promise.all([
       sbGet('orcamento_areas?orcamento_id=eq.' + orcId + '&order=ordem.asc'),
-      sbGet('orcamento_itens?order=ordem.asc')
+      sbGet('orcamento_itens?order=ordem.asc'),
+      sbGet('orcamento_parcelas?orcamento_id=eq.' + orcId + '&order=ordem.asc')
     ]);
   } catch(e) {}
   orcAreasData = areas.map(a => ({ ...a, itens: itens.filter(it => it.area_id === a.id) }));
+  orcParcelasData = parcelas;
   renderAreasOrcamento();
+  renderParcelasOrcamento();
 }
 
 function orcTotaisArea(area) {
@@ -1942,7 +1963,7 @@ function atualizarResumoFinanceiroOrcamento() {
   const el = document.getElementById('orc-resumo-financeiro');
   const valorInput = document.getElementById('orc-valor');
   if (!el) return;
-  if (!orcAreasData.length) { el.innerHTML = ''; if (valorInput) valorInput.readOnly = false; return; }
+  if (!orcAreasData.length) { el.innerHTML = ''; if (valorInput) valorInput.readOnly = false; renderParcelasOrcamento(); return; }
   const t = calcularTotaisOrcamentoProposta();
   el.innerHTML = '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + tr('orc_total_parts') + '</span><span>$' + t.totalParts.toFixed(2) + '</span></div>'
     + '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + tr('orc_total_labor') + '</span><span>$' + t.totalLabor.toFixed(2) + '</span></div>'
@@ -1950,6 +1971,69 @@ function atualizarResumoFinanceiroOrcamento() {
     + '<div style="display:flex;justify-content:space-between;padding:2px 0;color:#888"><span>' + tr('orc_imposto') + ' (' + t.impostoPct + '%)</span><span>$' + t.imposto.toFixed(2) + '</span></div>'
     + '<div style="display:flex;justify-content:space-between;padding:4px 0 0;margin-top:4px;border-top:1px solid #e8e8e5;font-weight:700"><span>' + tr('orc_total_proposta') + '</span><span>$' + t.total.toFixed(2) + '</span></div>';
   if (valorInput) { valorInput.value = t.total.toFixed(2); valorInput.readOnly = true; }
+  renderParcelasOrcamento();
+}
+
+// ── PARCELAMENTO (Payment Schedule) ─────────────────────────────
+function orcTotalAtual() {
+  if (orcAreasData.length) return calcularTotaisOrcamentoProposta().total;
+  return parseFloat(document.getElementById('orc-valor')?.value) || 0;
+}
+
+function renderParcelasOrcamento() {
+  const el = document.getElementById('orc-parcelas-lista');
+  if (!el) return;
+  const totalAtual = orcTotalAtual();
+  if (!orcParcelasData.length) {
+    el.innerHTML = '<div style="font-size:12px;color:#bbb">' + tr('orc_sem_parcelas') + '</div>';
+    return;
+  }
+  const somaPct = orcParcelasData.reduce((s, p) => s + (Number(p.percentual) || 0), 0);
+  const somaCor = Math.abs(somaPct - 100) < 0.01 ? '#2a9d5c' : '#c07a1e';
+  el.innerHTML = orcParcelasData.map((p, i) => {
+    const valor = totalAtual * (Number(p.percentual) || 0) / 100;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;border:1px solid #e8e8e5;border-radius:8px;padding:8px 12px">'
+      + '<div style="font-size:12px"><span style="font-weight:600">' + tr('orc_parcela_label') + ' ' + (i + 1) + '</span> — ' + Number(p.percentual).toFixed(1) + '% · ' + (p.condicao || '') + '</div>'
+      + '<div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;font-weight:600">$' + valor.toFixed(2) + '</span>'
+      + '<button type="button" onclick="excluirParcelaOrcamento(\'' + p.id + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px">×</button></div>'
+      + '</div>';
+  }).join('')
+    + '<div style="text-align:right;font-size:11px;color:' + somaCor + ';margin-top:2px">' + tr('orc_parcelas_soma') + ': ' + somaPct.toFixed(1) + '%' + (Math.abs(somaPct - 100) < 0.01 ? '' : ' ' + tr('orc_parcelas_soma_aviso')) + '</div>';
+}
+
+function abrirNovaParcela() {
+  if (!orcEditandoId) return;
+  const somaAtual = orcParcelasData.reduce((s, p) => s + (Number(p.percentual) || 0), 0);
+  document.getElementById('op-percentual').value = somaAtual < 100 ? (100 - somaAtual).toFixed(2) : '';
+  document.getElementById('op-condicao').value = '';
+  abrirModal('m-orc-parcela');
+}
+
+async function salvarParcelaOrcamento() {
+  if (!orcEditandoId) return;
+  const percentual = parseFloat(document.getElementById('op-percentual')?.value);
+  if (!(percentual > 0) || percentual > 100) { toast(tr('orc_parcela_percentual_invalido'), 'err'); return; }
+  const condicao = document.getElementById('op-condicao')?.value.trim();
+  if (!condicao) { toast(tr('orc_parcela_condicao_obrigatoria'), 'err'); return; }
+  try {
+    const [nova] = await sbPost('orcamento_parcelas', {
+      orcamento_id: orcEditandoId,
+      percentual, condicao,
+      ordem: orcParcelasData.length
+    });
+    orcParcelasData.push(nova);
+    fecharModal('m-orc-parcela');
+    renderParcelasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirParcelaOrcamento(parcelaId) {
+  if (!confirm(tr('orc_parcela_excluir_confirm'))) return;
+  try {
+    await sbDelete('orcamento_parcelas?id=eq.' + parcelaId);
+    orcParcelasData = orcParcelasData.filter(p => p.id !== parcelaId);
+    renderParcelasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 async function excluirOrcamento(id) {
