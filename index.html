@@ -167,7 +167,9 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784659728" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
+<script src="app.js?v=1784662734" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -259,6 +261,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <div class="sb-sec" onclick="toggleSec('projetos',this)"><span data-i18n="sec_projetos">PROJETOS</span> <span class="sb-sec-arr">−</span></div>
       <div class="sb-sec-body" id="sec-projetos" style="max-height:500px">
         <button class="sb-item" onclick="goPage(this,'projetos-rack','Rack','Projetos')" data-i18n="nav_projetos_rack">Rack</button>
+        <button class="sb-item" onclick="goPage(this,'projetos-planta','Planta','Projetos')" data-i18n="nav_projetos_planta">Planta</button>
       </div>
       <div class="sb-sec" onclick="toggleSec('pessoas',this)"><span data-i18n="sec_pessoas">GESTÃO DE PESSOAS</span> <span class="sb-sec-arr">−</span></div>
       <div class="sb-sec-body" id="sec-pessoas" style="max-height:500px">
@@ -932,6 +935,81 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-rack-preview')" data-i18n="btn_fechar">Fechar</button>
       <button class="btn-pri" id="rack-preview-abrir-btn" data-i18n="rack_abrir">Abrir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Nova Planta -->
+<div class="modal-bg" id="m-nova-planta">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="planta_novo_title">Nova Planta</span><button class="modal-close" onclick="fecharModal('m-nova-planta')">×</button></div>
+    <label class="f-lbl" data-i18n="label_nome_planta">Nome da planta</label>
+    <input class="f-inp" id="planta-nome" data-i18n-placeholder="planta_nome_ph" placeholder="Ex: Planta baixa - Residência Turnberry">
+    <label class="f-lbl" data-i18n="label_pdf_planta">Arquivo da planta (PDF)</label>
+    <input type="file" id="planta-pdf-input" accept="application/pdf" style="display:none" onchange="selecionarPdfNovaPlanta(event)">
+    <button type="button" onclick="document.getElementById('planta-pdf-input').click()" style="width:100%;padding:9px 14px;border:1px dashed #d4d4d0;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:6px" data-i18n="planta_importar_pdf_btn">Importar PDF da planta</button>
+    <div id="planta-pdf-nome" style="font-size:11px;color:#888;margin-bottom:6px"></div>
+    <div id="planta-pdf-status" style="display:none;font-size:11px;margin-bottom:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-nova-planta')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" id="planta-nova-salvar-btn" onclick="salvarNovaPlanta()" data-i18n="btn_cadastrar">Cadastrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Editor de Planta -->
+<div class="modal-bg" id="m-planta-editor">
+  <div class="modal-box" style="width:760px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-editor-titulo" data-i18n="planta_editor_title">Planta</span><button class="modal-close" onclick="fecharModal('m-planta-editor')">×</button></div>
+    <div id="planta-editor-hint" style="font-size:12.5px;color:#666;background:#f9f9f7;border-radius:8px;padding:8px 12px;margin-bottom:10px" data-i18n="planta_hint_padrao">Escolha um dispositivo e toque na planta para posicionar. Arraste um ícone já colocado pra mover, toque nele pra anotar.</div>
+    <div style="position:relative;width:100%;border:1px solid #e8e8e5;border-radius:8px;overflow:hidden;touch-action:none;background:#f4f4f2" id="planta-editor-canvas">
+      <img id="planta-editor-img" style="display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none" draggable="false">
+      <div id="planta-editor-marcadores" style="position:absolute;inset:0"></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button type="button" class="btn-pri" onclick="abrirBibliotecaIcones()" data-i18n="planta_escolher_dispositivo_btn">Escolher dispositivo</button>
+      <a id="planta-ver-pdf-btn" href="#" target="_blank" style="display:none;padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-decoration:none;color:inherit" data-i18n="planta_ver_pdf_original_btn">Ver PDF original</a>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-planta-editor')" data-i18n="btn_fechar">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Biblioteca de icones da Planta -->
+<div class="modal-bg" id="m-planta-biblioteca">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="planta_biblioteca_title">Biblioteca de ícones</span><button class="modal-close" onclick="fecharModal('m-planta-biblioteca')">×</button></div>
+    <input class="f-inp" id="planta-icone-busca" oninput="renderizarGradeIcones(this.value)" data-i18n-placeholder="planta_buscar_icone_ph" placeholder="Buscar ícone (câmera, wifi, fechadura...)">
+    <div id="planta-icones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;max-height:320px;overflow-y:auto;margin-top:10px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0 12px">
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+      <button type="button" onclick="toggleNovoTipoIcone()" style="background:none;border:none;color:#888;font-size:11px;cursor:pointer;text-decoration:underline" data-i18n="planta_novo_tipo_toggle">+ cadastrar novo tipo de ícone</button>
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+    </div>
+    <div id="planta-novo-tipo-form" style="display:none">
+      <label class="f-lbl" data-i18n="label_nome_tipo_icone">Nome do dispositivo</label>
+      <input class="f-inp" id="pti-nome" data-i18n-placeholder="planta_tipo_nome_ph" placeholder="Ex: Sensor de fumaça">
+      <label class="f-lbl" data-i18n="label_emoji_tipo_icone">Ícone (emoji)</label>
+      <input class="f-inp" id="pti-emoji" maxlength="4" data-i18n-placeholder="planta_tipo_emoji_ph" placeholder="Cole um emoji, ex: 🔥" style="width:100px">
+      <label class="f-lbl" data-i18n="label_cor_tipo_icone">Cor</label>
+      <div id="pti-cores" style="display:flex;gap:8px;margin-bottom:14px"></div>
+      <div class="modal-btns">
+        <button class="btn-pri" style="width:100%" onclick="salvarNovoTipoIcone()" data-i18n="btn_cadastrar">Cadastrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Observacao do marcador da Planta -->
+<div class="modal-bg" id="m-planta-obs">
+  <div class="modal-box" style="width:380px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-obs-titulo" data-i18n="planta_obs_title">Observação</span><button class="modal-close" onclick="fecharModal('m-planta-obs')">×</button></div>
+    <textarea class="f-inp" id="planta-obs-texto" rows="4" style="resize:vertical;font-family:inherit" data-i18n-placeholder="planta_obs_ph" placeholder="Ex: câmera apontada para o portão, senha do wifi, ajuste feito..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="excluirMarcadorPlantaAtual()" style="border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
+      <button class="btn-sec" onclick="fecharModal('m-planta-obs')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarObsPlanta()" data-i18n="btn_salvar">Salvar</button>
     </div>
   </div>
 </div>

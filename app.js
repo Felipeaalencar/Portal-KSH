@@ -809,6 +809,49 @@ const I18N = {
   agenda_semana: { en: 'Week', pt: 'Semana' },
   agenda_dia: { en: 'Day', pt: 'Dia' },
   agenda_sem_tarefas: { en: 'No scheduled tasks this week', pt: 'Sem tarefas marcadas nessa semana' },
+
+  // Planta (dispositivos na planta baixa)
+  nav_projetos_planta: { en: 'Floor plan', pt: 'Planta' },
+  pt_projetos_planta: { en: 'Floor plan', pt: 'Planta' },
+  planta_subtitle: { en: 'Import a floor plan and mark where each device goes', pt: 'Importe a planta da casa e marque onde fica cada dispositivo' },
+  planta_novo_btn: { en: '+ New floor plan', pt: '+ Nova Planta' },
+  planta_none_found: { en: 'No floor plans yet', pt: 'Nenhuma planta cadastrada ainda' },
+  planta_th_nome: { en: 'Name', pt: 'Nome' },
+  planta_novo_title: { en: 'New floor plan', pt: 'Nova Planta' },
+  label_nome_planta: { en: 'Floor plan name', pt: 'Nome da planta' },
+  planta_nome_ph: { en: 'Ex: Floor plan - Turnberry residence', pt: 'Ex: Planta baixa - Residência Turnberry' },
+  label_pdf_planta: { en: 'Floor plan file (PDF)', pt: 'Arquivo da planta (PDF)' },
+  planta_importar_pdf_btn: { en: 'Import floor plan PDF', pt: 'Importar PDF da planta' },
+  planta_nome_obrigatorio: { en: 'Enter a name for the floor plan', pt: 'Informe um nome para a planta' },
+  planta_pdf_obrigatorio: { en: 'Import a PDF file first', pt: 'Importe um arquivo PDF primeiro' },
+  planta_processando_pdf: { en: 'Processing PDF and uploading to Drive...', pt: 'Processando o PDF e enviando pro Drive...' },
+  planta_erro_processar: { en: 'Could not process the PDF', pt: 'Não foi possível processar o PDF' },
+  planta_salva: { en: 'Floor plan saved', pt: 'Planta salva' },
+  planta_excluir_confirm: { en: 'Delete this floor plan and all its markers?', pt: 'Excluir esta planta e todos os marcadores dela?' },
+  planta_excluida: { en: 'Floor plan deleted', pt: 'Planta excluída' },
+  planta_nao_encontrada: { en: 'Floor plan not found', pt: 'Planta não encontrada' },
+  planta_editor_title: { en: 'Floor plan', pt: 'Planta' },
+  planta_hint_padrao: { en: 'Pick a device and tap the floor plan to place it. Drag a placed icon to move it, tap it to add a note.', pt: 'Escolha um dispositivo e toque na planta para posicionar. Arraste um ícone já colocado pra mover, toque nele pra anotar.' },
+  planta_hint_armado_prefix: { en: 'Tap the floor plan to place:', pt: 'Toque na planta para posicionar:' },
+  planta_escolha_icone_primeiro: { en: 'Pick a device first', pt: 'Escolha um dispositivo primeiro' },
+  planta_escolher_dispositivo_btn: { en: 'Pick a device', pt: 'Escolher dispositivo' },
+  planta_ver_pdf_original_btn: { en: 'View original PDF', pt: 'Ver PDF original' },
+  planta_biblioteca_title: { en: 'Icon library', pt: 'Biblioteca de ícones' },
+  planta_buscar_icone_ph: { en: 'Search icon (camera, wifi, lock...)', pt: 'Buscar ícone (câmera, wifi, fechadura...)' },
+  planta_icone_nao_encontrado: { en: 'No icon found', pt: 'Nenhum ícone encontrado' },
+  planta_novo_tipo_toggle: { en: '+ register a new device type', pt: '+ cadastrar novo tipo de ícone' },
+  label_nome_tipo_icone: { en: 'Device name', pt: 'Nome do dispositivo' },
+  planta_tipo_nome_ph: { en: 'Ex: Smoke sensor', pt: 'Ex: Sensor de fumaça' },
+  label_emoji_tipo_icone: { en: 'Icon (emoji)', pt: 'Ícone (emoji)' },
+  planta_tipo_emoji_ph: { en: 'Paste an emoji, ex: 🔥', pt: 'Cole um emoji, ex: 🔥' },
+  label_cor_tipo_icone: { en: 'Color', pt: 'Cor' },
+  planta_tipo_campos_obrigatorios: { en: 'Fill in the name and icon', pt: 'Preencha o nome e o ícone' },
+  planta_tipo_salvo: { en: 'Device type registered', pt: 'Tipo de dispositivo cadastrado' },
+  planta_obs_title: { en: 'Note', pt: 'Observação' },
+  planta_obs_ph: { en: 'Ex: camera pointed at the gate, wifi password, adjustment made...', pt: 'Ex: câmera apontada para o portão, senha do wifi, ajuste feito...' },
+  planta_obs_salva: { en: 'Note saved', pt: 'Observação salva' },
+  planta_marcador_excluir_confirm: { en: 'Remove this device from the floor plan?', pt: 'Remover este dispositivo da planta?' },
+  planta_marcador_excluido: { en: 'Device removed', pt: 'Dispositivo removido' },
 };
 
 function tr(key) {
@@ -1025,7 +1068,7 @@ function pageTitle(id) {
     'crm-clientes':'pt_crm_clientes','crm-orcamentos':'pt_crm_orcamentos','crm-followups':'pt_crm_followups','crm-comissoes':'pt_crm_comissoes','crm-consultores':'pt_crm_consultores','crm-reprovacao':'pt_crm_reprovacao',
     'fin-banco':'pt_fin_banco','fin-dre':'pt_fin_dre','fin-indicadores':'pt_fin_indicadores','fin-analise':'pt_fin_analise','fin-fluxo':'pt_fin_fluxo','fin-patrimonio':'pt_fin_patrimonio','fin-custeio':'pt_fin_custeio',
     'desp-lancar':'pt_desp_lancar','desp-aprovar':'pt_desp_aprovar','fin-frota':'pt_fin_frota','fin-cadastros':'pt_fin_cadastros',
-    'kshcam':'pt_kshcam','tecnicos':'pt_tecnicos','tarefas':'pt_tarefas','ferramentas':'pt_ferramentas','documentos':'pt_documentos','projetos-rack':'pt_projetos_rack'
+    'kshcam':'pt_kshcam','tecnicos':'pt_tecnicos','tarefas':'pt_tarefas','ferramentas':'pt_ferramentas','documentos':'pt_documentos','projetos-rack':'pt_projetos_rack','projetos-planta':'pt_projetos_planta'
   };
   return m[id] ? tr(m[id]) : null;
 }
@@ -1074,6 +1117,7 @@ function getActions(id) {
     'documentos': '<button class="btn-pri" onclick="abrirNovoDocumento()">' + tr('btn_novo_documento') + '</button>',
     'fin-cadastros': '<button class="btn-pri" onclick="abrirNovoCatalogoItem()">' + tr('btn_novo_item_catalogo') + '</button>',
     'projetos-rack': '<button class="btn-pri" onclick="abrirNovoRack()">' + tr('rack_novo_btn') + '</button>',
+    'projetos-planta': '<button class="btn-pri" onclick="abrirNovaPlanta()">' + tr('planta_novo_btn') + '</button>',
   };
   return m[id] || '';
 }
@@ -1092,6 +1136,7 @@ function getSubtitle(id) {
     'fin-rentabilidade': tr('rentabilidade_subtitle'),
     'fin-cadastros': tr('cat_subtitle'),
     'projetos-rack': tr('rack_subtitle'),
+    'projetos-planta': tr('planta_subtitle'),
   };
   return m[id] || '';
 }
@@ -1131,6 +1176,7 @@ function loadModule(id) {
   else if (id === 'documentos') renderDocumentos();
   else if (id === 'fin-cadastros') renderCadastros();
   else if (id === 'projetos-rack') renderRacks();
+  else if (id === 'projetos-planta') renderPlantas();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -5868,6 +5914,53 @@ async function getPastaDocumentos() {
   return documentosFolderId;
 }
 
+// Pasta "Plantas" dentro de Portal — cria uma vez e reaproveita (cacheada na sessão)
+let plantasFolderId = null;
+async function getPastaPlantas() {
+  if (plantasFolderId) return plantasFolderId;
+  const cached = sessionStorage.getItem('ksh_plantas_folder_id');
+  if (cached) { plantasFolderId = cached; return plantasFolderId; }
+  try {
+    const parentId = await getPastaPortal();
+    const q = encodeURIComponent("name='Plantas' and mimeType='application/vnd.google-apps.folder' and trashed=false and '" + parentId + "' in parents");
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', { headers: { 'Authorization': 'Bearer ' + googleToken } });
+    const d = await r.json();
+    plantasFolderId = (d.files && d.files[0] && d.files[0].id) || await criarPastaDrive('Plantas', parentId);
+  } catch(e) {
+    const parentId = await getPastaPortal();
+    plantasFolderId = await criarPastaDrive('Plantas', parentId);
+  }
+  if (plantasFolderId) sessionStorage.setItem('ksh_plantas_folder_id', plantasFolderId);
+  return plantasFolderId;
+}
+
+// Drive só devolve uma thumbnail pequena por padrão (=s220); pedimos uma versão maior
+// pra usar como imagem de fundo da planta sem ficar borrada.
+function urlImagemDriveGrande(thumbnailLink) {
+  if (!thumbnailLink) return null;
+  return thumbnailLink.replace(/=s\d+$/, '=s1600');
+}
+
+// Renderiza a 1a pagina de um PDF como PNG (usado pra transformar a planta em PDF
+// numa imagem de fundo sobre a qual dá pra posicionar os marcadores de dispositivo).
+async function renderizarPdfComoPngFile(file, nomeBase) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  const page = await pdf.getPage(1);
+  const base = page.getViewport({ scale: 1 });
+  const scale = Math.max(0.1, Math.min(2200 / base.width, 2200 / base.height, 3));
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(viewport.width);
+  canvas.height = Math.round(viewport.height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.92));
+  return new File([blob], (nomeBase || 'planta').replace(/[^a-z0-9 _-]/gi, '') + '.png', { type: 'image/png' });
+}
+
 
 // ── DOCUMENTOS ────────────────────────────────────────────────
 const DOC_CATEGORIA_COR = {
@@ -7146,6 +7239,432 @@ async function criarRackDeFoto() {
   }
 }
 
+
+// ── PLANTA (dispositivos marcados na planta baixa da casa) ──────
+const PLANTA_CORES = {
+  blue:   { bg: '#E6F1FB', text: '#0C447C' },
+  coral:  { bg: '#FAECE7', text: '#712B13' },
+  purple: { bg: '#EEEDFE', text: '#3C3489' },
+  teal:   { bg: '#E1F5EE', text: '#085041' },
+  amber:  { bg: '#FAEEDA', text: '#633806' },
+  gray:   { bg: '#F1EFE8', text: '#444441' },
+  green:  { bg: '#E6F6EA', text: '#0F5C2E' },
+  red:    { bg: '#FCE8E8', text: '#7A1414' }
+};
+
+const PLANTA_ICONES_PADRAO = [
+  { nome: 'Câmera', emoji: '📷', cor: 'blue', kw: 'camera cftv seguranca video vigilancia' },
+  { nome: 'Alarme', emoji: '🚨', cor: 'coral', kw: 'alarme sirene seguranca alerta' },
+  { nome: 'Caixa de som', emoji: '🔊', cor: 'purple', kw: 'som audio caixa speaker gesso embutida musica' },
+  { nome: 'Controle de acesso', emoji: '🪪', cor: 'teal', kw: 'acesso controle cartao biometria catraca' },
+  { nome: 'Interruptor inteligente', emoji: '💡', cor: 'amber', kw: 'interruptor luz switch iluminacao dimmer' },
+  { nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'blue', kw: 'wifi ap access point rede sem fio roteador' },
+  { nome: 'Rack de rede', emoji: '🗄️', cor: 'gray', kw: 'rack rede switch servidor patch' },
+  { nome: 'Fechadura digital', emoji: '🔑', cor: 'coral', kw: 'fechadura porta digital trava smart lock' },
+  { nome: 'Sensor de presença', emoji: '🚶', cor: 'teal', kw: 'sensor presenca movimento pir' },
+  { nome: 'Sensor de abertura', emoji: '🚪', cor: 'teal', kw: 'sensor porta janela abertura contato' },
+  { nome: 'Ar-condicionado', emoji: '❄️', cor: 'blue', kw: 'termostato ar condicionado climatizacao hvac' },
+  { nome: 'Cortina motorizada', emoji: '🪟', cor: 'amber', kw: 'cortina persiana motorizada automacao' },
+  { nome: 'Campainha inteligente', emoji: '🔔', cor: 'coral', kw: 'campainha interfone video porteiro doorbell' },
+  { nome: 'Tomada inteligente', emoji: '🔌', cor: 'amber', kw: 'tomada smart plug energia' },
+  { nome: 'TV / Display', emoji: '📺', cor: 'purple', kw: 'tv televisao display tela' },
+  { nome: 'Projetor', emoji: '📽️', cor: 'purple', kw: 'projetor home theater cinema' },
+  { nome: 'Central de automação', emoji: '🧠', cor: 'teal', kw: 'central hub controladora crestron control4' },
+  { nome: 'Detector de fumaça', emoji: '🔥', cor: 'red', kw: 'fumaca incendio detector alarme incendio' },
+  { nome: 'Detector de vazamento', emoji: '💧', cor: 'blue', kw: 'agua vazamento sensor de agua' },
+  { nome: 'Nobreak / UPS', emoji: '🔋', cor: 'green', kw: 'nobreak ups bateria energia' },
+  { nome: 'Botoeira / keypad', emoji: '🔢', cor: 'gray', kw: 'botoeira keypad painel de controle teclado' },
+  { nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'gray', kw: 'ponto de rede rj45 cabo ethernet' },
+  { nome: 'Repetidor de sinal', emoji: '📡', cor: 'blue', kw: 'repetidor sinal antena extensor' },
+  { nome: 'Spot / trilho', emoji: '💡', cor: 'amber', kw: 'spot trilho iluminacao luminaria' },
+  { nome: 'Cofre', emoji: '🔐', cor: 'gray', kw: 'cofre seguranca protecao' },
+  { nome: 'Portão automático', emoji: '🚧', cor: 'coral', kw: 'portao automatico motor de portao' },
+  { nome: 'Irrigação', emoji: '🌱', cor: 'green', kw: 'irrigacao jardim valvula' },
+  { nome: 'Automação de piscina', emoji: '🏊', cor: 'blue', kw: 'piscina bomba automacao piscina' },
+  { nome: 'Genérico / outro', emoji: '📍', cor: 'gray', kw: 'outro generico diverso' }
+];
+
+let plantasData = [];
+let plantaTiposCustom = [];
+let plantaTiposCarregados = false;
+let plantaEditandoId = null;
+let plantaAtual = null;
+let plantaTipoArmado = null;
+let plantaMarcadorAtual = null;
+let plantaNovaPdfFile = null;
+let plantaUltimoToquePlantaMs = 0;
+let plantaCorEscolhida = 'blue';
+
+async function renderPlantas() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    plantasData = await sbGet('projetos_plantas?order=criado_em.desc');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  if (!plantasData.length) {
+    el.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:40px">' + tr('planta_none_found') + '</div>';
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl" style="min-width:0"><thead><tr>'
+    + '<th>' + tr('planta_th_nome') + '</th>'
+    + '<th class="rack-th-criado">' + tr('rack_th_criado') + '</th>'
+    + '<th></th>'
+    + '</tr></thead><tbody>'
+    + plantasData.map(function(p) {
+        return '<tr onclick="abrirEditorPlanta(\'' + p.id + '\')" style="cursor:pointer">'
+        + '<td style="font-weight:500">' + p.nome + '</td>'
+        + '<td class="rack-th-criado">' + new Date(p.criado_em).toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US') + '</td>'
+        + '<td style="text-align:right">'
+          + '<button onclick="event.stopPropagation();excluirPlanta(\'' + p.id + '\')" style="padding:3px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#dc2626;font-family:inherit">' + tr('orc_excluir') + '</button>'
+        + '</td>'
+      + '</tr>';
+      }).join('')
+    + '</tbody></table></div>';
+}
+
+function abrirNovaPlanta() {
+  document.getElementById('planta-nome').value = '';
+  plantaNovaPdfFile = null;
+  const nomeEl = document.getElementById('planta-pdf-nome');
+  if (nomeEl) nomeEl.textContent = '';
+  const inputEl = document.getElementById('planta-pdf-input');
+  if (inputEl) inputEl.value = '';
+  const statusEl = document.getElementById('planta-pdf-status');
+  if (statusEl) statusEl.style.display = 'none';
+  const btn = document.getElementById('planta-nova-salvar-btn');
+  if (btn) btn.disabled = false;
+  abrirModal('m-nova-planta');
+}
+
+function selecionarPdfNovaPlanta(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  plantaNovaPdfFile = file;
+  const nomeEl = document.getElementById('planta-pdf-nome');
+  if (nomeEl) nomeEl.textContent = file.name;
+}
+
+async function salvarNovaPlanta() {
+  const nome = document.getElementById('planta-nome')?.value.trim();
+  if (!nome) { toast(tr('planta_nome_obrigatorio'), 'err'); return; }
+  if (!plantaNovaPdfFile) { toast(tr('planta_pdf_obrigatorio'), 'err'); return; }
+  const btn = document.getElementById('planta-nova-salvar-btn');
+  const statusEl = document.getElementById('planta-pdf-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('planta_processando_pdf'); }
+  try {
+    const conectado = await garantirTokenDrive();
+    if (!conectado) throw new Error(tr('drive_conecte_primeiro'));
+
+    const pngFile = await renderizarPdfComoPngFile(plantaNovaPdfFile, nome);
+    const folderId = await getPastaPlantas();
+    const [imgUp, pdfUp] = await Promise.all([
+      uploadDrive(pngFile, folderId),
+      uploadDrive(plantaNovaPdfFile, folderId)
+    ]);
+    if (!imgUp?.id) throw new Error(tr('planta_erro_processar'));
+
+    const imagemUrl = urlImagemDriveGrande(imgUp.thumbnailLink) || ('https://drive.google.com/uc?id=' + imgUp.id);
+    const pdfUrl = pdfUp?.id ? ('https://drive.google.com/file/d/' + pdfUp.id + '/view') : '';
+
+    const [nova] = await sbPost('projetos_plantas', {
+      nome,
+      imagem_drive_id: imgUp.id, imagem_url: imagemUrl,
+      pdf_drive_id: pdfUp?.id || '', pdf_drive_url: pdfUrl,
+      criado_por: ME.nome
+    });
+
+    fecharModal('m-nova-planta');
+    toast(tr('planta_salva'), 'ok');
+    renderPlantas();
+    abrirEditorPlanta(nova.id);
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('erro_prefix') + e.message; }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function excluirPlanta(id) {
+  if (!confirm(tr('planta_excluir_confirm'))) return;
+  try {
+    const p = plantasData.find(function(x) { return x.id === id; });
+    if (p && (p.imagem_drive_id || p.pdf_drive_id)) {
+      try {
+        const conectado = await garantirTokenDrive();
+        if (conectado) {
+          const ids = [p.imagem_drive_id, p.pdf_drive_id].filter(Boolean);
+          await Promise.all(ids.map(function(fid) {
+            return fetch('https://www.googleapis.com/drive/v3/files/' + fid, {
+              method: 'PATCH',
+              headers: { 'Authorization': 'Bearer ' + googleToken, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ trashed: true })
+            });
+          }));
+        }
+      } catch(e) {}
+    }
+    await sbDelete('projetos_plantas?id=eq.' + id);
+    toast(tr('planta_excluida'), 'ok');
+    renderPlantas();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirEditorPlanta(id) {
+  let planta;
+  try {
+    const rows = await sbGet('projetos_plantas?id=eq.' + id);
+    planta = rows[0];
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); return; }
+  if (!planta) { toast(tr('planta_nao_encontrada'), 'err'); return; }
+  let marcadores = [];
+  try { marcadores = await sbGet('projetos_planta_marcadores?planta_id=eq.' + id + '&order=criado_em.asc'); } catch(e) {}
+  if (!plantaTiposCarregados) {
+    try { plantaTiposCustom = await sbGet('projetos_planta_tipos_icone?order=criado_em.asc'); } catch(e) {}
+    plantaTiposCarregados = true;
+  }
+  plantaEditandoId = id;
+  plantaAtual = { ...planta, marcadores };
+  document.getElementById('planta-editor-titulo').textContent = planta.nome;
+  document.getElementById('planta-editor-img').src = planta.imagem_url;
+  const pdfBtn = document.getElementById('planta-ver-pdf-btn');
+  if (pdfBtn) {
+    if (planta.pdf_drive_url) { pdfBtn.style.display = 'inline-block'; pdfBtn.href = planta.pdf_drive_url; }
+    else pdfBtn.style.display = 'none';
+  }
+  desarmarTipoPlanta();
+  configurarCanvasPlanta();
+  renderMarcadoresPlanta();
+  abrirModal('m-planta-editor');
+}
+
+function configurarCanvasPlanta() {
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!canvasEl) return;
+  canvasEl.onclick = function(e) {
+    if (Date.now() - plantaUltimoToquePlantaMs < 200) return;
+    if (!plantaTipoArmado) { toast(tr('planta_escolha_icone_primeiro'), 'err'); return; }
+    if (!plantaAtual) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const x = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(1, Math.min(99, ((e.clientY - rect.top) / rect.height) * 100));
+    criarMarcadorPlanta(x, y);
+  };
+}
+
+function armarTipoPlanta(tipo) {
+  plantaTipoArmado = tipo;
+  const hint = document.getElementById('planta-editor-hint');
+  if (hint) hint.textContent = tr('planta_hint_armado_prefix') + ' ' + tipo.emoji + ' ' + tipo.nome;
+  fecharModal('m-planta-biblioteca');
+}
+
+function desarmarTipoPlanta() {
+  plantaTipoArmado = null;
+  const hint = document.getElementById('planta-editor-hint');
+  if (hint) hint.textContent = tr('planta_hint_padrao');
+}
+
+async function criarMarcadorPlanta(x, y) {
+  const tipo = plantaTipoArmado;
+  if (!tipo) return;
+  try {
+    const [criado] = await sbPost('projetos_planta_marcadores', {
+      planta_id: plantaEditandoId, nome: tipo.nome, emoji: tipo.emoji, cor: tipo.cor,
+      x_pct: x, y_pct: y, observacoes: '', criado_por: ME.nome
+    });
+    plantaAtual.marcadores.push(criado);
+    criarElementoMarcadorPlanta(criado, document.getElementById('planta-editor-marcadores'));
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function renderMarcadoresPlanta() {
+  const cont = document.getElementById('planta-editor-marcadores');
+  if (!cont) return;
+  cont.innerHTML = '';
+  (plantaAtual.marcadores || []).forEach(function(m) { criarElementoMarcadorPlanta(m, cont); });
+}
+
+function criarElementoMarcadorPlanta(marcador, cont) {
+  if (!cont) return;
+  const cor = PLANTA_CORES[marcador.cor] || PLANTA_CORES.gray;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:' + marcador.x_pct + '%;top:' + marcador.y_pct + '%;transform:translate(-50%,-50%)';
+
+  const bola = document.createElement('div');
+  bola.style.cssText = 'width:30px;height:30px;border-radius:50%;background:' + cor.bg + ';border:1.5px solid ' + cor.text + ';display:flex;align-items:center;justify-content:center;cursor:grab;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,.18);touch-action:none';
+  bola.textContent = marcador.emoji || '📍';
+  bola.title = marcador.nome + (marcador.observacoes ? ' — ' + marcador.observacoes : '');
+
+  const xBtn = document.createElement('div');
+  xBtn.setAttribute('aria-hidden', 'true');
+  xBtn.textContent = '×';
+  xBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer';
+
+  wrap.appendChild(bola);
+  wrap.appendChild(xBtn);
+  cont.appendChild(wrap);
+
+  xBtn.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+  xBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    excluirMarcadorPlanta(marcador, wrap);
+  });
+
+  let moveu = false;
+  bola.addEventListener('pointerdown', function(e) {
+    e.stopPropagation();
+    moveu = false;
+    const canvasEl = document.getElementById('planta-editor-canvas');
+    const rect = canvasEl.getBoundingClientRect();
+    function mover(ev) {
+      moveu = true;
+      let x = ((ev.clientX - rect.left) / rect.width) * 100;
+      let y = ((ev.clientY - rect.top) / rect.height) * 100;
+      x = Math.max(1, Math.min(99, x));
+      y = Math.max(1, Math.min(99, y));
+      wrap.style.left = x + '%';
+      wrap.style.top = y + '%';
+      marcador.x_pct = x; marcador.y_pct = y;
+    }
+    function soltar() {
+      document.removeEventListener('pointermove', mover);
+      document.removeEventListener('pointerup', soltar);
+      plantaUltimoToquePlantaMs = Date.now();
+      if (moveu) {
+        sbPatch('projetos_planta_marcadores?id=eq.' + marcador.id, { x_pct: marcador.x_pct, y_pct: marcador.y_pct }).catch(function(){});
+      } else {
+        abrirObsMarcadorPlanta(marcador);
+      }
+    }
+    document.addEventListener('pointermove', mover);
+    document.addEventListener('pointerup', soltar);
+  });
+  // Sem isso, o "click" nativo disparado apos o pointerup vaza pro canvas e
+  // cria um marcador novo em cima do que a gente acabou de tocar/mover.
+  bola.addEventListener('click', function(e) { e.stopPropagation(); });
+}
+
+async function excluirMarcadorPlanta(marcador, wrapEl) {
+  if (!confirm(tr('planta_marcador_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_planta_marcadores?id=eq.' + marcador.id);
+    plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
+    wrapEl.remove();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function abrirObsMarcadorPlanta(marcador) {
+  plantaMarcadorAtual = marcador;
+  document.getElementById('planta-obs-titulo').textContent = (marcador.emoji || '') + ' ' + marcador.nome;
+  document.getElementById('planta-obs-texto').value = marcador.observacoes || '';
+  abrirModal('m-planta-obs');
+}
+
+async function salvarObsPlanta() {
+  if (!plantaMarcadorAtual) return;
+  const texto = document.getElementById('planta-obs-texto')?.value || '';
+  try {
+    await sbPatch('projetos_planta_marcadores?id=eq.' + plantaMarcadorAtual.id, { observacoes: texto });
+    plantaMarcadorAtual.observacoes = texto;
+    fecharModal('m-planta-obs');
+    toast(tr('planta_obs_salva'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirMarcadorPlantaAtual() {
+  if (!plantaMarcadorAtual) return;
+  if (!confirm(tr('planta_marcador_excluir_confirm'))) return;
+  const marcador = plantaMarcadorAtual;
+  try {
+    await sbDelete('projetos_planta_marcadores?id=eq.' + marcador.id);
+    plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
+    fecharModal('m-planta-obs');
+    renderMarcadoresPlanta();
+    toast(tr('planta_marcador_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function todosTiposIconePlanta() {
+  const custom = plantaTiposCustom.map(function(t) {
+    return { id: t.id, nome: t.nome, emoji: t.emoji, cor: t.cor || 'gray', kw: (t.nome || '').toLowerCase() };
+  });
+  return PLANTA_ICONES_PADRAO.concat(custom);
+}
+
+function abrirBibliotecaIcones() {
+  document.getElementById('planta-icone-busca').value = '';
+  document.getElementById('planta-novo-tipo-form').style.display = 'none';
+  document.getElementById('pti-nome').value = '';
+  document.getElementById('pti-emoji').value = '';
+  montarCoresPickerPlanta();
+  renderizarGradeIcones('');
+  abrirModal('m-planta-biblioteca');
+}
+
+function renderizarGradeIcones(q) {
+  const grid = document.getElementById('planta-icones-grid');
+  if (!grid) return;
+  const termo = (q || '').trim().toLowerCase();
+  const todos = todosTiposIconePlanta();
+  const filtrados = termo ? todos.filter(function(t) { return t.kw.indexOf(termo) !== -1 || t.nome.toLowerCase().indexOf(termo) !== -1; }) : todos;
+  grid.innerHTML = '';
+  if (!filtrados.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#bbb;font-size:12px;padding:20px">' + tr('planta_icone_nao_encontrado') + '</div>';
+    return;
+  }
+  filtrados.forEach(function(tipo) {
+    const cor = PLANTA_CORES[tipo.cor] || PLANTA_CORES.gray;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:10px;border:1px solid #e8e8e5;background:' + cor.bg + ';cursor:pointer';
+    btn.innerHTML = '<span style="font-size:20px">' + tipo.emoji + '</span><span style="font-size:9.5px;color:' + cor.text + ';text-align:center;line-height:1.2">' + tipo.nome + '</span>';
+    btn.onclick = function() { armarTipoPlanta(tipo); };
+    grid.appendChild(btn);
+  });
+}
+
+function toggleNovoTipoIcone() {
+  const form = document.getElementById('planta-novo-tipo-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+function montarCoresPickerPlanta() {
+  plantaCorEscolhida = 'blue';
+  const cont = document.getElementById('pti-cores');
+  if (!cont) return;
+  cont.innerHTML = '';
+  Object.keys(PLANTA_CORES).forEach(function(key) {
+    const cor = PLANTA_CORES[key];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = 'width:26px;height:26px;border-radius:50%;background:' + cor.bg + ';border:2px solid ' + (key === plantaCorEscolhida ? cor.text : 'transparent') + ';cursor:pointer';
+    b.onclick = function() {
+      plantaCorEscolhida = key;
+      Array.from(cont.children).forEach(function(c) { c.style.borderColor = 'transparent'; });
+      b.style.borderColor = cor.text;
+    };
+    cont.appendChild(b);
+  });
+}
+
+async function salvarNovoTipoIcone() {
+  const nome = document.getElementById('pti-nome')?.value.trim();
+  const emoji = document.getElementById('pti-emoji')?.value.trim();
+  if (!nome || !emoji) { toast(tr('planta_tipo_campos_obrigatorios'), 'err'); return; }
+  try {
+    const [criado] = await sbPost('projetos_planta_tipos_icone', { nome, emoji, cor: plantaCorEscolhida, criado_por: ME.nome });
+    plantaTiposCustom.push(criado);
+    toggleNovoTipoIcone();
+    renderizarGradeIcones(document.getElementById('planta-icone-busca')?.value || '');
+    toast(tr('planta_tipo_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
 const PERMISSOES_ESTRUTURA = [
   { label: 'Comercial', itens: [
@@ -7179,7 +7698,7 @@ const PERMISSOES_ESTRUTURA = [
       { id: 'tarefas', label: 'Tarefas' },
       { id: 'agenda', label: 'Agenda' }
   ]},
-  { label: 'Projetos', itens: [ { id: 'projetos-rack', label: 'Rack' } ] },
+  { label: 'Projetos', itens: [ { id: 'projetos-rack', label: 'Rack' }, { id: 'projetos-planta', label: 'Planta' } ] },
   { label: 'Gestão de Pessoas', itens: [ { id: 'tecnicos', label: 'Funcionários' } ] },
   { label: 'Registros', itens: [ { id: 'documentos', label: 'Documentos' } ] }
 ];
