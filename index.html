@@ -165,7 +165,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784592739" defer></script>
+<script src="app.js?v=1784597856" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -657,6 +657,34 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="cancelarPerdaOrcamento()" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="confirmarPerdaOrcamento()" data-i18n="btn_confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo/Editar Item de Catalogo (Materiais / Mao de obra) -->
+<div class="modal-bg" id="m-cat-item">
+  <div class="modal-box" style="width:460px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="cat_novo_title">Novo item</span><button class="modal-close" onclick="fecharModal('m-cat-item')">×</button></div>
+    <input type="hidden" id="cat-item-id">
+    <label class="f-lbl" data-i18n="label_tipo_item">Tipo</label>
+    <select class="f-sel" id="cat-item-tipo">
+      <option value="material" data-i18n="cat_tipo_material">Material</option>
+      <option value="mao_obra" data-i18n="cat_tipo_mao_obra">Mão de obra</option>
+    </select>
+    <label class="f-lbl" data-i18n="label_nome_item">Nome</label>
+    <input class="f-inp" id="cat-item-nome" data-i18n-placeholder="cat_nome_ph" placeholder="Ex: 2000VA Pure Sinewave IP UPS">
+    <label class="f-lbl" data-i18n="label_descricao_item">Descrição (opcional)</label>
+    <textarea class="f-ta" id="cat-item-descricao" data-i18n-placeholder="cat_descricao_ph" placeholder="Detalhes do item ou serviço..."></textarea>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_unidade">Unidade (opcional)</label><input class="f-inp" id="cat-item-unidade" data-i18n-placeholder="cat_unidade_ph" placeholder="un, hora, m..."></div>
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_preco_venda">Preço de venda (US$)</label><input class="f-inp" type="number" step="0.01" id="cat-item-preco" placeholder="0.00"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#555;margin-bottom:12px;cursor:pointer">
+      <input type="checkbox" id="cat-item-ativo" checked><span data-i18n="label_item_ativo">Item ativo</span>
+    </label>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-cat-item')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarCatalogoItem()" data-i18n="btn_cadastrar">Cadastrar</button>
     </div>
   </div>
 </div>

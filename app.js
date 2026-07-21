@@ -212,6 +212,34 @@ const I18N = {
   orc_analise_motivos_title: { en: 'Reasons for loss', pt: 'Motivos de perda' },
   orc_analise_conversao: { en: 'Conversion rate (converted / converted+lost)', pt: 'Taxa de conversão (convertidos / convertidos+perdidos)' },
   orc_sem_motivo: { en: 'No reason given', pt: 'Sem motivo' },
+
+  // Cadastros (Materiais / Mao de obra)
+  cat_subtitle: { en: 'Materials and labor catalog for proposals', pt: 'Catálogo de materiais e mão de obra para propostas' },
+  cat_busca_ph: { en: 'Search by name or description...', pt: 'Buscar por nome ou descrição...' },
+  cat_filtro_todos: { en: 'All', pt: 'Todos' },
+  cat_tipo_material: { en: 'Material', pt: 'Material' },
+  cat_tipo_mao_obra: { en: 'Labor', pt: 'Mão de obra' },
+  cat_none_found: { en: 'No items found', pt: 'Nenhum item encontrado' },
+  cat_th_nome: { en: 'Name', pt: 'Nome' },
+  cat_th_tipo: { en: 'Type', pt: 'Tipo' },
+  cat_th_unidade: { en: 'Unit', pt: 'Unidade' },
+  cat_th_preco: { en: 'Sell price', pt: 'Preço de venda' },
+  btn_novo_item_catalogo: { en: '+ New Item', pt: '+ Novo Item' },
+  cat_novo_title: { en: 'New Item', pt: 'Novo Item' },
+  cat_editar_title: { en: 'Edit Item', pt: 'Editar Item' },
+  label_tipo_item: { en: 'Type', pt: 'Tipo' },
+  label_nome_item: { en: 'Name', pt: 'Nome' },
+  cat_nome_ph: { en: 'Ex: 2000VA Pure Sinewave IP UPS', pt: 'Ex: 2000VA Pure Sinewave IP UPS' },
+  label_descricao_item: { en: 'Description (optional)', pt: 'Descrição (opcional)' },
+  cat_descricao_ph: { en: 'Item or service details...', pt: 'Detalhes do item ou serviço...' },
+  label_unidade: { en: 'Unit (optional)', pt: 'Unidade (opcional)' },
+  cat_unidade_ph: { en: 'ea, hour, m...', pt: 'un, hora, m...' },
+  label_preco_venda: { en: 'Sell price ($)', pt: 'Preço de venda (US$)' },
+  label_item_ativo: { en: 'Active item', pt: 'Item ativo' },
+  cat_nome_obrigatorio: { en: 'Enter a name for the item', pt: 'Informe um nome para o item' },
+  cat_salvo: { en: 'Item saved!', pt: 'Item salvo!' },
+  cat_excluir_confirm: { en: 'Delete this item?', pt: 'Excluir este item?' },
+  cat_excluido: { en: 'Item deleted', pt: 'Item excluído' },
   eu: { en: 'me', pt: 'eu' },
   btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
 
@@ -913,6 +941,7 @@ function getActions(id) {
     'ferramentas': '<button class="btn-pri" onclick="toast(tr(\'btn_em_breve\'))">+ ' + (LANG==='pt'?'Novo Item':'New Item') + '</button>',
     'fin-rentabilidade': '<button class="btn-sec" onclick="loadModule(\'fin-rentabilidade\')">' + tr('btn_atualizar') + '</button>',
     'documentos': '<button class="btn-pri" onclick="abrirNovoDocumento()">' + tr('btn_novo_documento') + '</button>',
+    'fin-cadastros': '<button class="btn-pri" onclick="abrirNovoCatalogoItem()">' + tr('btn_novo_item_catalogo') + '</button>',
   };
   return m[id] || '';
 }
@@ -929,6 +958,7 @@ function getSubtitle(id) {
     'fin-veiculos': LANG==='pt' ? 'Cadastro de veículos da frota' : 'Fleet vehicle registry',
     'documentos': tr('sub_documentos'),
     'fin-rentabilidade': tr('rentabilidade_subtitle'),
+    'fin-cadastros': tr('cat_subtitle'),
   };
   return m[id] || '';
 }
@@ -966,6 +996,7 @@ function loadModule(id) {
   else if (id === 'agenda') renderAgenda();
   else if (id === 'fin-rentabilidade') renderRentabilidadeOS();
   else if (id === 'documentos') renderDocumentos();
+  else if (id === 'fin-cadastros') renderCadastros();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -5438,6 +5469,135 @@ async function excluirDocumento(id) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+
+// ── CATALOGO (Materiais e Mão de obra) ─────────────────────────
+let catalogoData = [];
+let catFiltroTipo = 'todos';
+let catFiltroBusca = '';
+
+async function renderCadastros() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    catalogoData = await sbGet('catalogo_itens?order=nome');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  catFiltroTipo = 'todos';
+  catFiltroBusca = '';
+  el.innerHTML = '<div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">'
+    + '<input id="cat-busca" placeholder="' + tr('cat_busca_ph') + '" style="flex:1;min-width:180px;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" oninput="catFiltrar()">'
+    + '<div id="cat-filtro-tipo" style="display:flex;gap:6px"></div>'
+    + '</div>'
+    + '<div id="cat-tbody-wrap"></div>';
+  document.getElementById('cat-filtro-tipo').innerHTML = ['todos','material','mao_obra'].map(v =>
+    chipTecnicoHTML(v, v==='todos'?tr('cat_filtro_todos'):(v==='material'?tr('cat_tipo_material'):tr('cat_tipo_mao_obra')), catFiltroTipo===v, 'catTogglefiltroTipo')
+  ).join('');
+  catFiltrar();
+}
+
+function catTogglefiltroTipo(v) { catFiltroTipo = v; catFiltrar(); }
+
+function catFiltrar() {
+  catFiltroBusca = (document.getElementById('cat-busca')?.value || '').toLowerCase();
+  const lista = catalogoData.filter(c => {
+    if (catFiltroTipo !== 'todos' && c.tipo !== catFiltroTipo) return false;
+    if (catFiltroBusca && !((c.nome||'').toLowerCase().includes(catFiltroBusca) || (c.descricao||'').toLowerCase().includes(catFiltroBusca))) return false;
+    return true;
+  });
+  renderTabelaCatalogo(lista);
+}
+
+function renderTabelaCatalogo(lista) {
+  const wrap = document.getElementById('cat-tbody-wrap');
+  if (!wrap) return;
+  if (!lista.length) { wrap.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:30px">' + tr('cat_none_found') + '</div>'; return; }
+  wrap.innerHTML = '<div class="tbl-wrap"><table class="tbl">'
+    + '<thead><tr>'
+      + '<th>' + tr('cat_th_nome') + '</th>'
+      + '<th>' + tr('cat_th_tipo') + '</th>'
+      + '<th>' + tr('cat_th_unidade') + '</th>'
+      + '<th>' + tr('cat_th_preco') + '</th>'
+      + '<th>' + tr('clientes_th_status') + '</th>'
+      + '<th>' + tr('clientes_th_acoes') + '</th>'
+    + '</tr></thead><tbody>'
+    + lista.map(c => '<tr>'
+        + '<td style="font-weight:500">' + c.nome + (c.descricao ? '<div style="font-size:11px;color:#888;font-weight:400">' + c.descricao + '</div>' : '') + '</td>'
+        + '<td><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:' + (c.tipo === 'material' ? '#eff6ff' : '#fffbeb') + ';color:' + (c.tipo === 'material' ? '#1d4ed8' : '#92400e') + '">' + (c.tipo === 'material' ? tr('cat_tipo_material') : tr('cat_tipo_mao_obra')) + '</span></td>'
+        + '<td>' + (c.unidade || '—') + '</td>'
+        + '<td>$' + Number(c.preco_venda || 0).toFixed(2) + '</td>'
+        + '<td><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:' + (c.ativo ? '#f0fdf4' : '#f5f5f3') + ';color:' + (c.ativo ? '#166534' : '#888') + '">' + (c.ativo ? tr('cliente_status_ativo') : tr('cliente_status_inativo')) + '</span></td>'
+        + '<td style="display:flex;gap:6px">'
+          + '<button onclick="abrirEditarCatalogoItem(\'' + c.id + '\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">' + tr('btn_editar') + '</button>'
+          + '<button onclick="excluirCatalogoItem(\'' + c.id + '\')" style="padding:3px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#dc2626;font-family:inherit">' + tr('orc_excluir') + '</button>'
+        + '</td>'
+      + '</tr>').join('')
+    + '</tbody></table></div>';
+}
+
+function abrirNovoCatalogoItem() {
+  document.getElementById('cat-item-id').value = '';
+  document.getElementById('cat-item-nome').value = '';
+  document.getElementById('cat-item-descricao').value = '';
+  document.getElementById('cat-item-unidade').value = '';
+  document.getElementById('cat-item-preco').value = '';
+  document.getElementById('cat-item-tipo').value = 'material';
+  document.getElementById('cat-item-ativo').checked = true;
+  document.getElementById('m-cat-item').querySelector('.modal-hd-title').textContent = tr('cat_novo_title');
+  const btn = document.getElementById('m-cat-item').querySelector('.btn-pri');
+  btn.textContent = tr('btn_cadastrar');
+  btn.onclick = salvarCatalogoItem;
+  abrirModal('m-cat-item');
+}
+
+function abrirEditarCatalogoItem(id) {
+  const c = catalogoData.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('cat-item-id').value = c.id;
+  document.getElementById('cat-item-nome').value = c.nome || '';
+  document.getElementById('cat-item-descricao').value = c.descricao || '';
+  document.getElementById('cat-item-unidade').value = c.unidade || '';
+  document.getElementById('cat-item-preco').value = c.preco_venda != null ? c.preco_venda : '';
+  document.getElementById('cat-item-tipo').value = c.tipo || 'material';
+  document.getElementById('cat-item-ativo').checked = c.ativo !== false;
+  document.getElementById('m-cat-item').querySelector('.modal-hd-title').textContent = tr('cat_editar_title');
+  const btn = document.getElementById('m-cat-item').querySelector('.btn-pri');
+  btn.textContent = tr('btn_salvar');
+  btn.onclick = salvarCatalogoItem;
+  abrirModal('m-cat-item');
+}
+
+async function salvarCatalogoItem() {
+  const id = document.getElementById('cat-item-id').value;
+  const nome = document.getElementById('cat-item-nome')?.value.trim();
+  if (!nome) { toast(tr('cat_nome_obrigatorio'), 'err'); return; }
+  const body = {
+    nome,
+    tipo: document.getElementById('cat-item-tipo')?.value || 'material',
+    descricao: document.getElementById('cat-item-descricao')?.value.trim() || '',
+    unidade: document.getElementById('cat-item-unidade')?.value.trim() || '',
+    preco_venda: parseFloat(document.getElementById('cat-item-preco')?.value) || 0,
+    ativo: document.getElementById('cat-item-ativo')?.checked !== false,
+    atualizado_em: new Date().toISOString()
+  };
+  try {
+    if (id) await sbPatch('catalogo_itens?id=eq.' + id, body);
+    else await sbPost('catalogo_itens', body);
+    fecharModal('m-cat-item');
+    toast(tr('cat_salvo'), 'ok');
+    renderCadastros();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirCatalogoItem(id) {
+  if (!confirm(tr('cat_excluir_confirm'))) return;
+  try {
+    await sbDelete('catalogo_itens?id=eq.' + id);
+    toast(tr('cat_excluido'), 'ok');
+    renderCadastros();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
 
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
 const PERMISSOES_ESTRUTURA = [
