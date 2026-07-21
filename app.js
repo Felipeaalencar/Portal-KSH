@@ -367,6 +367,8 @@ const I18N = {
   rack_foto_anexada_sucesso: { en: 'Photo attached', pt: 'Foto anexada' },
   rack_vinculado_label: { en: 'Linked rack', pt: 'Rack vinculado' },
   rack_nao_encontrado: { en: 'Rack not found', pt: 'Rack não encontrado' },
+  rack_preview_title: { en: 'Rack', pt: 'Rack' },
+  rack_ver_preview: { en: 'View', pt: 'Ver' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -2849,7 +2851,6 @@ async function abrirOS(id, opts) {
         <div style="font-size:11px;color:#888;margin-top:3px">${tr('os_por')}${os.criado_por||'—'}</div>
       </div>
       ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">'+tr('os_endereco_label')+'</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
-      ${racksVinculados.length?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+tr('rack_vinculado_label')+'</div>'+racksVinculados.map(r=>'<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:4px 0"><span style="font-weight:600">'+r.nome+' — '+r.tamanho_u+'U</span><button onclick="abrirRackDaOS(\''+r.id+'\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">'+tr('rack_abrir')+'</button></div>').join('')+'</div>':''}
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
           <div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px">${tr('os_servico_label')}</div>
@@ -2926,6 +2927,7 @@ async function abrirOS(id, opts) {
     </div>
     </div>
     <div id="os-tab-anotacoes-${id}" style="display:none">
+    ${racksVinculados.length?'<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('rack_vinculado_label')+'</div>'+racksVinculados.map(r=>'<div onclick="abrirPreviewRackDaOS(\''+r.id+'\')" style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:10px 12px;background:#f9f9f7;border-radius:8px;cursor:pointer;margin-bottom:6px"><span style="font-weight:600">'+r.nome+' — '+r.tamanho_u+'U</span><span style="font-size:11px;color:#888">'+tr('rack_ver_preview')+' →</span></div>').join('')+'</div>':''}
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('os_anotacoes_label')} (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
@@ -6415,6 +6417,26 @@ async function excluirRack(id) {
     await sbDelete('projetos_racks?id=eq.' + id);
     toast(tr('rack_excluido'), 'ok');
     renderRacks();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirPreviewRackDaOS(rackId) {
+  try {
+    const rows = await sbGet('projetos_racks?id=eq.' + rackId);
+    const r = rows[0];
+    if (!r) { toast(tr('rack_nao_encontrado'), 'err'); return; }
+    let itens = [];
+    try { itens = await sbGet('projetos_rack_itens?rack_id=eq.' + rackId + '&order=ordem.asc'); } catch(e) {}
+    document.getElementById('rack-preview-titulo').textContent = r.nome;
+    document.getElementById('rack-preview-nome').textContent = r.nome + ' — ' + r.tamanho_u + 'U';
+    const trilho = gerarRailHtml(r.tamanho_u);
+    document.getElementById('rack-preview-rail-l').innerHTML = trilho;
+    document.getElementById('rack-preview-rail-r').innerHTML = trilho;
+    const occupied = construirOcupacao(itens);
+    renderRackFrame(document.getElementById('rack-preview-body'), r.tamanho_u, occupied, { interativo: false });
+    const abrirBtn = document.getElementById('rack-preview-abrir-btn');
+    abrirBtn.onclick = function () { fecharModal('m-rack-preview'); abrirRackDaOS(rackId); };
+    abrirModal('m-rack-preview');
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
