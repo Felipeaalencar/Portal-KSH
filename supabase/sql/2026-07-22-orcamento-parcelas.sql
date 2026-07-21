@@ -11,5 +11,6 @@ create index if not exists orcamento_parcelas_orcamento_idx on orcamento_parcela
 
 alter table orcamento_parcelas enable row level security;
 
+drop policy if exists "orcamento_parcelas_authenticated" on orcamento_parcelas;
 create policy "orcamento_parcelas_authenticated" on orcamento_parcelas
   for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
