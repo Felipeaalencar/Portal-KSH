@@ -1915,7 +1915,7 @@ function buscarItemCatalogoModal(q) {
     const lista = catalogoCache.filter(c => c.tipo === tipo && c.nome.toLowerCase().includes(ql)).slice(0, 8);
     if (!lista.length) { res.style.display = 'none'; return; }
     res.style.display = 'block';
-    res.innerHTML = lista.map(c => '<div onclick="selecionarItemCatalogoModal(\'' + c.id + '\')" style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f5f5f3"><div style="font-size:13px;font-weight:500">' + c.nome + '</div><div style="font-size:11px;color:#888">$' + Number(c.preco_venda).toFixed(2) + (c.descricao ? ' · ' + c.descricao : '') + '</div></div>').join('');
+    res.innerHTML = lista.map(c => '<div onclick="selecionarItemCatalogoModal(\'' + c.id + '\')" onmouseover="this.style.background=\'#f7f7f5\'" onmouseout="this.style.background=\'#fff\'" style="padding:14px 16px;cursor:pointer;border-bottom:1px solid #f0f0ee;background:#fff"><div style="font-size:15px;font-weight:600;line-height:1.35;margin-bottom:4px">' + c.nome + '</div><div style="font-size:13px;color:#777"><span style="font-weight:600;color:#2a9d5c">$' + Number(c.preco_venda).toFixed(2) + '</span>' + (c.descricao ? ' &middot; ' + c.descricao : '') + '</div></div>').join('');
   }, 200);
 }
 
