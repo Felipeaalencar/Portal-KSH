@@ -6289,19 +6289,18 @@ async function renderRacks() {
     el.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:40px">' + tr('rack_none_found') + '</div>';
     return;
   }
-  el.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl" style="min-width:0"><thead><tr>'
     + '<th>' + tr('rack_th_nome') + '</th>'
     + '<th>' + tr('rack_th_tamanho') + '</th>'
-    + '<th>' + tr('rack_th_criado') + '</th>'
-    + '<th>' + tr('clientes_th_acoes') + '</th>'
+    + '<th class="rack-th-criado">' + tr('rack_th_criado') + '</th>'
+    + '<th></th>'
     + '</tr></thead><tbody>'
-    + racksData.map(r => '<tr>'
+    + racksData.map(r => '<tr onclick="abrirEditorRack(\'' + r.id + '\')" style="cursor:pointer">'
         + '<td style="font-weight:500">' + r.nome + '</td>'
         + '<td>' + r.tamanho_u + 'U</td>'
-        + '<td>' + new Date(r.criado_em).toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US') + '</td>'
-        + '<td style="display:flex;gap:6px">'
-          + '<button onclick="abrirEditorRack(\'' + r.id + '\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">' + tr('rack_abrir') + '</button>'
-          + '<button onclick="excluirRack(\'' + r.id + '\')" style="padding:3px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#dc2626;font-family:inherit">' + tr('orc_excluir') + '</button>'
+        + '<td class="rack-th-criado">' + new Date(r.criado_em).toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US') + '</td>'
+        + '<td style="text-align:right">'
+          + '<button onclick="event.stopPropagation();excluirRack(\'' + r.id + '\')" style="padding:3px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#dc2626;font-family:inherit">' + tr('orc_excluir') + '</button>'
         + '</td>'
       + '</tr>').join('')
     + '</tbody></table></div>';
@@ -6404,16 +6403,17 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
       div.title = textoCompleto;
       if (opts.interativo && !item.sugerido) {
         div.style.position = 'relative';
-        div.onmousedown = function (e) { iniciarDragRack(e, item, 'mover'); };
+        div.style.touchAction = 'none';
+        div.onpointerdown = function (e) { iniciarDragRack(e, item, 'mover'); };
         const xSpan = div.querySelector('.rack-item-x');
         if (xSpan) {
-          xSpan.onmousedown = function (e) { e.stopPropagation(); };
+          xSpan.onpointerdown = function (e) { e.stopPropagation(); };
           xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
         }
         const alca = document.createElement('div');
         alca.title = tr('rack_arrastar_redimensionar');
-        alca.style.cssText = 'position:absolute;left:4px;right:4px;bottom:0;height:5px;cursor:ns-resize';
-        alca.onmousedown = function (e) { e.stopPropagation(); iniciarDragRack(e, item, 'redimensionar'); };
+        alca.style.cssText = 'position:absolute;left:4px;right:4px;bottom:-4px;height:12px;cursor:ns-resize;touch-action:none';
+        alca.onpointerdown = function (e) { e.stopPropagation(); iniciarDragRack(e, item, 'redimensionar'); };
         div.appendChild(alca);
       }
       bodyEl.appendChild(div);
@@ -6441,17 +6441,21 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
 function iniciarDragRack(e, item, tipo) {
   if (!rackAtual) return;
   e.preventDefault();
+  const posOriginais = {};
+  rackAtual.itens.forEach(it => { posOriginais[it.id] = { u_inicio: it.u_inicio, u_altura: it.u_altura }; });
   rackDrag = {
     tipo: tipo,
     itemId: item.id,
     uInicioOrig: item.u_inicio,
     uAlturaOrig: item.u_altura,
     startY: e.clientY,
+    posOriginais: posOriginais,
     moveu: false
   };
   document.body.style.userSelect = 'none';
-  document.addEventListener('mousemove', moverDragRack);
-  document.addEventListener('mouseup', finalizarDragRack);
+  document.addEventListener('pointermove', moverDragRack);
+  document.addEventListener('pointerup', finalizarDragRack);
+  document.addEventListener('pointercancel', finalizarDragRack);
 }
 
 function renderRackFrameAtual() {
@@ -6467,18 +6471,47 @@ function moverDragRack(e) {
   const deltaY = e.clientY - rackDrag.startY;
   if (Math.abs(deltaY) > 3) rackDrag.moveu = true;
   const deltaU = Math.round(deltaY / RACK_ROW_H);
-  const outros = rackAtual.itens.filter(it => it.id !== rackDrag.itemId);
-  const ocupadoOutros = construirOcupacao(outros);
+  const posOriginais = rackDrag.posOriginais;
 
   if (rackDrag.tipo === 'mover') {
-    let novoInicio = rackDrag.uInicioOrig + deltaU;
-    novoInicio = Math.max(1, Math.min(novoInicio, rackAtual.tamanho_u - item.u_altura + 1));
-    let livre = true;
-    for (let u = novoInicio; u <= novoInicio + item.u_altura - 1; u++) { if (ocupadoOutros[u]) { livre = false; break; } }
-    if (livre) item.u_inicio = novoInicio;
+    const origU = rackDrag.uInicioOrig;
+    const altura = rackDrag.uAlturaOrig;
+    let novoInicio = origU + deltaU;
+    novoInicio = Math.max(1, Math.min(novoInicio, rackAtual.tamanho_u - altura + 1));
+
+    const tentativas = {};
+    rackAtual.itens.forEach(it => {
+      if (it.id === item.id) { tentativas[it.id] = novoInicio; return; }
+      const orig = posOriginais[it.id];
+      let pos = orig.u_inicio;
+      if (novoInicio < origU) {
+        if (orig.u_inicio >= novoInicio && orig.u_inicio < origU) pos = orig.u_inicio + altura;
+      } else if (novoInicio > origU) {
+        if (orig.u_inicio > origU && orig.u_inicio <= novoInicio + altura - 1) pos = orig.u_inicio - altura;
+      }
+      tentativas[it.id] = pos;
+    });
+
+    let valido = true;
+    const faixasOcupadas = {};
+    rackAtual.itens.forEach(it => {
+      const altItem = it.id === item.id ? altura : posOriginais[it.id].u_altura;
+      const inicio = tentativas[it.id];
+      if (inicio < 1 || inicio + altItem - 1 > rackAtual.tamanho_u) { valido = false; return; }
+      for (let u = inicio; u <= inicio + altItem - 1; u++) {
+        if (faixasOcupadas[u]) { valido = false; }
+        faixasOcupadas[u] = true;
+      }
+    });
+
+    if (valido) {
+      rackAtual.itens.forEach(it => { it.u_inicio = tentativas[it.id]; });
+    }
   } else {
     let novaAltura = rackDrag.uAlturaOrig + deltaU;
     novaAltura = Math.max(1, Math.min(novaAltura, rackAtual.tamanho_u - rackDrag.uInicioOrig + 1));
+    const outros = rackAtual.itens.filter(it => it.id !== rackDrag.itemId);
+    const ocupadoOutros = construirOcupacao(outros);
     let livre = true;
     for (let u = rackDrag.uInicioOrig; u <= rackDrag.uInicioOrig + novaAltura - 1; u++) { if (ocupadoOutros[u]) { livre = false; break; } }
     if (livre) item.u_altura = novaAltura;
@@ -6487,8 +6520,9 @@ function moverDragRack(e) {
 }
 
 function finalizarDragRack() {
-  document.removeEventListener('mousemove', moverDragRack);
-  document.removeEventListener('mouseup', finalizarDragRack);
+  document.removeEventListener('pointermove', moverDragRack);
+  document.removeEventListener('pointerup', finalizarDragRack);
+  document.removeEventListener('pointercancel', finalizarDragRack);
   document.body.style.userSelect = '';
   if (!rackDrag || !rackAtual) { rackDrag = null; return; }
   const drag = rackDrag;
@@ -6501,15 +6535,19 @@ function finalizarDragRack() {
     return;
   }
 
-  const mudouInicio = item.u_inicio !== drag.uInicioOrig;
-  const mudouAltura = item.u_altura !== drag.uAlturaOrig;
-  if (!mudouInicio && !mudouAltura) { renderRackEditor(); return; }
+  const mudaram = rackAtual.itens.filter(it => {
+    const orig = drag.posOriginais[it.id];
+    return orig.u_inicio !== it.u_inicio || orig.u_altura !== it.u_altura;
+  });
+  if (!mudaram.length) { renderRackEditor(); return; }
 
-  sbPatch('projetos_rack_itens?id=eq.' + item.id, { u_inicio: item.u_inicio, u_altura: item.u_altura })
+  Promise.all(mudaram.map(it => sbPatch('projetos_rack_itens?id=eq.' + it.id, { u_inicio: it.u_inicio, u_altura: it.u_altura })))
     .then(function () { toast(tr('rack_item_atualizado'), 'ok'); renderRackEditor(); })
     .catch(function (e) {
-      item.u_inicio = drag.uInicioOrig;
-      item.u_altura = drag.uAlturaOrig;
+      rackAtual.itens.forEach(it => {
+        const orig = drag.posOriginais[it.id];
+        if (orig) { it.u_inicio = orig.u_inicio; it.u_altura = orig.u_altura; }
+      });
       toast(tr('erro_prefix') + e.message, 'err');
       renderRackEditor();
     });
@@ -6750,25 +6788,23 @@ async function importarRackDeFoto() {
     const ocupado = {};
     rackAtual.itens.forEach(it => { for (let u = it.u_inicio; u <= it.u_inicio + it.u_altura - 1; u++) ocupado[u] = true; });
     let adicionados = 0, ignorados = 0;
+    let cursor = 1;
     for (const det of itensDetectados) {
-      let uInicio = Math.max(1, Math.min(det.u_inicio, rackAtual.tamanho_u));
-      let uAltura = Math.max(1, det.u_altura || 1);
-      if (uInicio + uAltura - 1 > rackAtual.tamanho_u) uAltura = rackAtual.tamanho_u - uInicio + 1;
-      if (uAltura < 1) { ignorados++; continue; }
-      let conflita = false;
-      for (let u = uInicio; u <= uInicio + uAltura - 1; u++) { if (ocupado[u]) { conflita = true; break; } }
-      if (conflita) { ignorados++; continue; }
       if (ehEspacoVazioNome(det.nome)) { ignorados++; continue; }
       const nome = normalizarNomeItem(det.nome || '');
       if (!nome) { ignorados++; continue; }
+      while (cursor <= rackAtual.tamanho_u && ocupado[cursor]) cursor++;
+      if (cursor > rackAtual.tamanho_u) { ignorados++; continue; }
+      const uInicio = cursor;
       const corIdx = rackAtual.itens.length % RACK_CORES.length;
       try {
         const [novo] = await sbPost('projetos_rack_itens', {
-          rack_id: rackAtual.id, nome: nome, u_inicio: uInicio, u_altura: uAltura,
+          rack_id: rackAtual.id, nome: nome, u_inicio: uInicio, u_altura: 1,
           cor_idx: corIdx, ordem: rackAtual.itens.length
         });
         rackAtual.itens.push(novo);
-        for (let u = uInicio; u <= uInicio + uAltura - 1; u++) ocupado[u] = true;
+        ocupado[uInicio] = true;
+        cursor++;
         adicionados++;
       } catch(e) { ignorados++; }
     }
@@ -6821,35 +6857,26 @@ async function criarRackDeFoto() {
     const nomeDigitado = document.getElementById('rack-nome')?.value.trim();
     const nome = nomeDigitado || tr('rack_nome_padrao_importado');
     let tamanho = (typeof d.tamanho_u === 'number' && d.tamanho_u > 0) ? Math.round(d.tamanho_u) : 0;
-    if (!tamanho) {
-      const maxU = itensDetectados.reduce((m, it) => Math.max(m, (it.u_inicio || 0) + (it.u_altura || 1) - 1), 0);
-      tamanho = maxU > 0 ? maxU : 21;
-    }
+    if (!tamanho) tamanho = Math.max(itensDetectados.length, 21);
     tamanho = Math.max(1, Math.min(tamanho, 60));
 
     const [novoRack] = await sbPost('projetos_racks', { nome, tamanho_u: tamanho, criado_por: ME.nome });
 
-    const ocupado = {};
     const itensFinal = [];
-    let ordem = 0;
+    let cursor = 1;
     for (const det of itensDetectados) {
-      let uInicio = Math.max(1, Math.min(det.u_inicio || 0, tamanho));
-      let uAltura = Math.max(1, det.u_altura || 1);
-      if (uInicio + uAltura - 1 > tamanho) uAltura = tamanho - uInicio + 1;
-      if (uAltura < 1) continue;
-      let conflita = false;
-      for (let u = uInicio; u <= uInicio + uAltura - 1; u++) { if (ocupado[u]) { conflita = true; break; } }
-      if (conflita) continue;
       const nomeItem = normalizarNomeItem(det.nome || '');
       if (!nomeItem) continue;
+      if (cursor > tamanho) break;
+      const uInicio = cursor;
       const corIdx = itensFinal.length % RACK_CORES.length;
       try {
         const [criado] = await sbPost('projetos_rack_itens', {
-          rack_id: novoRack.id, nome: nomeItem, u_inicio: uInicio, u_altura: uAltura,
-          cor_idx: corIdx, ordem: ordem++
+          rack_id: novoRack.id, nome: nomeItem, u_inicio: uInicio, u_altura: 1,
+          cor_idx: corIdx, ordem: itensFinal.length
         });
         itensFinal.push(criado);
-        for (let u = uInicio; u <= uInicio + uAltura - 1; u++) ocupado[u] = true;
+        cursor++;
       } catch(e) {}
     }
 
