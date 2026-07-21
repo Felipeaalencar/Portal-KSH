@@ -165,7 +165,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784639303" defer></script>
+<script src="app.js?v=1784639579" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -665,6 +665,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <div id="orc-parcelas-lista" style="display:flex;flex-direction:column;gap:6px"></div>
     </div>
     <div class="modal-btns">
+      <button type="button" id="orc-pdf-btn" onclick="gerarPropostaPDF()" style="display:none;margin-right:auto;padding:9px 16px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;color:#333" data-i18n="orc_gerar_pdf_btn">Gerar PDF</button>
       <button class="btn-sec" onclick="fecharModal('m-novo-orc')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarOrcamento()" data-i18n="btn_cadastrar">Cadastrar</button>
     </div>

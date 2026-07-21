@@ -278,6 +278,26 @@ const I18N = {
   orc_parcelas_soma: { en: 'Total scheduled', pt: 'Total parcelado' },
   orc_parcelas_soma_aviso: { en: '(should add up to 100%)', pt: '(deveria somar 100%)' },
 
+  // PDF da proposta
+  orc_gerar_pdf_btn: { en: 'Generate PDF', pt: 'Gerar PDF' },
+  orc_pdf_gerado: { en: 'PDF generated!', pt: 'PDF gerado!' },
+  orc_pdf_ref: { en: 'Ref', pt: 'Ref' },
+  orc_pdf_proposta_titulo: { en: 'Proposal', pt: 'Proposta' },
+  orc_pdf_sem_titulo: { en: 'Untitled proposal', pt: 'Proposta sem título' },
+  orc_pdf_data: { en: 'Date', pt: 'Data' },
+  orc_pdf_cliente_secao: { en: 'Client', pt: 'Cliente' },
+  orc_pdf_cliente_nome: { en: 'Name', pt: 'Nome' },
+  orc_pdf_cliente_tel: { en: 'Phone', pt: 'Telefone' },
+  orc_pdf_cliente_email: { en: 'Email', pt: 'Email' },
+  orc_pdf_escopo: { en: 'Scope', pt: 'Escopo' },
+  orc_pdf_total_proposta_label: { en: 'PROPOSAL TOTAL', pt: 'TOTAL DA PROPOSTA' },
+  orc_pdf_areas_itens_titulo: { en: 'Areas & Items', pt: 'Áreas & Itens' },
+  orc_pdf_col_item: { en: 'Item', pt: 'Item' },
+  orc_pdf_col_qtd: { en: 'Qty', pt: 'Qtd' },
+  orc_pdf_col_preco: { en: 'Price', pt: 'Preço' },
+  orc_pdf_col_total: { en: 'Total', pt: 'Total' },
+  orc_pdf_resumo_financeiro_titulo: { en: 'Financial Summary', pt: 'Resumo Financeiro' },
+
   eu: { en: 'me', pt: 'eu' },
   btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
 
@@ -1699,6 +1719,8 @@ function abrirNovoOrcamento() {
   if (valorInput) valorInput.readOnly = false;
   const propostaSection = document.getElementById('orc-proposta-section');
   if (propostaSection) propostaSection.style.display = 'none';
+  const pdfBtn = document.getElementById('orc-pdf-btn');
+  if (pdfBtn) pdfBtn.style.display = 'none';
   document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_novo_title');
   const btn = document.getElementById('m-novo-orc').querySelector('.btn-pri');
   btn.textContent = tr('btn_cadastrar');
@@ -1772,6 +1794,8 @@ async function abrirEditarOrcamento(id) {
   }
   const propostaSection = document.getElementById('orc-proposta-section');
   if (propostaSection) propostaSection.style.display = 'block';
+  const pdfBtn = document.getElementById('orc-pdf-btn');
+  if (pdfBtn) pdfBtn.style.display = 'inline-block';
   document.getElementById('orc-imposto-pct').value = o.imposto_pct != null ? o.imposto_pct : 0;
   await carregarPropostaOrcamento(id);
   document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_editar_title');
@@ -2067,6 +2091,227 @@ async function excluirParcelaOrcamento(parcelaId) {
     orcParcelasData = orcParcelasData.filter(p => p.id !== parcelaId);
     renderParcelasOrcamento();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+// ── GERAR PDF DA PROPOSTA (modelo cover / areas & itens / resumo financeiro / parcelamento) ──
+function gerarPropostaPDF() {
+  if (!orcEditandoId) return;
+  const o = orcamentosData.find(x => x.id === orcEditandoId);
+  const titulo = document.getElementById('orc-titulo')?.value.trim() || (o && o.titulo) || '';
+  const descricao = document.getElementById('orc-descricao')?.value.trim() || '';
+  const clienteNome = orcClienteSel?.nome || (o && o.cliente_nome) || '';
+  const clienteTel = orcClienteSel?.telefone || (o && o.cliente_tel) || '';
+  const clienteEmail = orcClienteSel?.email || (o && o.cliente_email) || '';
+  const temAreas = orcAreasData.length > 0;
+  const totais = temAreas ? calcularTotaisOrcamentoProposta() : null;
+  const valorManual = parseFloat(document.getElementById('orc-valor')?.value) || 0;
+  const totalProposta = temAreas ? totais.total : valorManual;
+  const dataHoje = new Date().toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US');
+  const refCurta = orcEditandoId.slice(0, 8).toUpperCase();
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const margin = 48;
+  let y = 0;
+
+  function rodape() {
+    doc.setFontSize(8);
+    doc.setTextColor(160);
+    doc.text('Kilian Smart Homes © ' + new Date().getFullYear() + '  ·  ' + tr('orc_pdf_ref') + ' ' + refCurta, margin, pageH - 24);
+  }
+  function novaPagina() {
+    rodape();
+    doc.addPage();
+    y = 50;
+  }
+  function garantirEspaco(altura) {
+    if (y + altura > pageH - 50) novaPagina();
+  }
+
+  // ── Capa ──
+  doc.setFillColor(20, 20, 20);
+  doc.rect(0, 0, pageW, 130, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.text('KILIAN SMART HOMES', margin, 55);
+  doc.setFontSize(10);
+  doc.setTextColor(200, 200, 200);
+  doc.text('South Florida  ·  Smart Home & AV Integration', margin, 74);
+  doc.setFontSize(15);
+  doc.setTextColor(255, 255, 255);
+  doc.text(tr('orc_pdf_proposta_titulo').toUpperCase(), margin, 108);
+
+  y = 165;
+  doc.setTextColor(20, 20, 20);
+  doc.setFontSize(17);
+  doc.text(titulo || tr('orc_pdf_sem_titulo'), margin, y);
+  y += 20;
+  doc.setFontSize(9);
+  doc.setTextColor(140);
+  doc.text(tr('orc_pdf_data') + ': ' + dataHoje + '   ·   ' + tr('orc_pdf_ref') + ': ' + refCurta, margin, y);
+  y += 30;
+
+  function campoCapa(label, valor) {
+    if (!valor) return;
+    doc.setFontSize(9);
+    doc.setTextColor(140);
+    doc.text(label.toUpperCase(), margin, y);
+    y += 13;
+    doc.setFontSize(12);
+    doc.setTextColor(30);
+    const linhas = doc.splitTextToSize(String(valor), pageW - margin * 2);
+    doc.text(linhas, margin, y);
+    y += linhas.length * 14 + 12;
+  }
+
+  doc.setFontSize(11);
+  doc.setTextColor(20);
+  doc.text(tr('orc_pdf_cliente_secao'), margin, y);
+  y += 16;
+  campoCapa(tr('orc_pdf_cliente_nome'), clienteNome);
+  campoCapa(tr('orc_pdf_cliente_tel'), clienteTel);
+  campoCapa(tr('orc_pdf_cliente_email'), clienteEmail);
+
+  if (descricao) {
+    doc.setFontSize(11);
+    doc.setTextColor(20);
+    doc.text(tr('orc_pdf_escopo'), margin, y);
+    y += 16;
+    doc.setFontSize(10);
+    doc.setTextColor(60);
+    const linhas = doc.splitTextToSize(descricao, pageW - margin * 2);
+    doc.text(linhas, margin, y);
+    y += linhas.length * 13 + 16;
+  }
+
+  // total destacado na capa
+  garantirEspaco(60);
+  doc.setFillColor(247, 247, 245);
+  doc.roundedRect(margin, y, pageW - margin * 2, 46, 6, 6, 'F');
+  doc.setFontSize(10);
+  doc.setTextColor(120);
+  doc.text(tr('orc_pdf_total_proposta_label'), margin + 16, y + 18);
+  doc.setFontSize(18);
+  doc.setTextColor(20);
+  doc.text('$' + totalProposta.toFixed(2), margin + 16, y + 37);
+  y += 70;
+
+  // ── Areas & Itens ──
+  if (temAreas) {
+    novaPagina();
+    doc.setFontSize(14);
+    doc.setTextColor(20);
+    doc.text(tr('orc_pdf_areas_itens_titulo'), margin, y);
+    y += 24;
+
+    orcAreasData.forEach(area => {
+      garantirEspaco(50);
+      doc.setFillColor(245, 245, 243);
+      doc.rect(margin, y, pageW - margin * 2, 22, 'F');
+      doc.setFontSize(11);
+      doc.setTextColor(20);
+      doc.text(area.nome, margin + 8, y + 15);
+      y += 30;
+
+      const itens = area.itens || [];
+      if (!itens.length) {
+        doc.setFontSize(9);
+        doc.setTextColor(160);
+        doc.text(tr('orc_area_sem_itens'), margin + 8, y);
+        y += 18;
+      } else {
+        const colNome = margin + 8, colTipo = margin + 300, colQtd = margin + 360, colPreco = margin + 410, colTotal = pageW - margin - 8;
+        doc.setFontSize(8.5);
+        doc.setTextColor(140);
+        doc.text(tr('orc_pdf_col_item').toUpperCase(), colNome, y);
+        doc.text(tr('orc_pdf_col_qtd').toUpperCase(), colQtd, y, { align: 'right' });
+        doc.text(tr('orc_pdf_col_preco').toUpperCase(), colPreco, y, { align: 'right' });
+        doc.text(tr('orc_pdf_col_total').toUpperCase(), colTotal, y, { align: 'right' });
+        y += 12;
+        doc.setDrawColor(230);
+        doc.line(margin, y, pageW - margin, y);
+        y += 10;
+
+        itens.forEach(it => {
+          garantirEspaco(30);
+          const nomeLinhas = doc.splitTextToSize(it.nome, 240);
+          doc.setFontSize(9.5);
+          doc.setTextColor(30);
+          doc.text(nomeLinhas, colNome, y);
+          doc.setFontSize(7.5);
+          doc.setTextColor(150);
+          doc.text(it.tipo === 'mao_obra' ? tr('cat_tipo_mao_obra') : tr('cat_tipo_material'), colTipo, y);
+          doc.setFontSize(9.5);
+          doc.setTextColor(60);
+          doc.text(String(it.quantidade), colQtd, y, { align: 'right' });
+          doc.text('$' + Number(it.preco_unitario).toFixed(2), colPreco, y, { align: 'right' });
+          doc.setTextColor(20);
+          doc.text('$' + (Number(it.preco_unitario) * Number(it.quantidade)).toFixed(2), colTotal, y, { align: 'right' });
+          y += Math.max(nomeLinhas.length * 12, 16) + 6;
+        });
+      }
+
+      garantirEspaco(20);
+      doc.setFontSize(9.5);
+      doc.setTextColor(20);
+      doc.text(tr('orc_area_total') + ' $' + orcTotaisArea(area).toFixed(2), pageW - margin - 8, y, { align: 'right' });
+      y += 26;
+    });
+
+    // ── Financial Summary ──
+    garantirEspaco(140);
+    doc.setFontSize(13);
+    doc.setTextColor(20);
+    doc.text(tr('orc_pdf_resumo_financeiro_titulo'), margin, y);
+    y += 20;
+
+    function linhaResumo(label, valor, destaque) {
+      doc.setFontSize(destaque ? 12 : 10);
+      doc.setTextColor(destaque ? 20 : 90);
+      doc.text(label, margin, y);
+      doc.text('$' + valor.toFixed(2), pageW - margin, y, { align: 'right' });
+      y += destaque ? 20 : 16;
+    }
+    linhaResumo(tr('orc_total_parts'), totais.totalParts, false);
+    linhaResumo(tr('orc_total_labor'), totais.totalLabor, false);
+    linhaResumo(tr('orc_subtotal'), totais.subtotal, false);
+    linhaResumo(tr('orc_imposto') + ' (' + totais.impostoPct + '%)', totais.imposto, false);
+    doc.setDrawColor(220);
+    doc.line(margin, y, pageW - margin, y);
+    y += 14;
+    linhaResumo(tr('orc_total_proposta'), totais.total, true);
+    y += 20;
+  }
+
+  // ── Payment Schedule ──
+  if (orcParcelasData.length) {
+    garantirEspaco(100);
+    doc.setFontSize(13);
+    doc.setTextColor(20);
+    doc.text(tr('orc_parcelamento_label'), margin, y);
+    y += 22;
+
+    orcParcelasData.forEach((p, i) => {
+      garantirEspaco(30);
+      const valor = totalProposta * (Number(p.percentual) || 0) / 100;
+      doc.setFontSize(10.5);
+      doc.setTextColor(20);
+      doc.text(tr('orc_parcela_label') + ' ' + (i + 1), margin, y);
+      doc.setFontSize(9.5);
+      doc.setTextColor(100);
+      doc.text(Number(p.percentual).toFixed(1) + '%  ·  ' + (p.condicao || ''), margin + 90, y);
+      doc.setFontSize(10.5);
+      doc.setTextColor(20);
+      doc.text('$' + valor.toFixed(2), pageW - margin, y, { align: 'right' });
+      y += 20;
+    });
+  }
+
+  rodape();
+  doc.save('Proposta-' + refCurta + (titulo ? '-' + titulo.replace(/[^a-zA-Z0-9]+/g, '-') : '') + '.pdf');
+  toast(tr('orc_pdf_gerado'), 'ok');
 }
 
 async function excluirOrcamento(id) {
