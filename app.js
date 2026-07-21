@@ -7802,16 +7802,32 @@ function renderPontosPlanta() {
 // Tocar sem arrastar abre o modal de renomear; arrastar persiste a nova posicao.
 function criarElementoPontoPlanta(ponto, cont) {
   if (!cont) return;
+  // O container pai (#planta-editor-pontos) tem pointer-events:none pra nao
+  // bloquear cliques no resto do canvas (marcadores/criacao de dispositivo) nas
+  // areas vazias - por isso o wrap precisa reativar pointer-events so onde tem
+  // o badge de verdade.
   const wrap = document.createElement('div');
-  wrap.style.cssText = 'position:absolute;left:' + ponto.x_pct + '%;top:' + ponto.y_pct + '%;transform:translate(-50%,-50%);z-index:2';
+  wrap.style.cssText = 'position:absolute;left:' + ponto.x_pct + '%;top:' + ponto.y_pct + '%;transform:translate(-50%,-50%);z-index:2;pointer-events:auto';
 
   const badge = document.createElement('div');
   badge.style.cssText = 'min-width:34px;height:34px;padding:0 7px;border-radius:9px;background:#1a1a1a;color:#fff;display:flex;align-items:center;justify-content:center;cursor:grab;font-size:11px;font-weight:700;letter-spacing:.2px;box-shadow:0 2px 6px rgba(0,0,0,.3);touch-action:none;border:2px solid #fff';
   badge.textContent = iniciaisPonto(ponto.nome);
   badge.title = ponto.nome;
 
+  const xBtn = document.createElement('div');
+  xBtn.setAttribute('aria-hidden', 'true');
+  xBtn.textContent = '×';
+  xBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer';
+
   wrap.appendChild(badge);
+  wrap.appendChild(xBtn);
   cont.appendChild(wrap);
+
+  xBtn.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+  xBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    excluirPontoPlantaDireto(ponto, wrap);
+  });
 
   let moveu = false;
   badge.addEventListener('pointerdown', function(e) {
@@ -7844,6 +7860,24 @@ function criarElementoPontoPlanta(ponto, cont) {
     document.addEventListener('pointerup', soltar);
   });
   badge.addEventListener('click', function(e) { e.stopPropagation(); });
+}
+
+// Exclusao direta pelo x no badge (sem precisar abrir o modal de nome primeiro,
+// que tambem tem um botao excluir como caminho alternativo).
+async function excluirPontoPlantaDireto(ponto, wrapEl) {
+  if (!confirm(tr('planta_ponto_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_planta_pontos?id=eq.' + ponto.id);
+    plantaAtual.pontos = (plantaAtual.pontos || []).filter(function(p) { return p.id !== ponto.id; });
+    (plantaAtual.marcadores || []).forEach(function(m) { if (m.ponto_id === ponto.id) m.ponto_id = null; });
+    const rot = plantaAtual.roteamento_padrao || {};
+    Object.keys(rot).forEach(function(k) { if (rot[k] === ponto.id) delete rot[k]; });
+    sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    wrapEl.remove();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
 // Modal de nome do ponto serve tanto para criar (ponto null, com x/y do toque no
