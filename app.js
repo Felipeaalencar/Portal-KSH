@@ -351,6 +351,8 @@ const I18N = {
   rack_sugestao_resumo_criterio: { en: 'I suggest reorganizing with cabling/network at the top for easy access, control and AV sources in the middle, and heavier/power gear at the bottom for stability and weight distribution.', pt: 'Sugiro reorganizar com cabeamento/rede no topo para fácil acesso, controle e fontes de áudio/vídeo no meio, e o equipamento mais pesado/energia na base, para estabilidade e melhor distribuição de peso.' },
   rack_sugestao_resumo_vazio: { en: 'Add items to your rack to see a suggested layout here.', pt: 'Adicione itens ao seu rack para ver uma sugestão de organização aqui.' },
   rack_sugestao_resumo_faltantes: { en: 'I noticed these are missing:', pt: 'Notei que faltam:' },
+  rack_arrastar_redimensionar: { en: 'Drag to resize', pt: 'Arraste para redimensionar' },
+  rack_item_atualizado: { en: 'Item updated', pt: 'Item atualizado' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -6262,6 +6264,7 @@ let racksData = [];
 let rackEditandoId = null;
 let rackAtual = null;
 let rackItemSlotAlvo = null;
+let rackDrag = null;
 
 const RACK_CORES = [
   { fill: '#0C447C', text: '#B5D4F4' },
@@ -6399,10 +6402,19 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
       const ledDot = '<span aria-hidden="true" style="width:5px;height:5px;border-radius:50%;background:' + ledCor + ';flex-shrink:0;display:inline-block"></span>';
       div.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (item.observacoes ? '<span aria-hidden="true" style="opacity:.75;flex-shrink:0">&#128221;</span>' : '') + ledDot + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px;flex-shrink:0">&times;</span>' : '');
       div.title = textoCompleto;
-      if (opts.interativo) {
-        div.onclick = function () { abrirEditarItemRack(item.id); };
+      if (opts.interativo && !item.sugerido) {
+        div.style.position = 'relative';
+        div.onmousedown = function (e) { iniciarDragRack(e, item, 'mover'); };
         const xSpan = div.querySelector('.rack-item-x');
-        if (xSpan) xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
+        if (xSpan) {
+          xSpan.onmousedown = function (e) { e.stopPropagation(); };
+          xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
+        }
+        const alca = document.createElement('div');
+        alca.title = tr('rack_arrastar_redimensionar');
+        alca.style.cssText = 'position:absolute;left:4px;right:4px;bottom:0;height:5px;cursor:ns-resize';
+        alca.onmousedown = function (e) { e.stopPropagation(); iniciarDragRack(e, item, 'redimensionar'); };
+        div.appendChild(alca);
       }
       bodyEl.appendChild(div);
       u += item.u_altura;
@@ -6424,6 +6436,83 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
     stripe++;
     u = bottomFree + 1;
   }
+}
+
+function iniciarDragRack(e, item, tipo) {
+  if (!rackAtual) return;
+  e.preventDefault();
+  rackDrag = {
+    tipo: tipo,
+    itemId: item.id,
+    uInicioOrig: item.u_inicio,
+    uAlturaOrig: item.u_altura,
+    startY: e.clientY,
+    moveu: false
+  };
+  document.body.style.userSelect = 'none';
+  document.addEventListener('mousemove', moverDragRack);
+  document.addEventListener('mouseup', finalizarDragRack);
+}
+
+function renderRackFrameAtual() {
+  if (!rackAtual) return;
+  const occupied = construirOcupacao(rackAtual.itens);
+  renderRackFrame(document.getElementById('rack-body'), rackAtual.tamanho_u, occupied, { interativo: true });
+}
+
+function moverDragRack(e) {
+  if (!rackDrag || !rackAtual) return;
+  const item = rackAtual.itens.find(it => it.id === rackDrag.itemId);
+  if (!item) return;
+  const deltaY = e.clientY - rackDrag.startY;
+  if (Math.abs(deltaY) > 3) rackDrag.moveu = true;
+  const deltaU = Math.round(deltaY / RACK_ROW_H);
+  const outros = rackAtual.itens.filter(it => it.id !== rackDrag.itemId);
+  const ocupadoOutros = construirOcupacao(outros);
+
+  if (rackDrag.tipo === 'mover') {
+    let novoInicio = rackDrag.uInicioOrig + deltaU;
+    novoInicio = Math.max(1, Math.min(novoInicio, rackAtual.tamanho_u - item.u_altura + 1));
+    let livre = true;
+    for (let u = novoInicio; u <= novoInicio + item.u_altura - 1; u++) { if (ocupadoOutros[u]) { livre = false; break; } }
+    if (livre) item.u_inicio = novoInicio;
+  } else {
+    let novaAltura = rackDrag.uAlturaOrig + deltaU;
+    novaAltura = Math.max(1, Math.min(novaAltura, rackAtual.tamanho_u - rackDrag.uInicioOrig + 1));
+    let livre = true;
+    for (let u = rackDrag.uInicioOrig; u <= rackDrag.uInicioOrig + novaAltura - 1; u++) { if (ocupadoOutros[u]) { livre = false; break; } }
+    if (livre) item.u_altura = novaAltura;
+  }
+  renderRackFrameAtual();
+}
+
+function finalizarDragRack() {
+  document.removeEventListener('mousemove', moverDragRack);
+  document.removeEventListener('mouseup', finalizarDragRack);
+  document.body.style.userSelect = '';
+  if (!rackDrag || !rackAtual) { rackDrag = null; return; }
+  const drag = rackDrag;
+  rackDrag = null;
+  const item = rackAtual.itens.find(it => it.id === drag.itemId);
+  if (!item) return;
+
+  if (!drag.moveu) {
+    abrirEditarItemRack(item.id);
+    return;
+  }
+
+  const mudouInicio = item.u_inicio !== drag.uInicioOrig;
+  const mudouAltura = item.u_altura !== drag.uAlturaOrig;
+  if (!mudouInicio && !mudouAltura) { renderRackEditor(); return; }
+
+  sbPatch('projetos_rack_itens?id=eq.' + item.id, { u_inicio: item.u_inicio, u_altura: item.u_altura })
+    .then(function () { toast(tr('rack_item_atualizado'), 'ok'); renderRackEditor(); })
+    .catch(function (e) {
+      item.u_inicio = drag.uInicioOrig;
+      item.u_altura = drag.uAlturaOrig;
+      toast(tr('erro_prefix') + e.message, 'err');
+      renderRackEditor();
+    });
 }
 
 function renderRackEditor() {
