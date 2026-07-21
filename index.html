@@ -167,7 +167,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784657836" defer></script>
+<script src="app.js?v=1784658251" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -846,7 +846,8 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
         <div id="rack-foto-nome" style="font-size:11px;color:#888;margin-bottom:6px"></div>
         <button type="button" id="rack-ler-ia-btn" onclick="importarRackDeFoto()" style="display:none;width:100%;padding:9px 14px;border:1px solid #333;border-radius:8px;background:#333;color:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:10px" data-i18n="rack_ler_foto_btn">Ler foto e preencher</button>
         <div id="rack-ia-status" style="display:none;font-size:11px;margin-bottom:10px"></div>
-        <button type="button" onclick="toast(tr('rack_enviar_os_em_breve'))" style="width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="rack_enviar_os_btn">Enviar para OS</button>
+        <button type="button" onclick="abrirEnviarRackOS()" style="width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:6px" data-i18n="rack_enviar_os_btn">Enviar para OS</button>
+        <a id="rack-ver-foto-original-btn" href="#" target="_blank" style="display:none;width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-align:center;box-sizing:border-box;text-decoration:none;color:inherit" data-i18n="rack_ver_foto_original_btn">Ver foto original</a>
       </div>
       <div style="background:linear-gradient(180deg,#141412,#0a0a09);border-radius:10px;padding:14px;width:300px;flex:0 0 300px;box-shadow:inset 0 0 0 1px #1f1f1c">
         <div style="font-size:13px;font-weight:500;margin-bottom:10px;color:#e8e8e6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" data-i18n="rack_sugestao_titulo">Sugestão do especialista (IA)</div>
@@ -887,6 +888,20 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
       <button class="btn-sec" id="ri-excluir-btn" onclick="excluirItemRackModal()" style="display:none;border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
       <button class="btn-sec" onclick="fecharModal('m-rack-item')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" id="ri-salvar-btn" onclick="salvarItemRack()" data-i18n="btn_add">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Enviar Rack para OS -->
+<div class="modal-bg" id="m-rack-enviar-os">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="rack_enviar_os_titulo">Enviar rack para OS</span><button class="modal-close" onclick="fecharModal('m-rack-enviar-os')">×</button></div>
+    <label class="f-lbl" data-i18n="label_buscar_os">Buscar OS aberta</label>
+    <input class="f-inp" id="reos-busca" oninput="filtrarOSParaRack(this.value)" data-i18n-placeholder="rack_os_busca_ph" placeholder="Nome do cliente ou número da OS">
+    <div id="reos-lista" style="max-height:320px;overflow-y:auto;margin-top:8px;border:1px solid #e8e8e5;border-radius:8px"></div>
+    <div id="reos-status" style="display:none;font-size:12px;margin-top:10px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-rack-enviar-os')" data-i18n="btn_cancelar">Cancelar</button>
     </div>
   </div>
 </div>

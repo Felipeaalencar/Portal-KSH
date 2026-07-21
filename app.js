@@ -353,6 +353,15 @@ const I18N = {
   rack_sugestao_resumo_faltantes: { en: 'I noticed these are missing:', pt: 'Notei que faltam:' },
   rack_arrastar_redimensionar: { en: 'Drag to resize', pt: 'Arraste para redimensionar' },
   rack_item_atualizado: { en: 'Item updated', pt: 'Item atualizado' },
+  rack_ver_foto_original_btn: { en: 'View original photo', pt: 'Ver foto original' },
+  rack_enviar_os_titulo: { en: 'Send rack to work order', pt: 'Enviar rack para OS' },
+  label_buscar_os: { en: 'Search open work order', pt: 'Buscar OS aberta' },
+  rack_os_busca_ph: { en: 'Client name or work order number', pt: 'Nome do cliente ou número da OS' },
+  rack_os_nenhuma_aberta: { en: 'No open work orders found', pt: 'Nenhuma OS aberta encontrada' },
+  rack_os_numero_label: { en: 'OS', pt: 'OS' },
+  rack_pdf_titulo: { en: 'Rack', pt: 'Rack' },
+  rack_enviando_os: { en: 'Sending...', pt: 'Enviando...' },
+  rack_enviado_os_sucesso: { en: 'Rack sent to the work order', pt: 'Rack enviado para a OS' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -5709,14 +5718,8 @@ async function garantirTokenDrive() {
   return ok;
 }
 
-async function uploadFotos(event, osId) {
-  const files = Array.from(event.target.files);
-  if (!files.length) return;
-  const conectado = await garantirTokenDrive();
-  if (!conectado) { toast(tr('drive_conecte_primeiro'),'err'); return; }
-  const prog = document.getElementById('upload-prog');
-  if (prog) prog.style.display = 'block';
-  const os = osData.find(o => o.id === osId);
+async function getOuCriarPastaOS(osId, osObj) {
+  const os = osObj || osData.find(o => o.id === osId);
   let folderId = os?.drive_folder_id;
   if (!folderId) {
     const parentId = await getPastaPortal();
@@ -5725,11 +5728,21 @@ async function uploadFotos(event, osId) {
     folderId = await criarPastaDrive(nomePasta, parentId);
     if (folderId) {
       await sbPatch('ordens_servico?id=eq.' + osId, { drive_folder_id: folderId, drive_folder_url: 'https://drive.google.com/drive/folders/' + folderId });
-      os.drive_folder_id = folderId;
-    } else {
-      toast(tr('drive_erro_pasta'), 'err');
+      if (os) os.drive_folder_id = folderId;
     }
   }
+  return folderId;
+}
+
+async function uploadFotos(event, osId) {
+  const files = Array.from(event.target.files);
+  if (!files.length) return;
+  const conectado = await garantirTokenDrive();
+  if (!conectado) { toast(tr('drive_conecte_primeiro'),'err'); return; }
+  const prog = document.getElementById('upload-prog');
+  if (prog) prog.style.display = 'block';
+  const folderId = await getOuCriarPastaOS(osId);
+  if (!folderId) toast(tr('drive_erro_pasta'), 'err');
   for (let i = 0; i < files.length; i++) {
     if (prog) prog.textContent = tr('os_enviando_progresso') + (i+1) + '/' + files.length + '...';
     try {
@@ -5791,6 +5804,39 @@ async function uploadDrive(file, folderId) {
   const d = await r.json();
   if (d.id) await fetch('https://www.googleapis.com/drive/v3/files/'+d.id+'/permissions',{method:'POST',headers:{'Authorization':'Bearer '+googleToken,'Content-Type':'application/json'},body:JSON.stringify({role:'reader',type:'anyone'})});
   return d;
+}
+
+// Pasta "Racks" dentro de Portal — cria uma vez e reaproveita (cacheada na sessão)
+let racksFolderId = null;
+async function getPastaRacks() {
+  if (racksFolderId) return racksFolderId;
+  const cached = sessionStorage.getItem('ksh_racks_folder_id');
+  if (cached) { racksFolderId = cached; return racksFolderId; }
+  try {
+    const parentId = await getPastaPortal();
+    const q = encodeURIComponent("name='Racks' and mimeType='application/vnd.google-apps.folder' and trashed=false and '" + parentId + "' in parents");
+    const r = await fetch('https://www.googleapis.com/drive/v3/files?q=' + q + '&fields=files(id,name)', { headers: { 'Authorization': 'Bearer ' + googleToken } });
+    const d = await r.json();
+    racksFolderId = (d.files && d.files[0] && d.files[0].id) || await criarPastaDrive('Racks', parentId);
+  } catch(e) {
+    const parentId = await getPastaPortal();
+    racksFolderId = await criarPastaDrive('Racks', parentId);
+  }
+  if (racksFolderId) sessionStorage.setItem('ksh_racks_folder_id', racksFolderId);
+  return racksFolderId;
+}
+
+async function salvarFotoOriginalRack(rackId, file) {
+  try {
+    const conectado = await garantirTokenDrive();
+    if (!conectado) return null;
+    const folderId = await getPastaRacks();
+    const d = await uploadDrive(file, folderId);
+    if (!d.id) return null;
+    const url = 'https://drive.google.com/file/d/' + d.id + '/view';
+    await sbPatch('projetos_racks?id=eq.' + rackId, { foto_original_drive_id: d.id, foto_original_drive_url: url });
+    return url;
+  } catch(e) { return null; }
 }
 
 // Pasta "Documentos" dentro de Portal — cria uma vez e reaproveita (cacheada na sessão)
@@ -6553,6 +6599,125 @@ function finalizarDragRack() {
     });
 }
 
+function atualizarBotaoFotoOriginalRack() {
+  const btn = document.getElementById('rack-ver-foto-original-btn');
+  if (!btn || !rackAtual) return;
+  if (rackAtual.foto_original_drive_url) {
+    btn.style.display = 'block';
+    btn.href = rackAtual.foto_original_drive_url;
+  } else {
+    btn.style.display = 'none';
+    btn.href = '#';
+  }
+}
+
+let rackOSListaCache = null;
+
+async function abrirEnviarRackOS() {
+  if (!rackAtual) return;
+  document.getElementById('reos-busca').value = '';
+  document.getElementById('reos-lista').innerHTML = '<div style="padding:14px;text-align:center;color:#bbb;font-size:12px">' + tr('loading') + '</div>';
+  document.getElementById('reos-status').style.display = 'none';
+  abrirModal('m-rack-enviar-os');
+  try {
+    rackOSListaCache = await sbGet('ordens_servico?status=in.(aberta,agendada,em_campo)&order=created_at.desc');
+  } catch(e) {
+    rackOSListaCache = [];
+  }
+  renderizarListaOSParaRack(rackOSListaCache);
+}
+
+function filtrarOSParaRack(q) {
+  if (!rackOSListaCache) return;
+  const termo = (q || '').toLowerCase();
+  const filtrada = rackOSListaCache.filter(o =>
+    (o.cliente_nome || '').toLowerCase().includes(termo) ||
+    String(o.numero || '').toLowerCase().includes(termo)
+  );
+  renderizarListaOSParaRack(filtrada);
+}
+
+function renderizarListaOSParaRack(lista) {
+  const cont = document.getElementById('reos-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="padding:14px;text-align:center;color:#bbb;font-size:12px">' + tr('rack_os_nenhuma_aberta') + '</div>';
+    return;
+  }
+  cont.innerHTML = lista.map(o =>
+    '<div onclick="selecionarOSParaRack(\'' + o.id + '\')" style="padding:10px 14px;border-bottom:1px solid #f0f0ed;cursor:pointer;font-size:13px" onmouseover="this.style.background=\'#f9f9f7\'" onmouseout="this.style.background=\'\'">'
+      + '<div style="font-weight:500">' + (o.cliente_nome || '') + '</div>'
+      + '<div style="font-size:11px;color:#888">' + tr('rack_os_numero_label') + ' ' + (o.numero || o.id.slice(0,8)) + ' · ' + tr('status_' + o.status) + '</div>'
+    + '</div>'
+  ).join('');
+}
+
+function gerarRackPDFBlob() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margin = 48;
+  let y = 60;
+  doc.setFontSize(16);
+  doc.setTextColor(20, 20, 20);
+  doc.text(tr('rack_pdf_titulo') + ': ' + rackAtual.nome, margin, y);
+  y += 22;
+  doc.setFontSize(11);
+  doc.setTextColor(100);
+  doc.text(rackAtual.tamanho_u + 'U · ' + new Date().toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US'), margin, y);
+  y += 30;
+  doc.setFontSize(12);
+  doc.setTextColor(20, 20, 20);
+  const ordenados = rackAtual.itens.slice().sort((a, b) => a.u_inicio - b.u_inicio);
+  ordenados.forEach(it => {
+    const bottomU = it.u_inicio + it.u_altura - 1;
+    const label = 'U' + it.u_inicio + (it.u_altura > 1 ? '-U' + bottomU : '');
+    doc.setFont(undefined, 'bold');
+    doc.text(label + '  —  ' + it.nome, margin, y);
+    doc.setFont(undefined, 'normal');
+    y += 16;
+    if (it.observacoes) {
+      doc.setFontSize(10);
+      doc.setTextColor(100);
+      const linhas = doc.splitTextToSize(it.observacoes, 480);
+      doc.text(linhas, margin + 14, y);
+      y += linhas.length * 12 + 4;
+      doc.setFontSize(12);
+      doc.setTextColor(20, 20, 20);
+    }
+    y += 6;
+    if (y > 760) { doc.addPage(); y = 60; }
+  });
+  return doc.output('blob');
+}
+
+async function selecionarOSParaRack(osId) {
+  if (!rackAtual) return;
+  const statusEl = document.getElementById('reos-status');
+  statusEl.style.display = 'block';
+  statusEl.style.color = '#555';
+  statusEl.textContent = tr('rack_enviando_os');
+  try {
+    const conectado = await garantirTokenDrive();
+    if (!conectado) { statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('drive_conecte_primeiro'); return; }
+    const os = rackOSListaCache.find(o => o.id === osId);
+    const folderId = await getOuCriarPastaOS(osId, os);
+    if (!folderId) { statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('drive_erro_pasta'); return; }
+    const blob = gerarRackPDFBlob();
+    const nomeArquivo = 'Rack - ' + rackAtual.nome + '.pdf';
+    const arquivo = new File([blob], nomeArquivo, { type: 'application/pdf' });
+    const d = await uploadDrive(arquivo, folderId);
+    if (!d.id) throw new Error('upload');
+    await sbPatch('projetos_racks?id=eq.' + rackAtual.id, { os_id: osId });
+    rackAtual.os_id = osId;
+    statusEl.style.color = '#166534';
+    statusEl.textContent = tr('rack_enviado_os_sucesso');
+    toast(tr('rack_enviado_os_sucesso'), 'ok');
+    setTimeout(() => fecharModal('m-rack-enviar-os'), 900);
+  } catch(e) {
+    statusEl.style.color = '#e74c3c';
+    statusEl.textContent = tr('erro_prefix') + e.message;
+  }
+}
+
 function renderRackEditor() {
   if (!rackAtual) return;
   document.getElementById('rack-editor-nome').textContent = rackAtual.nome + ' — ' + rackAtual.tamanho_u + 'U';
@@ -6565,6 +6730,7 @@ function renderRackEditor() {
   const usados = rackAtual.itens.reduce((s, it) => s + it.u_altura, 0);
   document.getElementById('rack-ocupacao-txt').textContent = usados + ' / ' + size + ' U';
   renderRackSugestao();
+  atualizarBotaoFotoOriginalRack();
 }
 
 const RACK_GRUPOS = [
@@ -6809,10 +6975,13 @@ async function importarRackDeFoto() {
       } catch(e) { ignorados++; }
     }
     renderRackEditor();
+    const fotoParaSalvar2 = rackFotoFile;
+    const rackIdAlvo = rackAtual.id;
     rackFotoFile = null;
     document.getElementById('rack-foto-nome').textContent = '';
     document.getElementById('rack-foto-input').value = '';
     if (btn) btn.style.display = 'none';
+    salvarFotoOriginalRack(rackIdAlvo, fotoParaSalvar2).then(url => { if (url && rackAtual && rackAtual.id === rackIdAlvo) { rackAtual.foto_original_drive_url = url; atualizarBotaoFotoOriginalRack(); } });
     if (statusEl) {
       statusEl.style.color = adicionados ? '#166534' : '#92400e';
       statusEl.textContent = adicionados + ' ' + tr('rack_ia_itens_adicionados') + (ignorados ? ' · ' + ignorados + ' ' + tr('rack_ia_itens_ignorados') : '');
@@ -6880,6 +7049,7 @@ async function criarRackDeFoto() {
       } catch(e) {}
     }
 
+    const fotoParaSalvar = rackNovaFotoFile;
     rackNovaFotoFile = null;
     fecharModal('m-novo-rack');
     toast(tr('rack_ia_sucesso'), 'ok');
@@ -6887,6 +7057,7 @@ async function criarRackDeFoto() {
     rackEditandoId = novoRack.id;
     rackAtual = { ...novoRack, itens: itensFinal };
     document.getElementById('rack-editor-titulo').textContent = novoRack.nome;
+    salvarFotoOriginalRack(novoRack.id, fotoParaSalvar).then(url => { if (url) { rackAtual.foto_original_drive_url = url; atualizarBotaoFotoOriginalRack(); } });
     renderRackEditor();
     abrirModal('m-rack-editor');
   } catch(e) {
