@@ -165,7 +165,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784656416" defer></script>
+<script src="app.js?v=1784656872" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -821,10 +821,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
           <div style="position:absolute;left:5px;top:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>
           <div style="position:absolute;right:5px;top:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>
         </div>
-        <div style="display:flex;background:#1c1c1a;padding:4px 0;border-left:1px solid #333;border-right:1px solid #333">
-          <div id="rack-rail-l" style="width:20px;display:flex;flex-direction:column"></div>
-          <div id="rack-body" style="flex:1;display:flex;flex-direction:column"></div>
-          <div id="rack-rail-r" style="width:20px;display:flex;flex-direction:column"></div>
+        <div style="display:flex;background:#1c1c1a;padding:4px 0;border-left:1px solid #333;border-right:1px solid #333;overflow:hidden">
+          <div id="rack-rail-l" style="width:20px;flex-shrink:0;display:flex;flex-direction:column"></div>
+          <div id="rack-body" style="flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column"></div>
+          <div id="rack-rail-r" style="width:20px;flex-shrink:0;display:flex;flex-direction:column"></div>
         </div>
         <div style="height:7px;background:linear-gradient(180deg,#141412,#2c2c27);border-radius:0 0 4px 4px;position:relative;margin-top:1px">
           <div style="position:absolute;left:5px;bottom:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>
@@ -852,10 +852,10 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
           <div style="position:absolute;left:5px;top:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>
           <div style="position:absolute;right:5px;top:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>
         </div>
-        <div style="display:flex;background:#1c1c1a;padding:4px 0;border-left:1px solid #333;border-right:1px solid #333">
-          <div id="rack-sug-rail-l" style="width:20px;display:flex;flex-direction:column"></div>
-          <div id="rack-sug-body" style="flex:1;display:flex;flex-direction:column"></div>
-          <div id="rack-sug-rail-r" style="width:20px;display:flex;flex-direction:column"></div>
+        <div style="display:flex;background:#1c1c1a;padding:4px 0;border-left:1px solid #333;border-right:1px solid #333;overflow:hidden">
+          <div id="rack-sug-rail-l" style="width:20px;flex-shrink:0;display:flex;flex-direction:column"></div>
+          <div id="rack-sug-body" style="flex:1;min-width:0;overflow:hidden;display:flex;flex-direction:column"></div>
+          <div id="rack-sug-rail-r" style="width:20px;flex-shrink:0;display:flex;flex-direction:column"></div>
         </div>
         <div style="height:7px;background:linear-gradient(180deg,#141412,#2c2c27);border-radius:0 0 4px 4px;position:relative;margin-top:1px">
           <div style="position:absolute;left:5px;bottom:1.5px;width:4px;height:4px;border-radius:50%;background:#000"></div>

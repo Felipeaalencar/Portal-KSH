@@ -6390,10 +6390,14 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
       const cor = RACK_CORES[(item.cor_idx || 0) % RACK_CORES.length];
       const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + bottomU : '');
       const div = document.createElement('div');
-      const dashed = item.sugerido ? ';border:1px dashed ' + cor.text + ';background:transparent;color:' + cor.text : ';background:' + cor.fill + ';color:' + cor.text;
-      div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:500;gap:6px' + dashed + (opts.interativo ? ';cursor:pointer' : '');
+      const ledCor = cor.fill;
+      const aparencia = item.sugerido
+        ? ';background:transparent;border:1px dashed ' + ledCor + ';color:' + ledCor
+        : ';background:#1a1a17;border:1px solid #2c2c28;color:#d8d8d2';
+      div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:500;gap:6px' + aparencia + (opts.interativo ? ';cursor:pointer' : '');
       const textoCompleto = label + ' — ' + item.nome + (item.observacoes ? ' (' + item.observacoes + ')' : '');
-      div.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (item.observacoes ? '<span aria-hidden="true" style="opacity:.75;flex-shrink:0">&#128221;</span>' : '') + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px;flex-shrink:0">&times;</span>' : '');
+      const ledDot = '<span aria-hidden="true" style="width:5px;height:5px;border-radius:50%;background:' + ledCor + ';flex-shrink:0;display:inline-block"></span>';
+      div.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (item.observacoes ? '<span aria-hidden="true" style="opacity:.75;flex-shrink:0">&#128221;</span>' : '') + ledDot + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px;flex-shrink:0">&times;</span>' : '');
       div.title = textoCompleto;
       if (opts.interativo) {
         div.onclick = function () { abrirEditarItemRack(item.id); };
