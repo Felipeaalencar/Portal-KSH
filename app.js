@@ -326,6 +326,8 @@ const I18N = {
   label_nome_item_rack: { en: 'Product name', pt: 'Nome do produto' },
   rack_item_nome_ph: { en: 'e.g. UniFi USW-24-G2 Switch', pt: 'Ex: Switch UniFi USW-24-G2' },
   label_altura_u: { en: 'Height (U)', pt: 'Altura (U)' },
+  label_observacoes_item_rack: { en: 'Notes (optional)', pt: 'Observações (opcional)' },
+  rack_item_obs_ph: { en: 'Ex: serial number, port used, install adjustment...', pt: 'Ex: número de série, porta usada, ajuste feito na instalação...' },
   rack_espaco_livre: { en: 'free space', pt: 'espaço livre' },
   rack_u_expansao: { en: 'U for expansion', pt: 'U de expansão' },
   rack_remover_item: { en: 'Remove', pt: 'Remover' },
@@ -6389,10 +6391,11 @@ function renderRackFrame(bodyEl, size, occupied, opts) {
       const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + bottomU : '');
       const div = document.createElement('div');
       const dashed = item.sugerido ? ';border:1px dashed ' + cor.text + ';background:transparent;color:' + cor.text : ';background:' + cor.fill + ';color:' + cor.text;
-      div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:500' + dashed + (opts.interativo ? ';cursor:pointer' : '');
-      div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px">&times;</span>' : '');
+      div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:500;gap:6px' + dashed + (opts.interativo ? ';cursor:pointer' : '');
+      const textoCompleto = label + ' — ' + item.nome + (item.observacoes ? ' (' + item.observacoes + ')' : '');
+      div.innerHTML = '<span style="flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (item.observacoes ? '<span aria-hidden="true" style="opacity:.75;flex-shrink:0">&#128221;</span>' : '') + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px;flex-shrink:0">&times;</span>' : '');
+      div.title = textoCompleto;
       if (opts.interativo) {
-        div.title = tr('rack_editar_item_title');
         div.onclick = function () { abrirEditarItemRack(item.id); };
         const xSpan = div.querySelector('.rack-item-x');
         if (xSpan) xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
@@ -6510,6 +6513,7 @@ function abrirNovoItemRack(topU, maxAltura) {
   rackItemSlotAlvo = { topU: topU, maxAltura: maxAltura };
   document.getElementById('ri-item-id').value = '';
   document.getElementById('ri-nome').value = '';
+  document.getElementById('ri-observacoes').value = '';
   const alturaInput = document.getElementById('ri-altura');
   alturaInput.value = '1';
   alturaInput.max = String(maxAltura);
@@ -6532,6 +6536,7 @@ function abrirEditarItemRack(itemId) {
   rackItemSlotAlvo = null;
   document.getElementById('ri-item-id').value = item.id;
   document.getElementById('ri-nome').value = item.nome;
+  document.getElementById('ri-observacoes').value = item.observacoes || '';
   const alturaInput = document.getElementById('ri-altura');
   alturaInput.value = item.u_altura;
   alturaInput.max = String(maxAltura);
@@ -6552,13 +6557,16 @@ async function salvarItemRack() {
   const alturaMax = parseInt(alturaInput?.max, 10) || altura;
   altura = Math.max(1, Math.min(altura, alturaMax));
 
+  const observacoes = document.getElementById('ri-observacoes')?.value.trim() || '';
+
   if (itemId) {
     const item = rackAtual.itens.find(it => it.id === itemId);
     if (!item) return;
     try {
-      await sbPatch('projetos_rack_itens?id=eq.' + itemId, { nome: nome, u_altura: altura });
+      await sbPatch('projetos_rack_itens?id=eq.' + itemId, { nome: nome, u_altura: altura, observacoes: observacoes });
       item.nome = nome;
       item.u_altura = altura;
+      item.observacoes = observacoes;
       fecharModal('m-rack-item');
       renderRackEditor();
     } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
@@ -6571,7 +6579,7 @@ async function salvarItemRack() {
   try {
     const [novo] = await sbPost('projetos_rack_itens', {
       rack_id: rackAtual.id, nome: nome, u_inicio: uInicio, u_altura: altura,
-      cor_idx: corIdx, ordem: rackAtual.itens.length
+      cor_idx: corIdx, ordem: rackAtual.itens.length, observacoes: observacoes
     });
     rackAtual.itens.push(novo);
     fecharModal('m-rack-item');
