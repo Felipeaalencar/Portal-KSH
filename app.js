@@ -342,6 +342,13 @@ const I18N = {
   rack_montar_foto_btn: { en: 'Build automatically from a photo', pt: 'Montar automaticamente a partir de uma foto' },
   rack_editar_item_title: { en: 'Edit Item', pt: 'Editar Item' },
   rack_nome_padrao_importado: { en: 'Imported rack', pt: 'Rack importado' },
+  rack_sugestao_titulo: { en: 'Expert suggestion (AI)', pt: 'Sugestão do especialista (IA)' },
+  rack_sugestao_falta_cabeamento: { en: 'Cable organizer / patch panel', pt: 'Organizador de cabos / patch panel' },
+  rack_sugestao_falta_energia: { en: 'Surge protector / power conditioner (PDU)', pt: 'Protetor de surto / condicionador de energia (PDU)' },
+  rack_sugestao_resumo_intro: { en: 'In your rack I saw:', pt: 'No seu rack eu vi:' },
+  rack_sugestao_resumo_criterio: { en: 'I suggest reorganizing with cabling/network at the top for easy access, control and AV sources in the middle, and heavier/power gear at the bottom for stability and weight distribution.', pt: 'Sugiro reorganizar com cabeamento/rede no topo para fácil acesso, controle e fontes de áudio/vídeo no meio, e o equipamento mais pesado/energia na base, para estabilidade e melhor distribuição de peso.' },
+  rack_sugestao_resumo_vazio: { en: 'Add items to your rack to see a suggested layout here.', pt: 'Adicione itens ao seu rack para ver uma sugestão de organização aqui.' },
+  rack_sugestao_resumo_faltantes: { en: 'I noticed these are missing:', pt: 'Notei que faltam:' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -6353,61 +6360,150 @@ async function abrirEditorRack(id) {
   abrirModal('m-rack-editor');
 }
 
-function renderRackEditor() {
-  if (!rackAtual) return;
-  document.getElementById('rack-editor-nome').textContent = rackAtual.nome + ' — ' + rackAtual.tamanho_u + 'U';
-  const size = rackAtual.tamanho_u;
+function gerarRailHtml(size) {
+  let html = '';
+  for (let n = 1; n <= size; n++) {
+    html += '<div style="height:' + RACK_ROW_H + 'px;display:flex;align-items:center;justify-content:center;font-size:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#55554f">' + n + '</div>';
+  }
+  return html;
+}
+
+function construirOcupacao(itens) {
   const occupied = {};
-  rackAtual.itens.forEach(it => {
-    const topU = it.u_inicio + it.u_altura - 1;
-    for (let u = it.u_inicio; u <= topU; u++) occupied[u] = it;
+  itens.forEach(it => {
+    const bottomU = it.u_inicio + it.u_altura - 1;
+    for (let u = it.u_inicio; u <= bottomU; u++) occupied[u] = it;
   });
-  const trilho = Array.from({ length: size }).map(() =>
-    '<div style="height:' + RACK_ROW_H + 'px;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3a3a37"></div></div>'
-  ).join('');
-  document.getElementById('rack-rail-l').innerHTML = trilho;
-  document.getElementById('rack-rail-r').innerHTML = trilho;
-  const body = document.getElementById('rack-body');
-  body.innerHTML = '';
-  let u = size;
+  return occupied;
+}
+
+function renderRackFrame(bodyEl, size, occupied, opts) {
+  bodyEl.innerHTML = '';
+  let u = 1;
   let stripe = 0;
-  while (u >= 1) {
+  while (u <= size) {
     const item = occupied[u];
     if (item) {
-      const topU = item.u_inicio + item.u_altura - 1;
-      if (u === topU) {
-        const cor = RACK_CORES[(item.cor_idx || 0) % RACK_CORES.length];
-        const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + topU : '');
-        const div = document.createElement('div');
-        div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;cursor:pointer;font-size:11.5px;font-weight:500;background:' + cor.fill + ';color:' + cor.text;
-        div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + '</span><span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px">&times;</span>';
+      const bottomU = item.u_inicio + item.u_altura - 1;
+      const cor = RACK_CORES[(item.cor_idx || 0) % RACK_CORES.length];
+      const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + bottomU : '');
+      const div = document.createElement('div');
+      const dashed = item.sugerido ? ';border:1px dashed ' + cor.text + ';background:transparent;color:' + cor.text : ';background:' + cor.fill + ';color:' + cor.text;
+      div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;font-size:11.5px;font-weight:500' + dashed + (opts.interativo ? ';cursor:pointer' : '');
+      div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + (item.sugerido ? ' <span style="opacity:.7;font-weight:400">(sugestão)</span>' : '') + '</span>' + (opts.interativo ? '<span class="rack-item-x" aria-hidden="true" style="opacity:.7;padding:2px 4px">&times;</span>' : '');
+      if (opts.interativo) {
         div.title = tr('rack_editar_item_title');
         div.onclick = function () { abrirEditarItemRack(item.id); };
         const xSpan = div.querySelector('.rack-item-x');
         if (xSpan) xSpan.onclick = function (e) { e.stopPropagation(); removerItemRack(item.id); };
-        body.appendChild(div);
       }
-      u -= item.u_altura;
+      bodyEl.appendChild(div);
+      u += item.u_altura;
       continue;
     }
     let count = 0;
     let scanU = u;
-    while (scanU >= 1 && !occupied[scanU]) { count++; scanU--; }
+    while (scanU <= size && !occupied[scanU]) { count++; scanU++; }
     const topFree = u;
-    const bottomFree = u - count + 1;
+    const bottomFree = u + count - 1;
     const div = document.createElement('div');
     const bg = stripe % 2 === 0 ? '#232320' : '#1c1c1a';
-    div.style.cssText = 'height:' + (count * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;padding:0 10px;cursor:pointer;font-size:10.5px;color:#6b6b66;background:' + bg;
+    div.style.cssText = 'height:' + (count * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;padding:0 10px;font-size:10.5px;color:#6b6b66;background:' + bg + (opts.interativo ? ';cursor:pointer' : '');
     div.textContent = count === 1
       ? ('U' + topFree + ' — ' + tr('rack_espaco_livre'))
       : ('U' + topFree + '-U' + bottomFree + ' — ' + tr('rack_espaco_livre') + ' (' + count + ' ' + tr('rack_u_expansao') + ')');
-    div.onclick = function () { abrirNovoItemRack(topFree, count); };
-    body.appendChild(div);
+    if (opts.interativo) div.onclick = function () { abrirNovoItemRack(topFree, count); };
+    bodyEl.appendChild(div);
     stripe++;
-    u = bottomFree - 1;
+    u = bottomFree + 1;
   }
+}
+
+function renderRackEditor() {
+  if (!rackAtual) return;
+  document.getElementById('rack-editor-nome').textContent = rackAtual.nome + ' — ' + rackAtual.tamanho_u + 'U';
+  const size = rackAtual.tamanho_u;
+  const occupied = construirOcupacao(rackAtual.itens);
+  const trilho = gerarRailHtml(size);
+  document.getElementById('rack-rail-l').innerHTML = trilho;
+  document.getElementById('rack-rail-r').innerHTML = trilho;
+  renderRackFrame(document.getElementById('rack-body'), size, occupied, { interativo: true });
   const usados = rackAtual.itens.reduce((s, it) => s + it.u_altura, 0);
   document.getElementById('rack-ocupacao-txt').textContent = usados + ' / ' + size + ' U';
+  renderRackSugestao();
+}
+
+const RACK_GRUPOS = [
+  { id: 'cabeamento', label: 'cabeamento/patch panel', kw: ['patch panel', 'patch-panel', 'organizador de cabos', 'organizador'] },
+  { id: 'rede', label: 'equipamento de rede', kw: ['switch', 'udm', 'router', 'roteador', 'gateway', 'modem', 'access point', 'unifi', 'dream machine'] },
+  { id: 'controle', label: 'processador de controle', kw: ['crestron', 'control4', 'rti', 'elan', 'processador', 'processor'] },
+  { id: 'fontes_av', label: 'fontes de áudio/vídeo', kw: ['dvr', 'nvr', 'matrix', 'streamer', 'blu-ray', 'media player', 'source', 'apple tv'] },
+  { id: 'amplificacao', label: 'amplificação', kw: ['receiver', 'amplificador', 'amp', 'preamp', 'denon', 'marantz', 'yamaha', 'anthem', 'rotel'] },
+  { id: 'armazenamento', label: 'armazenamento', kw: ['nas', 'servidor', 'storage', 'server'] },
+  { id: 'energia', label: 'energia/condicionador', kw: ['nobreak', 'ups', 'wattbox', 'whatbox', 'pdu', 'condicionador', 'power'] }
+];
+
+function classificarItemRack(nome) {
+  const n = (nome || '').toLowerCase();
+  for (const g of RACK_GRUPOS) {
+    if (g.kw.some(k => n.includes(k))) return g.id;
+  }
+  return 'outros';
+}
+
+function calcularSugestaoRack(rack) {
+  const ordemGrupos = ['cabeamento', 'rede', 'controle', 'fontes_av', 'amplificacao', 'armazenamento', 'outros', 'energia'];
+  const classificados = rack.itens.map(it => ({ nome: it.nome, u_altura: it.u_altura, cor_idx: it.cor_idx, grupo: classificarItemRack(it.nome) }));
+  classificados.sort((a, b) => {
+    const ia = ordemGrupos.indexOf(a.grupo), ib = ordemGrupos.indexOf(b.grupo);
+    if (ia !== ib) return ia - ib;
+    return 0;
+  });
+  const itensSugeridos = [];
+  let cursor = 1;
+  classificados.forEach((it, idx) => {
+    itensSugeridos.push({ nome: it.nome, u_inicio: cursor, u_altura: it.u_altura, cor_idx: it.cor_idx != null ? it.cor_idx : idx });
+    cursor += it.u_altura;
+  });
+  const livre = rack.tamanho_u - (cursor - 1);
+  const gruposPresentes = new Set(classificados.map(it => it.grupo));
+  const faltando = [];
+  if (!gruposPresentes.has('cabeamento')) faltando.push({ nome: tr('rack_sugestao_falta_cabeamento'), grupo: 'cabeamento' });
+  if (!gruposPresentes.has('energia')) faltando.push({ nome: tr('rack_sugestao_falta_energia'), grupo: 'energia' });
+  let restante = livre;
+  faltando.forEach(f => {
+    if (restante >= 1) {
+      itensSugeridos.push({ nome: f.nome, u_inicio: cursor, u_altura: 1, cor_idx: 0, sugerido: true });
+      cursor += 1;
+      restante -= 1;
+    }
+  });
+
+  const contagemGrupos = {};
+  classificados.forEach(it => { contagemGrupos[it.grupo] = (contagemGrupos[it.grupo] || 0) + 1; });
+  const partesResumo = ordemGrupos
+    .filter(g => contagemGrupos[g])
+    .map(g => contagemGrupos[g] + ' ' + (RACK_GRUPOS.find(x => x.id === g) ? RACK_GRUPOS.find(x => x.id === g).label : 'item(ns)'));
+  let resumo = rack.itens.length
+    ? (tr('rack_sugestao_resumo_intro') + ' ' + partesResumo.join(', ') + '. ' + tr('rack_sugestao_resumo_criterio'))
+    : tr('rack_sugestao_resumo_vazio');
+  if (faltando.length) {
+    resumo += ' ' + tr('rack_sugestao_resumo_faltantes') + ' ' + faltando.map(f => f.nome).join(', ') + '.';
+  }
+
+  return { itens: itensSugeridos, resumo };
+}
+
+function renderRackSugestao() {
+  if (!rackAtual) return;
+  const sugestao = calcularSugestaoRack(rackAtual);
+  const size = rackAtual.tamanho_u;
+  const trilho = gerarRailHtml(size);
+  document.getElementById('rack-sug-rail-l').innerHTML = trilho;
+  document.getElementById('rack-sug-rail-r').innerHTML = trilho;
+  const occupied = construirOcupacao(sugestao.itens);
+  renderRackFrame(document.getElementById('rack-sug-body'), size, occupied, { interativo: false });
+  document.getElementById('rack-sug-resumo').textContent = sugestao.resumo;
 }
 
 function abrirNovoItemRack(topU, maxAltura) {
@@ -6427,10 +6523,10 @@ function abrirEditarItemRack(itemId) {
   if (!rackAtual) return;
   const item = rackAtual.itens.find(it => it.id === itemId);
   if (!item) return;
-  const topU = item.u_inicio + item.u_altura - 1;
+  const bottomU = item.u_inicio + item.u_altura - 1;
   const ocupado = {};
   rackAtual.itens.forEach(it => { if (it.id !== itemId) for (let x = it.u_inicio; x <= it.u_inicio + it.u_altura - 1; x++) ocupado[x] = true; });
-  let livre = 0, u = topU + 1;
+  let livre = 0, u = bottomU + 1;
   while (u <= rackAtual.tamanho_u && !ocupado[u]) { livre++; u++; }
   const maxAltura = item.u_altura + livre;
   rackItemSlotAlvo = null;
@@ -6439,7 +6535,7 @@ function abrirEditarItemRack(itemId) {
   const alturaInput = document.getElementById('ri-altura');
   alturaInput.value = item.u_altura;
   alturaInput.max = String(maxAltura);
-  document.getElementById('rack-item-titulo').textContent = tr('rack_editar_item_title') + ' — U' + item.u_inicio + (item.u_altura > 1 ? '-U' + topU : '');
+  document.getElementById('rack-item-titulo').textContent = tr('rack_editar_item_title') + ' — U' + item.u_inicio + (item.u_altura > 1 ? '-U' + bottomU : '');
   document.getElementById('ri-excluir-btn').style.display = 'inline-block';
   document.getElementById('ri-salvar-btn').textContent = tr('btn_salvar');
   abrirModal('m-rack-item');
@@ -6470,7 +6566,7 @@ async function salvarItemRack() {
   }
 
   if (!rackItemSlotAlvo) return;
-  const uInicio = rackItemSlotAlvo.topU - altura + 1;
+  const uInicio = rackItemSlotAlvo.topU;
   const corIdx = rackAtual.itens.length % RACK_CORES.length;
   try {
     const [novo] = await sbPost('projetos_rack_itens', {
