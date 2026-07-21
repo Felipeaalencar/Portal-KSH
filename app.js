@@ -869,7 +869,7 @@ const I18N = {
   planta_zoom_menos_title: { en: 'Zoom out', pt: 'Diminuir zoom' },
   planta_zoom_mais_title: { en: 'Zoom in', pt: 'Aumentar zoom' },
   planta_zoom_ajustar_btn: { en: 'Fit', pt: 'Ajustar' },
-  planta_zoom_hint: { en: 'drag to pan when zoomed in', pt: 'arraste pra navegar quando der zoom' },
+  planta_zoom_hint: { en: 'pinch to zoom on mobile, scroll wheel on desktop', pt: 'pinça pra dar zoom no celular, scroll do mouse no PC' },
   planta_relatorio_col_dispositivo: { en: 'Device', pt: 'Dispositivo' },
   planta_relatorio_col_qtd: { en: 'Qty', pt: 'Qtd' },
   planta_relatorio_croqui_legenda: { en: 'Numbers match the detailed list below', pt: 'Os números batem com a lista detalhada a seguir' },
@@ -7417,8 +7417,10 @@ let plantaMarcadorAtual = null;
 let plantaNovaPdfFile = null;
 let plantaUltimoToquePlantaMs = 0;
 let plantaCorEscolhida = 'blue';
-const PLANTA_ZOOM_NIVEIS = [100, 130, 160, 200, 260, 320];
-let plantaZoomIdx = 0;
+const PLANTA_ZOOM_MIN = 100;
+const PLANTA_ZOOM_MAX = 400;
+let plantaZoomPct = 100;
+let plantaPinch = null;
 
 async function renderPlantas() {
   const el = document.getElementById('mod-content');
@@ -7562,25 +7564,97 @@ async function abrirEditorPlanta(id) {
     else pdfBtn.style.display = 'none';
   }
   desarmarTipoPlanta();
-  plantaZoomIdx = 0;
+  plantaZoomPct = 100;
   aplicarZoomPlanta();
   configurarCanvasPlanta();
+  configurarZoomPlanta();
   renderMarcadoresPlanta();
   abrirModal('m-planta-editor');
 }
 
 function ajustarZoomPlanta(direcao) {
-  if (direcao === 0) plantaZoomIdx = 0;
-  else plantaZoomIdx = Math.max(0, Math.min(PLANTA_ZOOM_NIVEIS.length - 1, plantaZoomIdx + direcao));
+  plantaZoomPct = direcao === 0 ? 100 : Math.max(PLANTA_ZOOM_MIN, Math.min(PLANTA_ZOOM_MAX, plantaZoomPct + direcao * 30));
   aplicarZoomPlanta();
 }
 
 function aplicarZoomPlanta() {
-  const nivel = PLANTA_ZOOM_NIVEIS[plantaZoomIdx];
   const canvasEl = document.getElementById('planta-editor-canvas');
   const label = document.getElementById('planta-zoom-label');
-  if (canvasEl) canvasEl.style.width = nivel + '%';
-  if (label) label.textContent = nivel + '%';
+  if (canvasEl) canvasEl.style.width = plantaZoomPct + '%';
+  if (label) label.textContent = Math.round(plantaZoomPct) + '%';
+}
+
+// Muda o zoom mantendo o ponto (clientX/clientY na tela) fixo visualmente - assim
+// da zoom "no dedo"/"no cursor" em vez de sempre no canto superior esquerdo.
+function aplicarZoomNoPonto(novoZoomPct, clientX, clientY) {
+  const scrollEl = document.getElementById('planta-editor-scroll');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!scrollEl || !canvasEl) return;
+  const scrollRect = scrollEl.getBoundingClientRect();
+  const oldWidth = canvasEl.offsetWidth || 1;
+  const oldHeight = canvasEl.offsetHeight || 1;
+  const cursorX = clientX - scrollRect.left;
+  const cursorY = clientY - scrollRect.top;
+  const fracX = (scrollEl.scrollLeft + cursorX) / oldWidth;
+  const fracY = (scrollEl.scrollTop + cursorY) / oldHeight;
+
+  plantaZoomPct = Math.max(PLANTA_ZOOM_MIN, Math.min(PLANTA_ZOOM_MAX, novoZoomPct));
+  aplicarZoomPlanta();
+
+  const newWidth = canvasEl.offsetWidth || 1;
+  const newHeight = canvasEl.offsetHeight || 1;
+  scrollEl.scrollLeft = fracX * newWidth - cursorX;
+  scrollEl.scrollTop = fracY * newHeight - cursorY;
+}
+
+// Zoom com scroll do mouse (PC) e pinca com dois dedos (celular) - substitui os
+// botoes de +/-, que ficam so como reforço visual/reset.
+function configurarZoomPlanta() {
+  const scrollEl = document.getElementById('planta-editor-scroll');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!scrollEl || !canvasEl) return;
+
+  scrollEl.onwheel = function(e) {
+    e.preventDefault();
+    const fator = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+    aplicarZoomNoPonto(plantaZoomPct * fator, e.clientX, e.clientY);
+  };
+
+  const dedos = new Map();
+
+  canvasEl.onpointerdown = function(e) {
+    if (e.pointerType !== 'touch') return;
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2) {
+      const pts = Array.from(dedos.values());
+      plantaPinch = {
+        distInicial: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+        zoomInicial: plantaZoomPct
+      };
+    }
+  };
+  canvasEl.onpointermove = function(e) {
+    if (!dedos.has(e.pointerId)) return;
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2 && plantaPinch) {
+      e.preventDefault();
+      const pts = Array.from(dedos.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const midX = (pts[0].x + pts[1].x) / 2;
+      const midY = (pts[0].y + pts[1].y) / 2;
+      aplicarZoomNoPonto(plantaPinch.zoomInicial * (dist / plantaPinch.distInicial), midX, midY);
+    }
+  };
+  function soltarDedo(e) {
+    dedos.delete(e.pointerId);
+    if (dedos.size < 2 && plantaPinch) {
+      plantaPinch = null;
+      // evita que o "click" fantasma que vem logo depois da pinça crie um marcador
+      plantaUltimoToquePlantaMs = Date.now();
+    }
+  }
+  canvasEl.onpointerup = soltarDedo;
+  canvasEl.onpointercancel = soltarDedo;
 }
 
 function configurarCanvasPlanta() {

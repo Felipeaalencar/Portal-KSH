@@ -169,7 +169,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
-<script src="app.js?v=1784664528" defer></script>
+<script src="app.js?v=1784664760" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -963,14 +963,12 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-hd"><span class="modal-hd-title" id="planta-editor-titulo" data-i18n="planta_editor_title">Planta</span><button class="modal-close" onclick="fecharModal('m-planta-editor')">×</button></div>
     <div id="planta-editor-hint" style="font-size:12.5px;color:#666;background:#f9f9f7;border-radius:8px;padding:8px 12px;margin-bottom:10px" data-i18n="planta_hint_padrao">Escolha um dispositivo e toque na planta para posicionar. Arraste um ícone já colocado pra mover, toque nele pra anotar.</div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-      <button type="button" onclick="ajustarZoomPlanta(-1)" style="width:30px;height:30px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;line-height:1" data-i18n-title="planta_zoom_menos_title" title="Diminuir zoom">−</button>
-      <span id="planta-zoom-label" style="font-size:12px;color:#666;min-width:42px;text-align:center">100%</span>
-      <button type="button" onclick="ajustarZoomPlanta(1)" style="width:30px;height:30px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;font-size:16px;line-height:1" data-i18n-title="planta_zoom_mais_title" title="Aumentar zoom">+</button>
-      <button type="button" onclick="ajustarZoomPlanta(0)" style="padding:0 10px;height:30px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;font-size:11.5px" data-i18n="planta_zoom_ajustar_btn">Ajustar</button>
-      <span style="font-size:11px;color:#aaa" data-i18n="planta_zoom_hint">arraste pra navegar quando der zoom</span>
+      <span id="planta-zoom-label" style="font-size:12px;color:#666;min-width:42px">100%</span>
+      <button type="button" onclick="ajustarZoomPlanta(0)" style="padding:0 10px;height:26px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;font-size:11.5px" data-i18n="planta_zoom_ajustar_btn">Ajustar</button>
+      <span style="font-size:11px;color:#aaa" data-i18n="planta_zoom_hint">pinça pra dar zoom no celular, scroll do mouse no PC</span>
     </div>
     <div id="planta-editor-scroll" style="width:100%;max-height:62vh;overflow:auto;border:1px solid #e8e8e5;border-radius:8px;background:#f4f4f2;-webkit-overflow-scrolling:touch">
-      <div style="position:relative;width:100%" id="planta-editor-canvas">
+      <div style="position:relative;width:100%;touch-action:pan-x pan-y" id="planta-editor-canvas">
         <img id="planta-editor-img" style="display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none" draggable="false">
         <div id="planta-editor-marcadores" style="position:absolute;inset:0"></div>
       </div>
