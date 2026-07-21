@@ -7253,35 +7253,35 @@ const PLANTA_CORES = {
 };
 
 const PLANTA_ICONES_PADRAO = [
-  { nome: 'Câmera', emoji: '📷', cor: 'blue', kw: 'camera cftv seguranca video vigilancia' },
-  { nome: 'Alarme', emoji: '🚨', cor: 'coral', kw: 'alarme sirene seguranca alerta' },
-  { nome: 'Caixa de som', emoji: '🔊', cor: 'purple', kw: 'som audio caixa speaker gesso embutida musica' },
-  { nome: 'Controle de acesso', emoji: '🪪', cor: 'teal', kw: 'acesso controle cartao biometria catraca' },
-  { nome: 'Interruptor inteligente', emoji: '💡', cor: 'amber', kw: 'interruptor luz switch iluminacao dimmer' },
-  { nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'blue', kw: 'wifi ap access point rede sem fio roteador' },
-  { nome: 'Rack de rede', emoji: '🗄️', cor: 'gray', kw: 'rack rede switch servidor patch' },
-  { nome: 'Fechadura digital', emoji: '🔑', cor: 'coral', kw: 'fechadura porta digital trava smart lock' },
-  { nome: 'Sensor de presença', emoji: '🚶', cor: 'teal', kw: 'sensor presenca movimento pir' },
-  { nome: 'Sensor de abertura', emoji: '🚪', cor: 'teal', kw: 'sensor porta janela abertura contato' },
-  { nome: 'Ar-condicionado', emoji: '❄️', cor: 'blue', kw: 'termostato ar condicionado climatizacao hvac' },
-  { nome: 'Cortina motorizada', emoji: '🪟', cor: 'amber', kw: 'cortina persiana motorizada automacao' },
-  { nome: 'Campainha inteligente', emoji: '🔔', cor: 'coral', kw: 'campainha interfone video porteiro doorbell' },
-  { nome: 'Tomada inteligente', emoji: '🔌', cor: 'amber', kw: 'tomada smart plug energia' },
-  { nome: 'TV / Display', emoji: '📺', cor: 'purple', kw: 'tv televisao display tela' },
-  { nome: 'Projetor', emoji: '📽️', cor: 'purple', kw: 'projetor home theater cinema' },
-  { nome: 'Central de automação', emoji: '🧠', cor: 'teal', kw: 'central hub controladora crestron control4' },
-  { nome: 'Detector de fumaça', emoji: '🔥', cor: 'red', kw: 'fumaca incendio detector alarme incendio' },
-  { nome: 'Detector de vazamento', emoji: '💧', cor: 'blue', kw: 'agua vazamento sensor de agua' },
-  { nome: 'Nobreak / UPS', emoji: '🔋', cor: 'green', kw: 'nobreak ups bateria energia' },
-  { nome: 'Botoeira / keypad', emoji: '🔢', cor: 'gray', kw: 'botoeira keypad painel de controle teclado' },
-  { nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'gray', kw: 'ponto de rede rj45 cabo ethernet' },
-  { nome: 'Repetidor de sinal', emoji: '📡', cor: 'blue', kw: 'repetidor sinal antena extensor' },
-  { nome: 'Spot / trilho', emoji: '💡', cor: 'amber', kw: 'spot trilho iluminacao luminaria' },
-  { nome: 'Cofre', emoji: '🔐', cor: 'gray', kw: 'cofre seguranca protecao' },
-  { nome: 'Portão automático', emoji: '🚧', cor: 'coral', kw: 'portao automatico motor de portao' },
-  { nome: 'Irrigação', emoji: '🌱', cor: 'green', kw: 'irrigacao jardim valvula' },
-  { nome: 'Automação de piscina', emoji: '🏊', cor: 'blue', kw: 'piscina bomba automacao piscina' },
-  { nome: 'Genérico / outro', emoji: '📍', cor: 'gray', kw: 'outro generico diverso' }
+  { chave: 'camera', nome: 'Câmera', emoji: '📷', cor: 'blue', kw: 'camera cftv seguranca video vigilancia' },
+  { chave: 'alarme', nome: 'Alarme', emoji: '🚨', cor: 'coral', kw: 'alarme sirene seguranca alerta' },
+  { chave: 'som', nome: 'Caixa de som', emoji: '🔊', cor: 'purple', kw: 'som audio caixa speaker gesso embutida musica' },
+  { chave: 'acesso', nome: 'Controle de acesso', emoji: '🪪', cor: 'teal', kw: 'acesso controle cartao biometria catraca' },
+  { chave: 'interruptor', nome: 'Interruptor inteligente', emoji: '💡', cor: 'amber', kw: 'interruptor luz switch iluminacao dimmer' },
+  { chave: 'wifi', nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'blue', kw: 'wifi ap access point rede sem fio roteador' },
+  { chave: 'rack_rede', nome: 'Rack de rede', emoji: '🗄️', cor: 'gray', kw: 'rack rede switch servidor patch' },
+  { chave: 'fechadura', nome: 'Fechadura digital', emoji: '🔑', cor: 'coral', kw: 'fechadura porta digital trava smart lock' },
+  { chave: 'presenca', nome: 'Sensor de presença', emoji: '🚶', cor: 'teal', kw: 'sensor presenca movimento pir' },
+  { chave: 'abertura', nome: 'Sensor de abertura', emoji: '🚪', cor: 'teal', kw: 'sensor porta janela abertura contato' },
+  { chave: 'ar_condicionado', nome: 'Ar-condicionado', emoji: '❄️', cor: 'blue', kw: 'termostato ar condicionado climatizacao hvac' },
+  { chave: 'cortina', nome: 'Cortina motorizada', emoji: '🪟', cor: 'amber', kw: 'cortina persiana motorizada automacao' },
+  { chave: 'campainha', nome: 'Campainha inteligente', emoji: '🔔', cor: 'coral', kw: 'campainha interfone video porteiro doorbell' },
+  { chave: 'tomada', nome: 'Tomada inteligente', emoji: '🔌', cor: 'amber', kw: 'tomada smart plug energia' },
+  { chave: 'tv', nome: 'TV / Display', emoji: '📺', cor: 'purple', kw: 'tv televisao display tela' },
+  { chave: 'projetor', nome: 'Projetor', emoji: '📽️', cor: 'purple', kw: 'projetor home theater cinema' },
+  { chave: 'central', nome: 'Central de automação', emoji: '🧠', cor: 'teal', kw: 'central hub controladora crestron control4' },
+  { chave: 'fumaca', nome: 'Detector de fumaça', emoji: '🔥', cor: 'red', kw: 'fumaca incendio detector alarme incendio' },
+  { chave: 'vazamento', nome: 'Detector de vazamento', emoji: '💧', cor: 'blue', kw: 'agua vazamento sensor de agua' },
+  { chave: 'nobreak', nome: 'Nobreak / UPS', emoji: '🔋', cor: 'green', kw: 'nobreak ups bateria energia' },
+  { chave: 'botoeira', nome: 'Botoeira / keypad', emoji: '🔢', cor: 'gray', kw: 'botoeira keypad painel de controle teclado' },
+  { chave: 'ponto_rede', nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'gray', kw: 'ponto de rede rj45 cabo ethernet' },
+  { chave: 'repetidor', nome: 'Repetidor de sinal', emoji: '📡', cor: 'blue', kw: 'repetidor sinal antena extensor' },
+  { chave: 'spot', nome: 'Spot / trilho', emoji: '💡', cor: 'amber', kw: 'spot trilho iluminacao luminaria' },
+  { chave: 'cofre', nome: 'Cofre', emoji: '🔐', cor: 'gray', kw: 'cofre seguranca protecao' },
+  { chave: 'portao', nome: 'Portão automático', emoji: '🚧', cor: 'coral', kw: 'portao automatico motor de portao' },
+  { chave: 'irrigacao', nome: 'Irrigação', emoji: '🌱', cor: 'green', kw: 'irrigacao jardim valvula' },
+  { chave: 'piscina', nome: 'Automação de piscina', emoji: '🏊', cor: 'blue', kw: 'piscina bomba automacao piscina' },
+  { chave: 'generico', nome: 'Genérico / outro', emoji: '📍', cor: 'gray', kw: 'outro generico diverso' }
 ];
 
 let plantasData = [];
@@ -7367,7 +7367,7 @@ async function salvarNovaPlanta() {
     ]);
     if (!imgUp?.id) throw new Error(tr('planta_erro_processar'));
 
-    const imagemUrl = urlImagemDriveGrande(imgUp.thumbnailLink) || ('https://drive.google.com/uc?id=' + imgUp.id);
+    const imagemUrl = 'https://drive.google.com/thumbnail?id=' + imgUp.id + '&sz=w1600';
     const pdfUrl = pdfUp?.id ? ('https://drive.google.com/file/d/' + pdfUp.id + '/view') : '';
 
     const [nova] = await sbPost('projetos_plantas', {
@@ -7474,7 +7474,8 @@ async function criarMarcadorPlanta(x, y) {
   if (!tipo) return;
   try {
     const [criado] = await sbPost('projetos_planta_marcadores', {
-      planta_id: plantaEditandoId, nome: tipo.nome, emoji: tipo.emoji, cor: tipo.cor,
+      planta_id: plantaEditandoId, nome: tipo.nome, cor: tipo.cor,
+      icone_chave: tipo.chave || '', emoji: tipo.chave ? '' : (tipo.emoji || ''),
       x_pct: x, y_pct: y, observacoes: '', criado_por: ME.nome
     });
     plantaAtual.marcadores.push(criado);
@@ -7497,7 +7498,7 @@ function criarElementoMarcadorPlanta(marcador, cont) {
 
   const bola = document.createElement('div');
   bola.style.cssText = 'width:30px;height:30px;border-radius:50%;background:' + cor.bg + ';border:1.5px solid ' + cor.text + ';display:flex;align-items:center;justify-content:center;cursor:grab;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,.18);touch-action:none';
-  bola.textContent = marcador.emoji || '📍';
+  bola.textContent = emojiDoMarcador(marcador);
   bola.title = marcador.nome + (marcador.observacoes ? ' — ' + marcador.observacoes : '');
 
   const xBtn = document.createElement('div');
@@ -7560,7 +7561,7 @@ async function excluirMarcadorPlanta(marcador, wrapEl) {
 
 function abrirObsMarcadorPlanta(marcador) {
   plantaMarcadorAtual = marcador;
-  document.getElementById('planta-obs-titulo').textContent = (marcador.emoji || '') + ' ' + marcador.nome;
+  document.getElementById('planta-obs-titulo').textContent = emojiDoMarcador(marcador) + ' ' + marcador.nome;
   document.getElementById('planta-obs-texto').value = marcador.observacoes || '';
   abrirModal('m-planta-obs');
 }
@@ -7591,9 +7592,19 @@ async function excluirMarcadorPlantaAtual() {
 
 function todosTiposIconePlanta() {
   const custom = plantaTiposCustom.map(function(t) {
-    return { id: t.id, nome: t.nome, emoji: t.emoji, cor: t.cor || 'gray', kw: (t.nome || '').toLowerCase() };
+    return { chave: '', id: t.id, nome: t.nome, emoji: t.emoji, cor: t.cor || 'gray', kw: (t.nome || '').toLowerCase() };
   });
   return PLANTA_ICONES_PADRAO.concat(custom);
+}
+
+// Ícones padrão são resolvidos pela chave (nunca guardamos o emoji deles no banco,
+// só o das customizados) - evita qualquer corrupção de encoding no ida-e-volta com o banco.
+function emojiDoMarcador(marcador) {
+  if (marcador.icone_chave) {
+    const padrao = PLANTA_ICONES_PADRAO.find(function(t) { return t.chave === marcador.icone_chave; });
+    if (padrao) return padrao.emoji;
+  }
+  return marcador.emoji || '📍';
 }
 
 function abrirBibliotecaIcones() {
