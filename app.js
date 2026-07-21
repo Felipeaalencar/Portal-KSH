@@ -240,6 +240,27 @@ const I18N = {
   cat_salvo: { en: 'Item saved!', pt: 'Item salvo!' },
   cat_excluir_confirm: { en: 'Delete this item?', pt: 'Excluir este item?' },
   cat_excluido: { en: 'Item deleted', pt: 'Item excluído' },
+
+  // Proposta detalhada (Areas/Itens do Orcamento)
+  orc_proposta_label: { en: 'Detailed proposal', pt: 'Proposta detalhada' },
+  orc_add_area_btn: { en: '+ Area', pt: '+ Área' },
+  orc_add_item_btn: { en: '+ Item', pt: '+ Item' },
+  orc_sem_areas: { en: 'No areas added yet', pt: 'Nenhuma área adicionada ainda' },
+  orc_area_sem_itens: { en: 'No items in this area', pt: 'Nenhum item nesta área' },
+  orc_area_total: { en: 'Area total:', pt: 'Total da área:' },
+  orc_area_prompt_nome: { en: 'Area name:', pt: 'Nome da área:' },
+  orc_area_excluir_confirm: { en: 'Delete this area and all its items?', pt: 'Excluir esta área e todos os itens dela?' },
+  label_item_catalogo: { en: 'Catalog item', pt: 'Item do catálogo' },
+  orc_item_add_title: { en: 'Add Item', pt: 'Adicionar Item' },
+  orc_item_manual_opcao: { en: '-- type a custom item --', pt: '-- digitar um item manual --' },
+  orc_item_prompt_nome: { en: 'Item name:', pt: 'Nome do item:' },
+  orc_item_nome_obrigatorio: { en: 'Enter a name for the item', pt: 'Informe um nome para o item' },
+  label_imposto_pct: { en: 'Tax on materials (%)', pt: 'Imposto sobre material (%)' },
+  orc_total_parts: { en: 'Total parts', pt: 'Total de material' },
+  orc_total_labor: { en: 'Total labor', pt: 'Total de mão de obra' },
+  orc_subtotal: { en: 'Subtotal', pt: 'Subtotal' },
+  orc_imposto: { en: 'Tax', pt: 'Imposto' },
+  orc_total_proposta: { en: 'Proposal total', pt: 'Total da proposta' },
   eu: { en: 'me', pt: 'eu' },
   btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
 
@@ -1654,6 +1675,12 @@ function abrirNovoOrcamento() {
   if (selBox) selBox.style.display = 'none';
   const resBox = document.getElementById('orc-cliente-res');
   if (resBox) resBox.style.display = 'none';
+  orcEditandoId = null;
+  orcAreasData = [];
+  const valorInput = document.getElementById('orc-valor');
+  if (valorInput) valorInput.readOnly = false;
+  const propostaSection = document.getElementById('orc-proposta-section');
+  if (propostaSection) propostaSection.style.display = 'none';
   document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_novo_title');
   const btn = document.getElementById('m-novo-orc').querySelector('.btn-pri');
   btn.textContent = tr('btn_cadastrar');
@@ -1709,7 +1736,7 @@ async function salvarOrcamento() {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
-function abrirEditarOrcamento(id) {
+async function abrirEditarOrcamento(id) {
   const o = orcamentosData.find(x => x.id === id);
   if (!o) return;
   document.getElementById('orc-titulo').value = o.titulo || '';
@@ -1725,12 +1752,18 @@ function abrirEditarOrcamento(id) {
     orcClienteSel = null;
     document.getElementById('orc-cliente-sel').style.display = 'none';
   }
+  const propostaSection = document.getElementById('orc-proposta-section');
+  if (propostaSection) propostaSection.style.display = 'block';
+  document.getElementById('orc-imposto-pct').value = o.imposto_pct != null ? o.imposto_pct : 0;
+  await carregarPropostaOrcamento(id);
   document.getElementById('m-novo-orc').querySelector('.modal-hd-title').textContent = tr('orc_editar_title');
   const btn = document.getElementById('m-novo-orc').querySelector('.btn-pri');
   btn.textContent = tr('btn_salvar');
   btn.onclick = async () => {
     const tituloNovo = document.getElementById('orc-titulo')?.value.trim();
     if (!tituloNovo) { toast(tr('orc_titulo_obrigatorio'), 'err'); return; }
+    const impostoPct = parseFloat(document.getElementById('orc-imposto-pct')?.value) || 0;
+    const valorFinal = orcAreasData.length ? calcularTotaisOrcamentoProposta().total : (document.getElementById('orc-valor')?.value ? parseFloat(document.getElementById('orc-valor').value) : null);
     try {
       await sbPatch('crm_orcamentos?id=eq.' + id, {
         titulo: tituloNovo,
@@ -1739,7 +1772,8 @@ function abrirEditarOrcamento(id) {
         cliente_tel: orcClienteSel?.telefone || null,
         cliente_email: orcClienteSel?.email || null,
         descricao: document.getElementById('orc-descricao')?.value.trim() || null,
-        valor: document.getElementById('orc-valor')?.value ? parseFloat(document.getElementById('orc-valor').value) : null
+        valor: valorFinal,
+        imposto_pct: impostoPct
       });
       fecharModal('m-novo-orc');
       toast(tr('orc_salvo'), 'ok');
@@ -1747,6 +1781,175 @@ function abrirEditarOrcamento(id) {
     } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
   };
   abrirModal('m-novo-orc');
+}
+
+// ── PROPOSTA DETALHADA (Areas / Itens dentro do Orçamento) ─────
+let orcAreasData = [];
+let orcEditandoId = null;
+let orcItemAreaAlvo = null;
+let catalogoCache = [];
+
+async function garantirCatalogoCache() {
+  try { catalogoCache = await sbGet('catalogo_itens?ativo=eq.true&order=nome'); }
+  catch(e) { catalogoCache = catalogoCache || []; }
+  return catalogoCache;
+}
+
+async function carregarPropostaOrcamento(orcId) {
+  orcEditandoId = orcId;
+  let areas = [], itens = [];
+  try {
+    [areas, itens] = await Promise.all([
+      sbGet('orcamento_areas?orcamento_id=eq.' + orcId + '&order=ordem.asc'),
+      sbGet('orcamento_itens?order=ordem.asc')
+    ]);
+  } catch(e) {}
+  orcAreasData = areas.map(a => ({ ...a, itens: itens.filter(it => it.area_id === a.id) }));
+  renderAreasOrcamento();
+}
+
+function orcTotaisArea(area) {
+  return (area.itens || []).reduce((s, it) => s + (Number(it.preco_unitario)||0) * (Number(it.quantidade)||0), 0);
+}
+
+function renderAreasOrcamento() {
+  const el = document.getElementById('orc-areas-lista');
+  if (!el) return;
+  el.innerHTML = orcAreasData.length
+    ? orcAreasData.map(a => areaCardHTML(a)).join('')
+    : '<div style="font-size:12px;color:#bbb">' + tr('orc_sem_areas') + '</div>';
+  atualizarResumoFinanceiroOrcamento();
+}
+
+function areaCardHTML(area) {
+  const total = orcTotaisArea(area);
+  return '<div style="border:1px solid #e8e8e5;border-radius:8px;padding:10px 12px">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+      + '<span style="font-size:12px;font-weight:600">' + area.nome + '</span>'
+      + '<span style="display:flex;gap:6px">'
+        + '<button type="button" onclick="abrirNovoItemOrcamento(\'' + area.id + '\')" style="font-size:10px;padding:3px 9px;border:1px dashed #d4d4d0;border-radius:6px;background:#fff;cursor:pointer">' + tr('orc_add_item_btn') + '</button>'
+        + '<button type="button" onclick="excluirAreaOrcamento(\'' + area.id + '\')" style="background:none;border:none;cursor:pointer;color:#c00;font-size:11px">' + tr('orc_excluir') + '</button>'
+      + '</span>'
+    + '</div>'
+    + (area.itens && area.itens.length
+        ? '<table style="width:100%;font-size:11px;border-collapse:collapse">'
+          + area.itens.map(it => '<tr style="border-top:1px solid #f0f0ee">'
+              + '<td style="padding:5px 4px">' + it.nome + ' <span style="color:#bbb">(' + (it.tipo==='material'?tr('cat_tipo_material'):tr('cat_tipo_mao_obra')) + ')</span></td>'
+              + '<td style="padding:5px 4px;text-align:right;white-space:nowrap">$' + Number(it.preco_unitario).toFixed(2) + ' × ' + it.quantidade + '</td>'
+              + '<td style="padding:5px 4px;text-align:right;font-weight:600;white-space:nowrap">$' + (Number(it.preco_unitario)*Number(it.quantidade)).toFixed(2) + '</td>'
+              + '<td style="padding:5px 4px;text-align:right"><button type="button" onclick="excluirItemOrcamento(\'' + it.id + '\',\'' + area.id + '\')" style="background:none;border:none;cursor:pointer;color:#bbb;font-size:14px">×</button></td>'
+            + '</tr>').join('')
+          + '</table>'
+        : '<div style="font-size:11px;color:#bbb">' + tr('orc_area_sem_itens') + '</div>')
+    + '<div style="text-align:right;font-size:11px;font-weight:600;margin-top:6px">' + tr('orc_area_total') + ' $' + total.toFixed(2) + '</div>'
+    + '</div>';
+}
+
+async function adicionarAreaOrcamento() {
+  if (!orcEditandoId) return;
+  const nome = prompt(tr('orc_area_prompt_nome'));
+  if (!nome || !nome.trim()) return;
+  try {
+    const [nova] = await sbPost('orcamento_areas', { orcamento_id: orcEditandoId, nome: nome.trim(), ordem: orcAreasData.length });
+    orcAreasData.push({ ...nova, itens: [] });
+    renderAreasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirAreaOrcamento(areaId) {
+  if (!confirm(tr('orc_area_excluir_confirm'))) return;
+  try {
+    await sbDelete('orcamento_areas?id=eq.' + areaId);
+    orcAreasData = orcAreasData.filter(a => a.id !== areaId);
+    renderAreasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirNovoItemOrcamento(areaId) {
+  orcItemAreaAlvo = areaId;
+  await garantirCatalogoCache();
+  document.getElementById('oi-tipo').value = 'material';
+  document.getElementById('oi-qtd').value = 1;
+  document.getElementById('oi-preco').value = '';
+  popularSelectCatalogoItem('material');
+  abrirModal('m-orc-item');
+}
+
+function popularSelectCatalogoItem(tipo) {
+  const sel = document.getElementById('oi-catalogo-sel');
+  if (!sel) return;
+  const lista = catalogoCache.filter(c => c.tipo === tipo);
+  sel.innerHTML = '<option value="">' + tr('orc_item_manual_opcao') + '</option>'
+    + lista.map(c => '<option value="' + c.id + '">' + c.nome + ' — $' + Number(c.preco_venda).toFixed(2) + '</option>').join('');
+  document.getElementById('oi-preco').value = '';
+}
+
+function preencherItemDoCatalogo(selectEl) {
+  const c = catalogoCache.find(x => x.id === selectEl.value);
+  if (c) document.getElementById('oi-preco').value = c.preco_venda;
+}
+
+async function salvarItemOrcamento() {
+  if (!orcItemAreaAlvo) return;
+  const tipo = document.getElementById('oi-tipo')?.value || 'material';
+  const catalogoId = document.getElementById('oi-catalogo-sel')?.value || null;
+  const catalogoItem = catalogoId ? catalogoCache.find(c => c.id === catalogoId) : null;
+  const nome = catalogoItem ? catalogoItem.nome : prompt(tr('orc_item_prompt_nome'));
+  if (!nome || !nome.trim()) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
+  const qtd = parseFloat(document.getElementById('oi-qtd')?.value) || 1;
+  const preco = parseFloat(document.getElementById('oi-preco')?.value) || 0;
+  const areaId = orcItemAreaAlvo;
+  try {
+    const area = orcAreasData.find(a => a.id === areaId);
+    const [novo] = await sbPost('orcamento_itens', {
+      area_id: areaId,
+      catalogo_item_id: catalogoId || null,
+      tipo, nome: nome.trim(),
+      descricao: catalogoItem?.descricao || '',
+      preco_unitario: preco,
+      quantidade: qtd,
+      ordem: area ? area.itens.length : 0
+    });
+    if (area) area.itens.push(novo);
+    fecharModal('m-orc-item');
+    renderAreasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirItemOrcamento(itemId, areaId) {
+  try {
+    await sbDelete('orcamento_itens?id=eq.' + itemId);
+    const area = orcAreasData.find(a => a.id === areaId);
+    if (area) area.itens = area.itens.filter(it => it.id !== itemId);
+    renderAreasOrcamento();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function calcularTotaisOrcamentoProposta() {
+  let totalParts = 0, totalLabor = 0;
+  orcAreasData.forEach(a => (a.itens || []).forEach(it => {
+    const sub = (Number(it.preco_unitario)||0) * (Number(it.quantidade)||0);
+    if (it.tipo === 'mao_obra') totalLabor += sub; else totalParts += sub;
+  }));
+  const subtotal = totalParts + totalLabor;
+  const impostoPct = parseFloat(document.getElementById('orc-imposto-pct')?.value) || 0;
+  const imposto = totalParts * impostoPct / 100;
+  const total = subtotal + imposto;
+  return { totalParts, totalLabor, subtotal, impostoPct, imposto, total };
+}
+
+function atualizarResumoFinanceiroOrcamento() {
+  const el = document.getElementById('orc-resumo-financeiro');
+  const valorInput = document.getElementById('orc-valor');
+  if (!el) return;
+  if (!orcAreasData.length) { el.innerHTML = ''; if (valorInput) valorInput.readOnly = false; return; }
+  const t = calcularTotaisOrcamentoProposta();
+  el.innerHTML = '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + tr('orc_total_parts') + '</span><span>$' + t.totalParts.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + tr('orc_total_labor') + '</span><span>$' + t.totalLabor.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:2px 0"><span>' + tr('orc_subtotal') + '</span><span>$' + t.subtotal.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:2px 0;color:#888"><span>' + tr('orc_imposto') + ' (' + t.impostoPct + '%)</span><span>$' + t.imposto.toFixed(2) + '</span></div>'
+    + '<div style="display:flex;justify-content:space-between;padding:4px 0 0;margin-top:4px;border-top:1px solid #e8e8e5;font-weight:700"><span>' + tr('orc_total_proposta') + '</span><span>$' + t.total.toFixed(2) + '</span></div>';
+  if (valorInput) { valorInput.value = t.total.toFixed(2); valorInput.readOnly = true; }
 }
 
 async function excluirOrcamento(id) {

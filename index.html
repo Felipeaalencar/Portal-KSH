@@ -165,7 +165,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784597856" defer></script>
+<script src="app.js?v=1784599544" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -626,7 +626,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 
 <!-- Modal Novo/Editar Orçamento (CRM) -->
 <div class="modal-bg" id="m-novo-orc">
-  <div class="modal-box" style="width:480px">
+  <div class="modal-box" style="width:560px">
     <div class="modal-hd"><span class="modal-hd-title" data-i18n="orc_novo_title">Novo Orçamento</span><button class="modal-close" onclick="fecharModal('m-novo-orc')">×</button></div>
     <label class="f-lbl" data-i18n="label_titulo_orcamento">Título</label><input class="f-inp" id="orc-titulo" placeholder="Título" data-i18n-placeholder="titulo_orcamento_ph">
     <label class="f-lbl" data-i18n="label_cliente_orcamento">Cliente</label>
@@ -640,6 +640,18 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     </div>
     <label class="f-lbl" data-i18n="label_valor_orcamento">Valor estimado ($)</label><input class="f-inp" id="orc-valor" type="number" step="0.01" placeholder="0.00">
     <label class="f-lbl" data-i18n="label_descricao_orcamento">Descrição</label><textarea class="f-ta" id="orc-descricao" placeholder="Escopo, equipamentos, observações..." data-i18n-placeholder="descricao_orcamento_ph"></textarea>
+    <div id="orc-proposta-section" style="display:none;margin-top:6px;padding-top:14px;border-top:1px solid #e8e8e5">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:13px;font-weight:600" data-i18n="orc_proposta_label">Proposta detalhada</span>
+        <button type="button" onclick="adicionarAreaOrcamento()" style="padding:5px 12px;border:1px dashed #d4d4d0;border-radius:7px;font-size:11px;cursor:pointer;color:#555;background:#fff" data-i18n="orc_add_area_btn">+ Área</button>
+      </div>
+      <div id="orc-areas-lista" style="display:flex;flex-direction:column;gap:10px;margin-bottom:10px"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <label style="font-size:11px;color:#888" data-i18n="label_imposto_pct">Imposto sobre material (%)</label>
+        <input type="number" step="0.01" id="orc-imposto-pct" style="width:70px;padding:5px 8px;border:1px solid #e8e8e5;border-radius:6px;font-size:12px" oninput="atualizarResumoFinanceiroOrcamento()">
+      </div>
+      <div id="orc-resumo-financeiro" style="background:#f9f9f7;border-radius:8px;padding:10px 12px;font-size:12px"></div>
+    </div>
     <div class="modal-btns">
       <button class="btn-sec" onclick="fecharModal('m-novo-orc')" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="salvarOrcamento()" data-i18n="btn_cadastrar">Cadastrar</button>
@@ -657,6 +669,28 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
     <div class="modal-btns">
       <button class="btn-sec" onclick="cancelarPerdaOrcamento()" data-i18n="btn_cancelar">Cancelar</button>
       <button class="btn-pri" onclick="confirmarPerdaOrcamento()" data-i18n="btn_confirmar">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Adicionar Item a uma Area do Orcamento -->
+<div class="modal-bg" id="m-orc-item">
+  <div class="modal-box" style="width:440px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="orc_item_add_title">Adicionar Item</span><button class="modal-close" onclick="fecharModal('m-orc-item')">×</button></div>
+    <label class="f-lbl" data-i18n="label_tipo_item">Tipo</label>
+    <select class="f-sel" id="oi-tipo" onchange="popularSelectCatalogoItem(this.value)">
+      <option value="material" data-i18n="cat_tipo_material">Material</option>
+      <option value="mao_obra" data-i18n="cat_tipo_mao_obra">Mão de obra</option>
+    </select>
+    <label class="f-lbl" data-i18n="label_item_catalogo">Item do catálogo</label>
+    <select class="f-sel" id="oi-catalogo-sel" onchange="preencherItemDoCatalogo(this)"></select>
+    <div style="display:flex;gap:8px">
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_quantidade">Quantidade</label><input class="f-inp" type="number" step="0.01" id="oi-qtd" value="1"></div>
+      <div style="flex:1"><label class="f-lbl" data-i18n="label_preco_venda">Preço de venda (US$)</label><input class="f-inp" type="number" step="0.01" id="oi-preco" placeholder="0.00"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-orc-item')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarItemOrcamento()" data-i18n="btn_add">Adicionar</button>
     </div>
   </div>
 </div>
