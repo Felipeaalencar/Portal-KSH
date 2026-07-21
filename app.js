@@ -252,6 +252,12 @@ const I18N = {
   label_dia_executado: { en: 'Work has already been done', pt: 'Trabalho já foi executado' },
   resumo_dias_agendados_aviso: { en: 'scheduled day(s) not yet counted in the total', pt: 'dia(s) agendado(s) ainda não contabilizado(s) no total' },
   os_finalizada_label: { en: 'Completed order', pt: 'OS finalizada' },
+  os_tab_geral: { en: 'Overview', pt: 'Visão geral' },
+  os_tab_dias: { en: 'Days', pt: 'Dias' },
+  os_tab_gastos: { en: 'Expenses', pt: 'Gastos' },
+  os_tab_financeiro: { en: 'Finance', pt: 'Financeiro' },
+  os_tab_fotos: { en: 'Photos', pt: 'Fotos' },
+  os_tab_anotacoes: { en: 'Notes', pt: 'Anotações' },
   os_finalizar_label: { en: 'Finish order', pt: 'Finalizar OS' },
   os_finalizar_desc: { en: 'Generates the AI work summary and marks the order as completed', pt: 'Gera o resumo do trabalho com IA e marca a OS como concluída' },
   os_concluir_btn: { en: 'Complete order', pt: 'Concluir OS' },
@@ -2051,6 +2057,29 @@ function renderOSLista(lista) {
 }
 
 // Abrir OS — modal de detalhe
+const OS_TABS = [
+  { id: 'geral', key: 'os_tab_geral', icon: '📋' },
+  { id: 'dias', key: 'os_tab_dias', icon: '📅' },
+  { id: 'gastos', key: 'os_tab_gastos', icon: '💰' },
+  { id: 'financeiro', key: 'os_tab_financeiro', icon: '📊' },
+  { id: 'fotos', key: 'os_tab_fotos', icon: '📷' },
+  { id: 'anotacoes', key: 'os_tab_anotacoes', icon: '📝' },
+];
+
+function osTabBarHTML(osId, ativa) {
+  return OS_TABS.map(t => '<button onclick="mudarAbaOS(\'' + osId + '\',\'' + t.id + '\')" data-os-tab="' + t.id + '" style="flex-shrink:0;padding:6px 12px;border-radius:99px;font-size:11px;border:1px solid ' + (ativa===t.id?'#1a1a1a':'#e8e8e5') + ';background:' + (ativa===t.id?'#1a1a1a':'#fff') + ';color:' + (ativa===t.id?'#fff':'#555') + ';cursor:pointer;font-family:inherit;white-space:nowrap">' + t.icon + ' ' + tr(t.key) + '</button>').join('');
+}
+
+function mudarAbaOS(osId, tabId) {
+  OS_TABS.forEach(t => {
+    const pane = document.getElementById('os-tab-' + t.id + '-' + osId);
+    if (pane) pane.style.display = (t.id === tabId) ? 'block' : 'none';
+  });
+  const bar = document.getElementById('os-tabbar-' + osId);
+  if (bar) bar.innerHTML = osTabBarHTML(osId, tabId);
+}
+
+
 async function abrirOS(id) {
   const os = osData.find(o => o.id === id);
   if (!os) return;
@@ -2088,7 +2117,9 @@ async function abrirOS(id) {
     </div>
     <button onclick="fecharModal('m-det-os')" style="background:none;border:none;cursor:pointer;font-size:22px;color:#bbb">×</button>
   </div>
+  <div id="os-tabbar-${id}" style="display:flex;gap:6px;padding:10px 20px;border-bottom:1px solid #e8e8e5;overflow-x:auto">${osTabBarHTML(id,'geral')}</div>
   <div style="padding:18px 20px">
+    <div id="os-tab-geral-${id}">
     <div class="os-grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
       <div style="background:#f9f9f7;border-radius:8px;padding:12px">
         <div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">${tr('os_cliente_label')}</div>
@@ -2132,6 +2163,8 @@ async function abrirOS(id) {
       </div>
       <button id="status-save-${id}" onclick="salvarStatusOS('${id}')" style="display:none;padding:6px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_salvar_alteracoes')}</button>
     </div>
+    </div>
+    <div id="os-tab-dias-${id}" style="display:none">
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_dias_label')} (${dias.length})</div>
@@ -2141,6 +2174,8 @@ async function abrirOS(id) {
         ${dias.length ? dias.map(d => diaTrabalhoCardHTML(d, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('dia_sem_registro')+'</div>'}
       </div>
     </div>
+    </div>
+    <div id="os-tab-gastos-${id}" style="display:none">
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_gastos_label')} (${gastos.length})</div>
@@ -2150,11 +2185,15 @@ async function abrirOS(id) {
         ${gastos.length ? gastos.map(g => gastoCardHTML(g, id)).join('') : '<div style="color:#bbb;font-size:12px">'+tr('gasto_sem_registro')+'</div>'}
       </div>
     </div>
+    </div>
+    <div id="os-tab-financeiro-${id}" style="display:none">
     <div style="margin-bottom:16px">
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('resumo_valores_label')}</div>
       ${resumoValoresHTML(resumoValores, id, os)}
     </div>
     ${os.resumo_ia ? '<div style="margin-bottom:16px"><div style="font-size:13px;font-weight:600;margin-bottom:8px">'+tr('resumo_trabalho_label')+'</div><div style="background:#f9f9f7;border-radius:8px;padding:10px 12px;font-size:12px;white-space:pre-wrap">'+os.resumo_ia+'</div></div>' : ''}
+    </div>
+    <div id="os-tab-fotos-${id}" style="display:none">
     <div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
         <div style="font-size:13px;font-weight:600">${tr('os_fotos_label')} (${fotos.length})</div>
@@ -2168,6 +2207,8 @@ async function abrirOS(id) {
       </div>
       <div id="upload-prog" style="display:none;text-align:center;font-size:12px;color:#2563eb;margin-top:8px">${tr('os_enviando')}</div>
     </div>
+    </div>
+    <div id="os-tab-anotacoes-${id}" style="display:none">
     <div>
       <div style="font-size:13px;font-weight:600;margin-bottom:10px">${tr('os_anotacoes_label')} (${notas.length})</div>
       <div id="notas-${id}" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
@@ -2180,6 +2221,7 @@ async function abrirOS(id) {
         <button id="nota-btn-${id}" onclick="gerarResumoNota('${id}')" style="padding:8px 14px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;cursor:pointer;font-family:inherit">${tr('os_enviar')}</button>
       </div>
       <div id="nota-rec-status-${id}" style="display:none;font-size:11px;color:#e74c3c;margin-top:6px"></div>
+    </div>
     </div>
     <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8e8e5">
       ${os.status === 'concluida'
