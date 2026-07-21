@@ -362,6 +362,11 @@ const I18N = {
   rack_pdf_titulo: { en: 'Rack', pt: 'Rack' },
   rack_enviando_os: { en: 'Sending...', pt: 'Enviando...' },
   rack_enviado_os_sucesso: { en: 'Rack sent to the work order', pt: 'Rack enviado para a OS' },
+  rack_anexar_foto_btn: { en: 'Attach photo (no AI)', pt: 'Anexar foto (sem IA)' },
+  rack_anexando_foto: { en: 'Attaching...', pt: 'Anexando...' },
+  rack_foto_anexada_sucesso: { en: 'Photo attached', pt: 'Foto anexada' },
+  rack_vinculado_label: { en: 'Linked rack', pt: 'Rack vinculado' },
+  rack_nao_encontrado: { en: 'Rack not found', pt: 'Rack não encontrado' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -2807,13 +2812,14 @@ async function abrirOS(id, opts) {
     return fid ? ('https://drive.google.com/thumbnail?id=' + fid + '&sz=w400') : '';
   }
 
-  let fotos = [], notas = [], dias = [], gastos = [];
+  let fotos = [], notas = [], dias = [], gastos = [], racksVinculados = [];
   try {
-    [fotos, notas, dias, gastos] = await Promise.all([
+    [fotos, notas, dias, gastos, racksVinculados] = await Promise.all([
       sbGet('os_fotos?os_id=eq.' + id + '&order=criado_em.desc'),
       sbGet('os_notas?os_id=eq.' + id + '&order=criado_em.asc'),
       sbGet('os_dias?os_id=eq.' + id + '&order=data.asc'),
-      sbGet('os_gastos?os_id=eq.' + id + '&order=criado_em.desc')
+      sbGet('os_gastos?os_id=eq.' + id + '&order=criado_em.desc'),
+      sbGet('projetos_racks?os_id=eq.' + id)
     ]);
   } catch(e) {}
   await garantirTecnicosAtivosCache();
@@ -2843,6 +2849,7 @@ async function abrirOS(id, opts) {
         <div style="font-size:11px;color:#888;margin-top:3px">${tr('os_por')}${os.criado_por||'—'}</div>
       </div>
       ${os.endereco?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px">'+tr('os_endereco_label')+'</div><div style="display:flex;gap:10px"><a href="https://waze.com/ul?q='+encodeURIComponent(os.endereco)+'&navigate=yes" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">🚗 Waze</a><a href="https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(os.endereco)+'" target="_blank" style="font-size:11px;color:#2563eb;text-decoration:none;font-weight:500">📍 Maps</a></div></div><div style="font-size:13px">'+os.endereco+'</div></div>':''}
+      ${racksVinculados.length?'<div style="background:#f9f9f7;border-radius:8px;padding:12px;grid-column:span 2"><div style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+tr('rack_vinculado_label')+'</div>'+racksVinculados.map(r=>'<div style="display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:4px 0"><span style="font-weight:600">'+r.nome+' — '+r.tamanho_u+'U</span><button onclick="abrirRackDaOS(\''+r.id+'\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">'+tr('rack_abrir')+'</button></div>').join('')+'</div>':''}
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px;grid-column:span 2">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
           <div style="font-size:9px;color:#92400e;text-transform:uppercase;letter-spacing:.5px">${tr('os_servico_label')}</div>
@@ -6411,6 +6418,24 @@ async function excluirRack(id) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+async function abrirRackDaOS(rackId) {
+  fecharOSDetalhe();
+  goPage(null, 'projetos-rack', 'Rack', 'Projetos');
+  try {
+    const rows = await sbGet('projetos_racks?id=eq.' + rackId);
+    const r = rows[0];
+    if (!r) { toast(tr('rack_nao_encontrado'), 'err'); return; }
+    if (!racksData.find(x => x.id === rackId)) racksData.push(r);
+    rackEditandoId = rackId;
+    let itens = [];
+    try { itens = await sbGet('projetos_rack_itens?rack_id=eq.' + rackId + '&order=ordem.asc'); } catch(e) {}
+    rackAtual = { ...r, itens };
+    document.getElementById('rack-editor-titulo').textContent = r.nome;
+    renderRackEditor();
+    abrirModal('m-rack-editor');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
 async function abrirEditorRack(id) {
   const r = racksData.find(x => x.id === id);
   if (!r) return;
@@ -6621,6 +6646,24 @@ function atualizarBotaoFotoOriginalRack() {
   } else {
     btn.style.display = 'none';
     btn.href = '#';
+  }
+}
+
+async function anexarFotoRackSemIA(event) {
+  const file = event.target.files[0];
+  if (!file || !rackAtual) return;
+  const statusEl = document.getElementById('rack-anexo-status');
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('rack_anexando_foto'); }
+  const url = await salvarFotoOriginalRack(rackAtual.id, file);
+  event.target.value = '';
+  if (url) {
+    rackAtual.foto_original_drive_url = url;
+    atualizarBotaoFotoOriginalRack();
+    if (statusEl) { statusEl.style.color = '#166534'; statusEl.textContent = tr('rack_foto_anexada_sucesso'); }
+    toast(tr('rack_foto_anexada_sucesso'), 'ok');
+  } else if (statusEl) {
+    statusEl.style.color = '#e74c3c';
+    statusEl.textContent = tr('drive_conecte_primeiro');
   }
 }
 

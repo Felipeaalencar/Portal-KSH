@@ -167,7 +167,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-<script src="app.js?v=1784658487" defer></script>
+<script src="app.js?v=1784659096" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -846,6 +846,9 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
         <div id="rack-foto-nome" style="font-size:11px;color:#888;margin-bottom:6px"></div>
         <button type="button" id="rack-ler-ia-btn" onclick="importarRackDeFoto()" style="display:none;width:100%;padding:9px 14px;border:1px solid #333;border-radius:8px;background:#333;color:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:10px" data-i18n="rack_ler_foto_btn">Ler foto e preencher</button>
         <div id="rack-ia-status" style="display:none;font-size:11px;margin-bottom:10px"></div>
+        <input type="file" id="rack-anexo-foto-input" accept="image/*" style="display:none" onchange="anexarFotoRackSemIA(event)">
+        <button type="button" onclick="document.getElementById('rack-anexo-foto-input').click()" style="width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:6px" data-i18n="rack_anexar_foto_btn">Anexar foto (sem IA)</button>
+        <div id="rack-anexo-status" style="display:none;font-size:11px;margin-bottom:10px"></div>
         <button type="button" onclick="abrirEnviarRackOS()" style="width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;margin-bottom:6px" data-i18n="rack_enviar_os_btn">Enviar para OS</button>
         <a id="rack-ver-foto-original-btn" href="#" target="_blank" style="display:none;width:100%;padding:9px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-align:center;box-sizing:border-box;text-decoration:none;color:inherit" data-i18n="rack_ver_foto_original_btn">Ver foto original</a>
       </div>
