@@ -40,6 +40,7 @@ const I18N = {
   sec_comercial: { en: 'SALES', pt: 'COMERCIAL' },
   sec_financeiro: { en: 'FINANCE', pt: 'FINANCEIRO' },
   sec_operacoes: { en: 'OPERATIONS', pt: 'OPERAÇÕES' },
+  sec_projetos: { en: 'PROJECTS', pt: 'PROJETOS' },
   sec_pessoas: { en: 'PEOPLE MANAGEMENT', pt: 'GESTÃO DE PESSOAS' },
   sec_registros: { en: 'RECORDS', pt: 'REGISTROS' },
 
@@ -72,6 +73,7 @@ const I18N = {
   nav_tarefas: { en: 'Tasks', pt: 'Tarefas' },
   nav_ferramentas: { en: 'Tools', pt: 'Ferramentas' },
   nav_documentos: { en: 'Documents', pt: 'Documentos' },
+  nav_projetos_rack: { en: 'Rack', pt: 'Rack' },
 
   // Home
   home_wb_sub: { en: 'Management Portal · Kilian Smart Homes · South Florida', pt: 'Portal de Gestão · Kilian Smart Homes · South Florida' },
@@ -297,6 +299,38 @@ const I18N = {
   orc_pdf_col_preco: { en: 'Price', pt: 'Preço' },
   orc_pdf_col_total: { en: 'Total', pt: 'Total' },
   orc_pdf_resumo_financeiro_titulo: { en: 'Financial Summary', pt: 'Resumo Financeiro' },
+
+  // Projetos > Rack
+  pt_projetos_rack: { en: 'Rack', pt: 'Rack' },
+  rack_subtitle: { en: 'Visual rack diagrams for your projects', pt: 'Diagramas visuais de rack para seus projetos' },
+  rack_novo_btn: { en: '+ New Rack', pt: '+ Novo Rack' },
+  rack_novo_title: { en: 'New Rack', pt: 'Novo Rack' },
+  label_nome_rack: { en: 'Rack name', pt: 'Nome do rack' },
+  rack_nome_ph: { en: 'e.g. Turnberry 3504 Rack', pt: 'Ex: Rack Turnberry 3504' },
+  label_tamanho_rack: { en: 'Size (U)', pt: 'Tamanho (U)' },
+  rack_nome_obrigatorio: { en: 'Enter a name for the rack', pt: 'Informe um nome para o rack' },
+  rack_salvo: { en: 'Rack saved!', pt: 'Rack salvo!' },
+  rack_excluir_confirm: { en: 'Delete this rack and all its items?', pt: 'Excluir este rack e todos os itens dele?' },
+  rack_excluido: { en: 'Rack deleted', pt: 'Rack excluído' },
+  rack_none_found: { en: 'No racks yet', pt: 'Nenhum rack cadastrado ainda' },
+  rack_th_nome: { en: 'Rack', pt: 'Rack' },
+  rack_th_tamanho: { en: 'Size', pt: 'Tamanho' },
+  rack_th_criado: { en: 'Created', pt: 'Criado em' },
+  rack_abrir: { en: 'Open', pt: 'Abrir' },
+  rack_editor_title: { en: 'Rack', pt: 'Rack' },
+  rack_ocupacao_label: { en: 'Occupancy', pt: 'Ocupação' },
+  rack_clique_livre: { en: 'Click a free slot in the rack to add an item', pt: 'Clique em um espaço livre no rack pra adicionar um item' },
+  rack_enviar_os_btn: { en: 'Send to Work Order', pt: 'Enviar para OS' },
+  rack_enviar_os_em_breve: { en: 'Coming soon', pt: 'Em breve' },
+  rack_item_add_title: { en: 'Add Item', pt: 'Adicionar Item' },
+  label_nome_item_rack: { en: 'Product name', pt: 'Nome do produto' },
+  rack_item_nome_ph: { en: 'e.g. UniFi USW-24-G2 Switch', pt: 'Ex: Switch UniFi USW-24-G2' },
+  label_altura_u: { en: 'Height (U)', pt: 'Altura (U)' },
+  rack_espaco_livre: { en: 'free space', pt: 'espaço livre' },
+  rack_u_expansao: { en: 'U for expansion', pt: 'U de expansão' },
+  rack_remover_item: { en: 'Remove', pt: 'Remover' },
+  rack_item_excluir_confirm: { en: 'Remove this item from the rack?', pt: 'Remover este item do rack?' },
+  btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
   btn_confirmar: { en: 'Confirm', pt: 'Confirmar' },
@@ -952,7 +986,7 @@ function pageTitle(id) {
     'crm-clientes':'pt_crm_clientes','crm-orcamentos':'pt_crm_orcamentos','crm-followups':'pt_crm_followups','crm-comissoes':'pt_crm_comissoes','crm-consultores':'pt_crm_consultores','crm-reprovacao':'pt_crm_reprovacao',
     'fin-banco':'pt_fin_banco','fin-dre':'pt_fin_dre','fin-indicadores':'pt_fin_indicadores','fin-analise':'pt_fin_analise','fin-fluxo':'pt_fin_fluxo','fin-patrimonio':'pt_fin_patrimonio','fin-custeio':'pt_fin_custeio',
     'desp-lancar':'pt_desp_lancar','desp-aprovar':'pt_desp_aprovar','fin-frota':'pt_fin_frota','fin-cadastros':'pt_fin_cadastros',
-    'kshcam':'pt_kshcam','tecnicos':'pt_tecnicos','tarefas':'pt_tarefas','ferramentas':'pt_ferramentas','documentos':'pt_documentos'
+    'kshcam':'pt_kshcam','tecnicos':'pt_tecnicos','tarefas':'pt_tarefas','ferramentas':'pt_ferramentas','documentos':'pt_documentos','projetos-rack':'pt_projetos_rack'
   };
   return m[id] ? tr(m[id]) : null;
 }
@@ -1000,6 +1034,7 @@ function getActions(id) {
     'fin-rentabilidade': '<button class="btn-sec" onclick="loadModule(\'fin-rentabilidade\')">' + tr('btn_atualizar') + '</button>',
     'documentos': '<button class="btn-pri" onclick="abrirNovoDocumento()">' + tr('btn_novo_documento') + '</button>',
     'fin-cadastros': '<button class="btn-pri" onclick="abrirNovoCatalogoItem()">' + tr('btn_novo_item_catalogo') + '</button>',
+    'projetos-rack': '<button class="btn-pri" onclick="abrirNovoRack()">' + tr('rack_novo_btn') + '</button>',
   };
   return m[id] || '';
 }
@@ -1017,6 +1052,7 @@ function getSubtitle(id) {
     'documentos': tr('sub_documentos'),
     'fin-rentabilidade': tr('rentabilidade_subtitle'),
     'fin-cadastros': tr('cat_subtitle'),
+    'projetos-rack': tr('rack_subtitle'),
   };
   return m[id] || '';
 }
@@ -1055,6 +1091,7 @@ function loadModule(id) {
   else if (id === 'fin-rentabilidade') renderRentabilidadeOS();
   else if (id === 'documentos') renderDocumentos();
   else if (id === 'fin-cadastros') renderCadastros();
+  else if (id === 'projetos-rack') renderRacks();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
@@ -6199,6 +6236,196 @@ async function excluirCatalogoItem(id) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
+// ── PROJETOS > RACK ──────────────────────────────────────────────
+let racksData = [];
+let rackEditandoId = null;
+let rackAtual = null;
+let rackItemSlotAlvo = null;
+
+const RACK_CORES = [
+  { fill: '#0C447C', text: '#B5D4F4' },
+  { fill: '#085041', text: '#9FE1CB' },
+  { fill: '#3C3489', text: '#CECBF6' },
+  { fill: '#712B13', text: '#F5C4B3' },
+  { fill: '#72243E', text: '#F4C0D1' },
+  { fill: '#633806', text: '#FAC775' }
+];
+const RACK_ROW_H = 24;
+
+async function renderRacks() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    racksData = await sbGet('projetos_racks?order=criado_em.desc');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  if (!racksData.length) {
+    el.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:40px">' + tr('rack_none_found') + '</div>';
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl"><thead><tr>'
+    + '<th>' + tr('rack_th_nome') + '</th>'
+    + '<th>' + tr('rack_th_tamanho') + '</th>'
+    + '<th>' + tr('rack_th_criado') + '</th>'
+    + '<th>' + tr('clientes_th_acoes') + '</th>'
+    + '</tr></thead><tbody>'
+    + racksData.map(r => '<tr>'
+        + '<td style="font-weight:500">' + r.nome + '</td>'
+        + '<td>' + r.tamanho_u + 'U</td>'
+        + '<td>' + new Date(r.criado_em).toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US') + '</td>'
+        + '<td style="display:flex;gap:6px">'
+          + '<button onclick="abrirEditorRack(\'' + r.id + '\')" style="padding:3px 10px;border:1px solid #e8e8e5;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;font-family:inherit">' + tr('rack_abrir') + '</button>'
+          + '<button onclick="excluirRack(\'' + r.id + '\')" style="padding:3px 10px;border:1px solid #fecaca;border-radius:6px;font-size:11px;cursor:pointer;background:#fff;color:#dc2626;font-family:inherit">' + tr('orc_excluir') + '</button>'
+        + '</td>'
+      + '</tr>').join('')
+    + '</tbody></table></div>';
+}
+
+function abrirNovoRack() {
+  document.getElementById('rack-nome').value = '';
+  const sel = document.getElementById('rack-tamanho');
+  if (!sel.options.length) {
+    for (let n = 1; n <= 60; n++) {
+      const o = document.createElement('option');
+      o.value = n; o.textContent = n + 'U';
+      if (n === 21) o.selected = true;
+      sel.appendChild(o);
+    }
+  } else {
+    sel.value = '21';
+  }
+  abrirModal('m-novo-rack');
+}
+
+async function salvarNovoRack() {
+  const nome = document.getElementById('rack-nome')?.value.trim();
+  if (!nome) { toast(tr('rack_nome_obrigatorio'), 'err'); return; }
+  const tamanho = parseInt(document.getElementById('rack-tamanho')?.value, 10) || 21;
+  try {
+    await sbPost('projetos_racks', { nome, tamanho_u: tamanho, criado_por: ME.nome });
+    fecharModal('m-novo-rack');
+    toast(tr('rack_salvo'), 'ok');
+    renderRacks();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirRack(id) {
+  if (!confirm(tr('rack_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_racks?id=eq.' + id);
+    toast(tr('rack_excluido'), 'ok');
+    renderRacks();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function abrirEditorRack(id) {
+  const r = racksData.find(x => x.id === id);
+  if (!r) return;
+  rackEditandoId = id;
+  let itens = [];
+  try { itens = await sbGet('projetos_rack_itens?rack_id=eq.' + id + '&order=ordem.asc'); } catch(e) {}
+  rackAtual = { ...r, itens };
+  document.getElementById('rack-editor-titulo').textContent = r.nome;
+  renderRackEditor();
+  abrirModal('m-rack-editor');
+}
+
+function renderRackEditor() {
+  if (!rackAtual) return;
+  document.getElementById('rack-editor-nome').textContent = rackAtual.nome + ' — ' + rackAtual.tamanho_u + 'U';
+  const size = rackAtual.tamanho_u;
+  const occupied = {};
+  rackAtual.itens.forEach(it => {
+    const topU = it.u_inicio + it.u_altura - 1;
+    for (let u = it.u_inicio; u <= topU; u++) occupied[u] = it;
+  });
+  const trilho = Array.from({ length: size }).map(() =>
+    '<div style="height:' + RACK_ROW_H + 'px;display:flex;align-items:center;justify-content:center"><div style="width:5px;height:5px;border-radius:50%;background:#3a3a37"></div></div>'
+  ).join('');
+  document.getElementById('rack-rail-l').innerHTML = trilho;
+  document.getElementById('rack-rail-r').innerHTML = trilho;
+  const body = document.getElementById('rack-body');
+  body.innerHTML = '';
+  let u = size;
+  let stripe = 0;
+  while (u >= 1) {
+    const item = occupied[u];
+    if (item) {
+      const topU = item.u_inicio + item.u_altura - 1;
+      if (u === topU) {
+        const cor = RACK_CORES[(item.cor_idx || 0) % RACK_CORES.length];
+        const label = 'U' + item.u_inicio + (item.u_altura > 1 ? '-U' + topU : '');
+        const div = document.createElement('div');
+        div.style.cssText = 'height:' + (item.u_altura * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;cursor:pointer;font-size:11.5px;font-weight:500;background:' + cor.fill + ';color:' + cor.text;
+        div.innerHTML = '<span>' + label + ' &mdash; ' + item.nome + '</span><span aria-hidden="true" style="opacity:.7">&times;</span>';
+        div.title = tr('rack_remover_item');
+        div.onclick = function () { removerItemRack(item.id); };
+        body.appendChild(div);
+      }
+      u -= item.u_altura;
+      continue;
+    }
+    let count = 0;
+    let scanU = u;
+    while (scanU >= 1 && !occupied[scanU]) { count++; scanU--; }
+    const topFree = u;
+    const bottomFree = u - count + 1;
+    const div = document.createElement('div');
+    const bg = stripe % 2 === 0 ? '#232320' : '#1c1c1a';
+    div.style.cssText = 'height:' + (count * RACK_ROW_H - 2) + 'px;margin:1px 2px;border-radius:3px;display:flex;align-items:center;padding:0 10px;cursor:pointer;font-size:10.5px;color:#6b6b66;background:' + bg;
+    div.textContent = count === 1
+      ? ('U' + topFree + ' — ' + tr('rack_espaco_livre'))
+      : ('U' + topFree + '-U' + bottomFree + ' — ' + tr('rack_espaco_livre') + ' (' + count + ' ' + tr('rack_u_expansao') + ')');
+    div.onclick = function () { abrirNovoItemRack(topFree, count); };
+    body.appendChild(div);
+    stripe++;
+    u = bottomFree - 1;
+  }
+  const usados = rackAtual.itens.reduce((s, it) => s + it.u_altura, 0);
+  document.getElementById('rack-ocupacao-txt').textContent = usados + ' / ' + size + ' U';
+}
+
+function abrirNovoItemRack(topU, maxAltura) {
+  rackItemSlotAlvo = { topU: topU, maxAltura: maxAltura };
+  document.getElementById('ri-nome').value = '';
+  const alturaInput = document.getElementById('ri-altura');
+  alturaInput.value = '1';
+  alturaInput.max = String(maxAltura);
+  document.getElementById('rack-item-titulo').textContent = tr('rack_item_add_title') + ' — U' + topU;
+  abrirModal('m-rack-item');
+}
+
+async function salvarItemRack() {
+  if (!rackItemSlotAlvo || !rackAtual) return;
+  const nomeDigitado = document.getElementById('ri-nome')?.value.trim();
+  if (!nomeDigitado) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
+  const nome = normalizarNomeItem(nomeDigitado);
+  let altura = parseInt(document.getElementById('ri-altura')?.value, 10) || 1;
+  altura = Math.max(1, Math.min(altura, rackItemSlotAlvo.maxAltura));
+  const uInicio = rackItemSlotAlvo.topU - altura + 1;
+  const corIdx = rackAtual.itens.length % RACK_CORES.length;
+  try {
+    const [novo] = await sbPost('projetos_rack_itens', {
+      rack_id: rackAtual.id, nome: nome, u_inicio: uInicio, u_altura: altura,
+      cor_idx: corIdx, ordem: rackAtual.itens.length
+    });
+    rackAtual.itens.push(novo);
+    fecharModal('m-rack-item');
+    renderRackEditor();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function removerItemRack(itemId) {
+  if (!confirm(tr('rack_item_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_rack_itens?id=eq.' + itemId);
+    rackAtual.itens = rackAtual.itens.filter(it => it.id !== itemId);
+    renderRackEditor();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
 const PERMISSOES_ESTRUTURA = [
   { label: 'Comercial', itens: [
@@ -6232,6 +6459,7 @@ const PERMISSOES_ESTRUTURA = [
       { id: 'tarefas', label: 'Tarefas' },
       { id: 'agenda', label: 'Agenda' }
   ]},
+  { label: 'Projetos', itens: [ { id: 'projetos-rack', label: 'Rack' } ] },
   { label: 'Gestão de Pessoas', itens: [ { id: 'tecnicos', label: 'Funcionários' } ] },
   { label: 'Registros', itens: [ { id: 'documentos', label: 'Documentos' } ] }
 ];
