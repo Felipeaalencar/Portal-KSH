@@ -330,6 +330,14 @@ const I18N = {
   rack_u_expansao: { en: 'U for expansion', pt: 'U de expansão' },
   rack_remover_item: { en: 'Remove', pt: 'Remover' },
   rack_item_excluir_confirm: { en: 'Remove this item from the rack?', pt: 'Remover este item do rack?' },
+  rack_importar_foto_btn: { en: 'Import from photo (AI)', pt: 'Importar de foto (IA)' },
+  rack_ler_foto_btn: { en: 'Read photo and fill in', pt: 'Ler foto e preencher' },
+  rack_ia_lendo: { en: 'Reading photo...', pt: 'Lendo a foto...' },
+  rack_ia_vazio: { en: 'Could not identify any equipment in this photo', pt: 'Não consegui identificar nenhum equipamento nessa foto' },
+  rack_ia_sucesso: { en: 'Photo read!', pt: 'Foto lida!' },
+  rack_ia_erro: { en: 'Error reading the photo', pt: 'Erro ao ler a foto' },
+  rack_ia_itens_adicionados: { en: 'items added', pt: 'itens adicionados' },
+  rack_ia_itens_ignorados: { en: 'items skipped (overlapping space)', pt: 'itens ignorados (espaço já ocupado)' },
   btn_fechar: { en: 'Close', pt: 'Fechar' },
 
   eu: { en: 'me', pt: 'eu' },
@@ -6424,6 +6432,82 @@ async function removerItemRack(itemId) {
     rackAtual.itens = rackAtual.itens.filter(it => it.id !== itemId);
     renderRackEditor();
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+let rackFotoFile = null;
+
+function selecionarFotoRack(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  rackFotoFile = file;
+  document.getElementById('rack-foto-nome').textContent = file.name;
+  const btn = document.getElementById('rack-ler-ia-btn');
+  if (btn) btn.style.display = 'block';
+}
+
+async function importarRackDeFoto() {
+  if (!rackFotoFile || !rackAtual) return;
+  const btn = document.getElementById('rack-ler-ia-btn');
+  const statusEl = document.getElementById('rack-ia-status');
+  if (btn) btn.disabled = true;
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#555'; statusEl.textContent = tr('rack_ia_lendo'); }
+  try {
+    await garantirSessao();
+    const imagem_base64 = await blobParaBase64(rackFotoFile);
+    const r = await fetch(SB_URL + '/functions/v1/extrair-rack', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
+      body: JSON.stringify({ imagem_base64, mime_type: rackFotoFile.type || 'image/jpeg', tamanho_u: rackAtual.tamanho_u })
+    });
+    const d = await r.json();
+    console.log('[extrair-rack] resposta da IA:', d);
+    if (!r.ok) throw new Error(d.error || 'Erro');
+    const itensDetectados = Array.isArray(d.itens) ? d.itens : [];
+    if (!itensDetectados.length) {
+      if (statusEl) { statusEl.style.color = '#92400e'; statusEl.textContent = tr('rack_ia_vazio'); }
+      toast(tr('rack_ia_vazio'), 'err');
+      return;
+    }
+    const ocupado = {};
+    rackAtual.itens.forEach(it => { for (let u = it.u_inicio; u <= it.u_inicio + it.u_altura - 1; u++) ocupado[u] = true; });
+    let adicionados = 0, ignorados = 0;
+    for (const det of itensDetectados) {
+      let uInicio = Math.max(1, Math.min(det.u_inicio, rackAtual.tamanho_u));
+      let uAltura = Math.max(1, det.u_altura || 1);
+      if (uInicio + uAltura - 1 > rackAtual.tamanho_u) uAltura = rackAtual.tamanho_u - uInicio + 1;
+      if (uAltura < 1) { ignorados++; continue; }
+      let conflita = false;
+      for (let u = uInicio; u <= uInicio + uAltura - 1; u++) { if (ocupado[u]) { conflita = true; break; } }
+      if (conflita) { ignorados++; continue; }
+      const nome = normalizarNomeItem(det.nome || '');
+      if (!nome) { ignorados++; continue; }
+      const corIdx = rackAtual.itens.length % RACK_CORES.length;
+      try {
+        const [novo] = await sbPost('projetos_rack_itens', {
+          rack_id: rackAtual.id, nome: nome, u_inicio: uInicio, u_altura: uAltura,
+          cor_idx: corIdx, ordem: rackAtual.itens.length
+        });
+        rackAtual.itens.push(novo);
+        for (let u = uInicio; u <= uInicio + uAltura - 1; u++) ocupado[u] = true;
+        adicionados++;
+      } catch(e) { ignorados++; }
+    }
+    renderRackEditor();
+    rackFotoFile = null;
+    document.getElementById('rack-foto-nome').textContent = '';
+    document.getElementById('rack-foto-input').value = '';
+    if (btn) btn.style.display = 'none';
+    if (statusEl) {
+      statusEl.style.color = adicionados ? '#166534' : '#92400e';
+      statusEl.textContent = adicionados + ' ' + tr('rack_ia_itens_adicionados') + (ignorados ? ' · ' + ignorados + ' ' + tr('rack_ia_itens_ignorados') : '');
+    }
+    if (adicionados) toast(tr('rack_ia_sucesso'), 'ok');
+  } catch(e) {
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; statusEl.textContent = tr('rack_ia_erro') + (e.message ? ' (' + e.message + ')' : ''); }
+    toast(tr('erro_prefix') + e.message, 'err');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
 }
 
 // ── PERMISSÕES POR FUNCIONÁRIO ──────────────────────────────────
