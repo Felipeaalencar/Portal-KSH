@@ -1915,8 +1915,9 @@ async function salvarItemOrcamento() {
   const tipo = document.getElementById('oi-tipo')?.value || 'material';
   const catalogoId = document.getElementById('oi-catalogo-sel')?.value || null;
   const catalogoItem = catalogoId ? catalogoCache.find(c => c.id === catalogoId) : null;
-  const nome = catalogoItem ? catalogoItem.nome : prompt(tr('orc_item_prompt_nome'));
-  if (!nome || !nome.trim()) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
+  const nomeDigitado = catalogoItem ? catalogoItem.nome : prompt(tr('orc_item_prompt_nome'));
+  if (!nomeDigitado || !nomeDigitado.trim()) { toast(tr('orc_item_nome_obrigatorio'), 'err'); return; }
+  const nome = catalogoItem ? nomeDigitado : normalizarNomeItem(nomeDigitado);
   const qtd = parseFloat(document.getElementById('oi-qtd')?.value) || 1;
   const preco = parseFloat(document.getElementById('oi-preco')?.value) || 0;
   const areaId = orcItemAreaAlvo;
@@ -5855,9 +5856,44 @@ function abrirEditarCatalogoItem(id) {
   abrirModal('m-cat-item');
 }
 
+// ── Normalizacao padrao de nomes do catalogo (Materiais/Mao de obra) ──
+// Regra: iniciais maiusculas e restante minusculo em cada palavra; tokens com
+// numero (codigo/numero de serie, ex: "C4-FP1-C-BL") ficam todo em maiuscula;
+// siglas tecnicas conhecidas (TV, LED, HDMI...) tambem ficam sempre maiuscula;
+// excecao: nomes de marca como "Control4" nao viram tudo maiusculo.
+const CAT_ACRONIMOS = new Set([
+  'TV','LED','HDMI','DVR','NVR','UPS','WIFI','IP','POE','AV','IR','RGB','USB',
+  'LAN','WAN','VLAN','PVC','EMT','GFCI','HVAC','AC','DC','VOIP','SIP','RF',
+  'UHD','HD','AI','NFC','BLE','GPS','PTZ','NAS','SSD','HDD','RAM','CPU','GPU',
+  'LCD','OLED','QLED','CCTV','ADA','UL','ETL','FCC','ROHS','AM','FM','XLR',
+  'HDBASET','SATA','PCB','LTE','5G','4G','OS','ID','PIN','QR',
+  'THX','DTS','AOC','JBL','ELAN','RTI','KNX','DMX','PDU'
+]);
+const CAT_MARCAS = { 'control4': 'Control4' };
+
+function normalizarTokenItem(tok) {
+  if (!tok) return tok;
+  const m = tok.match(/^(.*?)([®©™]*)$/);
+  const core = m ? m[1] : tok;
+  const suffix = m ? m[2] : '';
+  if (CAT_MARCAS[core.toLowerCase()]) return CAT_MARCAS[core.toLowerCase()] + suffix;
+  if (/[0-9]/.test(tok)) return tok.toUpperCase();
+  if (CAT_ACRONIMOS.has(tok.toUpperCase())) return tok.toUpperCase();
+  return tok.charAt(0).toUpperCase() + tok.slice(1).toLowerCase();
+}
+
+function normalizarSubpalavraItem(word) {
+  return word.split(/([\-:/])/).map(p => (p === '-' || p === ':' || p === '/') ? p : normalizarTokenItem(p)).join('');
+}
+
+function normalizarNomeItem(nome) {
+  if (!nome) return nome;
+  return nome.trim().replace(/\s+/g, ' ').split(' ').map(normalizarSubpalavraItem).join(' ');
+}
+
 async function salvarCatalogoItem() {
   const id = document.getElementById('cat-item-id').value;
-  const nome = document.getElementById('cat-item-nome')?.value.trim();
+  const nome = normalizarNomeItem(document.getElementById('cat-item-nome')?.value.trim());
   if (!nome) { toast(tr('cat_nome_obrigatorio'), 'err'); return; }
   const body = {
     nome,
