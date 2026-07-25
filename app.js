@@ -3357,32 +3357,7 @@ async function excluirDiaTrabalho(diaId, osId) {
 
 async function gerarResumoTrabalhoOS(osId) {
   let dias = [];
-  try { dias = await sbGet('os_dias?os_id=eq.' + osId + '&order=data.asc'); } catch(e) {}
-  const comObservacao = dias.filter(d => (d.observacao || '').trim());
-  if (!comObservacao.length) { toast(tr('resumo_sem_observacoes'), 'err'); return; }
-
-  const texto = comObservacao.map(d => {
-    const tecs = Array.isArray(d.tecnicos) && d.tecnicos.length ? ' (' + d.tecnicos.join(', ') + ')' : '';
-    return 'Dia ' + d.data + tecs + ': ' + d.observacao.trim();
-  }).join('\n');
-
-  const statusEl = document.getElementById('resumo-ia-status-' + osId);
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('os_gerando'); }
-  try {
-    // resumo-nota desativado
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Erro');
-    if (statusEl) statusEl.style.display = 'none';
-    mostrarPreviaResumoOS(osId, d.resumo || texto);
-  } catch(e) {
-    if (statusEl) statusEl.style.display = 'none';
-    toast(tr('erro_prefix') + e.message, 'err');
-  }
-}
+  // IA desativada
 
 function mostrarPreviaResumoOS(osId, resumo) {
   const el = document.getElementById('resumo-ia-preview-' + osId);
@@ -4460,64 +4435,7 @@ async function toggleGravacaoAudio(osId) {
     const blob = new Blob(chunks, { type: mime || 'audio/webm' });
     if (!blob.size) { if (statusEl) statusEl.style.display = 'none'; return; }
 
-    try {
-      const audio_base64 = await blobParaBase64(blob);
-      const r = await fetch(SB_URL + '/functions/v1/bright-processor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-        body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Erro');
-      const texto = (d.texto || '').trim();
-      if (statusEl) statusEl.style.display = 'none';
-      if (!texto) { toast(tr('nota_audio_vazio'), 'err'); return; }
-      const inp = document.getElementById('nota-input-' + osId);
-      if (inp) inp.value = texto;
-      gerarResumoNota(osId);
-    } catch(e) {
-      if (statusEl) statusEl.style.display = 'none';
-      console.error('transcrever-audio falhou:', e);
-      toast(tr('nota_erro_transcricao') + ': ' + e.message, 'err');
-    }
-  };
-
-  recorder.start();
-  gravacoesAtivas[osId] = { recorder };
-  if (micBtn) { micBtn.textContent = '⏹'; micBtn.style.background = '#e74c3c'; micBtn.style.color = '#fff'; }
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; }
-  atualizarTimer();
-  timerId = setInterval(atualizarTimer, 1000);
-}
-
-async function gerarResumoNota(osId) {
-  const inp = document.getElementById('nota-input-' + osId);
-  const texto = inp?.value.trim();
-  if (!texto) return;
-  const btn = document.getElementById('nota-btn-' + osId);
-  if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
-  try {
-    // resumo-nota desativado
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    if (!r.ok) {
-      let detalhe = '';
-      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
-      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
-    }
-    const d = await r.json();
-    mostrarPreviaNota(osId, d.resumo || texto);
-  } catch(e) {
-    // IA ainda não disponível: mostra o motivo (debug) e não trava o técnico, salva a anotação direto
-    // resumo-nota desativado
-    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
-    await salvarNotaDireta(osId, texto);
-  } finally {
-    if (btn) { btn.textContent = tr('os_enviar'); btn.disabled = false; }
-  }
-}
+  // IA desativada
 
 async function salvarNotaDireta(osId, texto) {
   try {
@@ -4621,65 +4539,7 @@ async function toggleGravacaoNotepad(osId) {
     const blob = new Blob(chunks, { type: mime || 'audio/webm' });
     if (!blob.size) { if (statusEl) statusEl.style.display = 'none'; return; }
 
-    try {
-      const audio_base64 = await blobParaBase64(blob);
-      const r = await fetch(SB_URL + '/functions/v1/bright-processor', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-        body: JSON.stringify({ audio_base64, mime_type: blob.type, idioma: LANG })
-      });
-      const d = await r.json();
-      if (!r.ok) throw new Error(d.error || 'Erro');
-      const texto = (d.texto || '').trim();
-      if (statusEl) statusEl.style.display = 'none';
-      if (!texto) { toast(tr('nota_audio_vazio'), 'err'); return; }
-
-      const ta = document.getElementById('os-notepad-' + osId);
-      if (ta) {
-        ta.value = ta.value.trim() ? (ta.value.replace(/\s+$/, '') + '\n' + texto) : texto;
-      }
-      await salvarNotepad(osId);
-    } catch(e) {
-      if (statusEl) statusEl.style.display = 'none';
-      console.error('transcrever-audio (notepad) falhou:', e);
-      toast(tr('nota_erro_transcricao') + ': ' + e.message, 'err');
-    }
-  };
-
-  recorder.start();
-  gravacoesAtivas[chave] = { recorder };
-  if (micBtn) { micBtn.textContent = '⏹'; micBtn.style.background = '#e74c3c'; micBtn.style.color = '#fff'; }
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = '#e74c3c'; }
-  atualizarTimer();
-  timerId = setInterval(atualizarTimer, 1000);
-}
-
-async function resumirNotepad(osId) {
-  const ta = document.getElementById('os-notepad-' + osId);
-  const texto = ta?.value.trim();
-  if (!texto) return;
-  const btn = document.getElementById('notepad-resumir-' + osId);
-  if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
-  try {
-    // resumo-nota desativado
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    if (!r.ok) {
-      let detalhe = '';
-      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
-      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
-    }
-    const d = await r.json();
-    mostrarPreviaNotepad(osId, d.resumo || texto);
-  } catch(e) {
-    // resumo-nota desativado
-    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
-  } finally {
-    if (btn) { btn.textContent = tr('os_notepad_resumir'); btn.disabled = false; }
-  }
-}
+  // IA desativada
 
 function mostrarPreviaNotepad(osId, resumo) {
   document.getElementById('notepad-form-' + osId).style.display = 'none';
