@@ -3369,7 +3369,7 @@ async function gerarResumoTrabalhoOS(osId) {
   const statusEl = document.getElementById('resumo-ia-status-' + osId);
   if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('os_gerando'); }
   try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+    // resumo-nota desativado
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
       body: JSON.stringify({ texto })
@@ -4497,7 +4497,7 @@ async function gerarResumoNota(osId) {
   const btn = document.getElementById('nota-btn-' + osId);
   if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
   try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+    // resumo-nota desativado
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
       body: JSON.stringify({ texto })
@@ -4511,7 +4511,7 @@ async function gerarResumoNota(osId) {
     mostrarPreviaNota(osId, d.resumo || texto);
   } catch(e) {
     // IA ainda não disponível: mostra o motivo (debug) e não trava o técnico, salva a anotação direto
-    console.error('resumo-nota falhou:', e);
+    // resumo-nota desativado
     toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
     await salvarNotaDireta(osId, texto);
   } finally {
@@ -4661,7 +4661,7 @@ async function resumirNotepad(osId) {
   const btn = document.getElementById('notepad-resumir-' + osId);
   if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
   try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
+    // resumo-nota desativado
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
       body: JSON.stringify({ texto })
@@ -4674,7 +4674,7 @@ async function resumirNotepad(osId) {
     const d = await r.json();
     mostrarPreviaNotepad(osId, d.resumo || texto);
   } catch(e) {
-    console.error('resumo-nota (notepad) falhou:', e);
+    // resumo-nota desativado
     toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
   } finally {
     if (btn) { btn.textContent = tr('os_notepad_resumir'); btn.disabled = false; }
