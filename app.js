@@ -482,6 +482,7 @@ const I18N = {
   resumo_cobranca_label: { en: 'Billing:', pt: 'Cobrança:' },
   resumo_a_cobrar: { en: 'To bill', pt: 'A cobrar' },
   resumo_cobrado: { en: 'Billed', pt: 'Cobrado' },
+  resumo_sem_custo: { en: 'No charge', pt: 'Sem custo' },
   resumo_todos: { en: 'All', pt: 'Todos' },
   nav_rentabilidade: { en: 'Profitability by OS', pt: 'Rentabilidade por OS' },
   rentabilidade_subtitle: { en: 'Quoted value vs real cost, by work order', pt: 'Valor orçado x custo real, por ordem de serviço' },
@@ -3219,7 +3220,8 @@ function resumoValoresHTML(r, id, os) {
     + '<div style="margin-top:10px;display:flex;align-items:center;gap:6px">'
       + '<span style="font-size:11px;color:#888">' + tr('resumo_cobranca_label') + '</span>'
       + '<button onclick="alterarStatusCobranca(\''+id+'\',\'a_cobrar\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='a_cobrar'?'#92400e':'#e8e8e5') + ';background:' + (cobranca==='a_cobrar'?'#fffbeb':'#fff') + ';color:' + (cobranca==='a_cobrar'?'#92400e':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='a_cobrar'?'600':'400') + '">' + tr('resumo_a_cobrar') + '</button>'
-      + '<button onclick="alterarStatusCobranca(\''+id+'\',\'cobrado\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='cobrado'?'#166534':'#e8e8e5') + ';background:' + (cobranca==='cobrado'?'#f0fdf4':'#fff') + ';color:' + (cobranca==='cobrado'?'#166534':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='cobrado'?'600':'400') + '">' + tr('resumo_cobrado') + '</button>'
+      + '<button onclick="alterarStatusCobranca(\''+id+'\',\'sem_custo\')" style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='sem_custo'?'#1e40af':'#e8e8e5') + ';background:' + (cobranca==='sem_custo'?'#eff6ff':'#fff') + ';color:' + (cobranca==='sem_custo'?'#1e40af':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='sem_custo'?'600':'400') + '">' + tr('resumo_sem_custo') + '</button>'
+      + '<button onclick="alterarStatusCobranca(\''+id+'\',\'cobrado\')"' style="font-size:11px;padding:4px 10px;border-radius:99px;border:1px solid ' + (cobranca==='cobrado'?'#166534':'#e8e8e5') + ';background:' + (cobranca==='cobrado'?'#f0fdf4':'#fff') + ';color:' + (cobranca==='cobrado'?'#166534':'#555') + ';cursor:pointer;font-weight:' + (cobranca==='cobrado'?'600':'400') + '">' + tr('resumo_cobrado') + '</button>'
     + '</div>'
     ;
 }
@@ -5406,8 +5408,8 @@ function renderRentabilidadeTabela() {
     chipTecnicoHTML(v, v==='todos'?tr('rent_status_todos'):(v==='andamento'?tr('rent_status_andamento'):tr('rent_status_concluida')), rentFiltroStatus===v, 'rentToggleStatus')
   ).join('');
   const filtroEl = document.getElementById('rent-filtro-cobranca');
-  if (filtroEl) filtroEl.innerHTML = ['todos','a_cobrar','cobrado'].map(v =>
-    chipTecnicoHTML(v, v==='todos'?tr('resumo_todos'):(v==='a_cobrar'?tr('resumo_a_cobrar'):tr('resumo_cobrado')), rentFiltroCobranca===v, 'rentToggleCobranca')
+  if (filtroEl) filtroEl.innerHTML = ['todos','a_cobrar','cobrado','sem_custo'].map(v =>
+    chipTecnicoHTML(v, v==='todos'?tr('resumo_todos'):(v==='a_cobrar'?tr('resumo_a_cobrar'):v==='cobrado'?tr('resumo_cobrado'):tr('resumo_sem_custo')), rentFiltroCobranca===v, 'rentToggleCobranca')
   ).join('');
   const filtroTecEl = document.getElementById('rent-filtro-tecnico');
   if (filtroTecEl) filtroTecEl.innerHTML = tecnicos.map(t =>
@@ -5462,7 +5464,7 @@ function renderRentabilidadeTabela() {
       + '<td style="padding:8px 10px">' + (orcado != null ? '$'+orcado.toFixed(2) : '—') + '</td>'
       + '<td style="padding:8px 10px">$' + custo.toFixed(2) + '</td>'
       + '<td style="padding:8px 10px;color:'+corMargem+';font-weight:600">' + (margem != null ? '$'+margem.toFixed(2) + (margemPct!=null?' ('+margemPct.toFixed(0)+'%)':'') : '—') + '</td>'
-      + '<td style="padding:8px 10px"><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:'+(cobranca==='cobrado'?'#f0fdf4':'#fffbeb')+';color:'+(cobranca==='cobrado'?'#166534':'#92400e')+'">'+(cobranca==='cobrado'?tr('resumo_cobrado'):tr('resumo_a_cobrar'))+'</span></td>'
+      + '<td style="padding:8px 10px"><span style="font-size:10px;padding:2px 8px;border-radius:99px;background:'+(cobranca==='cobrado'?'#f0fdf4':cobranca==='sem_custo'?'#eff6ff':'#fffbeb')+';color:'+(cobranca==='cobrado'?'#166534':cobranca==='sem_custo'?'#1e40af':'#92400e')+'">'+(cobranca==='cobrado'?tr('resumo_cobrado'):cobranca==='sem_custo'?tr('resumo_sem_custo'):tr('resumo_a_cobrar'))+'</span></td>'
       + '</tr>';
   });
 
