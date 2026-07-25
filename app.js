@@ -3447,10 +3447,111 @@ async function finalizarStatusConcluido(osId) {
     const os = osData.find(o => o.id === osId);
     if (os) { os.status = 'concluida'; os.concluida_em = agora; }
     toast(tr('os_concluida_sucesso'), 'ok');
-    abrirOS(osId);
-    // Recarrega a lista para refletir o novo status
     setTimeout(() => carregarOS && carregarOS(), 500);
+    // Pergunta se quer criar tarefa de orçamento
+    mostrarModalTarefaOS(osId);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function mostrarModalTarefaOS(osId) {
+  const os = osData.find(o => o.id === osId);
+  if (!os) return;
+  const clienteNome = os.cliente_nome || os.cliente || '';
+  const descDefault = 'Orçamento pendente — ' + clienteNome + ' (OS #' + (os.numero||osId.substring(0,6)) + ')';
+  
+  // Remove modal anterior se existir
+  const existing = document.getElementById('modal-tarefa-os');
+  if (existing) existing.remove();
+
+  const modal = document.createElement('div');
+  modal.id = 'modal-tarefa-os';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:2000;display:flex;align-items:center;justify-content:center';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:12px;padding:24px;width:480px;max-width:95vw;box-shadow:0 8px 40px rgba(0,0,0,.15)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+        <div style="font-size:16px;font-weight:700">OS #${os.numero||''} concluída! 🎉</div>
+        <button onclick="document.getElementById('modal-tarefa-os').remove();abrirOS('${osId}')" style="background:none;border:none;cursor:pointer;font-size:20px;color:#bbb">×</button>
+      </div>
+      <div style="font-size:12px;color:#888;margin-bottom:16px">${os.titulo||''} · ${clienteNome}</div>
+
+      <div id="tarefa-opt" style="display:flex;align-items:center;gap:10px;padding:12px;border:1.5px solid #2563eb;background:#eff6ff;border-radius:8px;cursor:pointer;margin-bottom:10px" onclick="toggleTarefaOpt()">
+        <span style="font-size:20px">📋</span>
+        <div style="flex:1">
+          <div style="font-size:12px;font-weight:600;color:#1e40af">Criar tarefa de orçamento</div>
+          <div style="font-size:11px;color:#3b82f6">Adiciona automaticamente no Kanban de Tarefas</div>
+        </div>
+        <div id="tarefa-check" style="width:18px;height:18px;border-radius:4px;background:#2563eb;border:1.5px solid #2563eb;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">✓</div>
+      </div>
+
+      <div id="tarefa-form">
+        <div style="background:#f9f9f7;border-radius:8px;padding:12px">
+          <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:4px">Descrição da tarefa</div>
+          <input id="tarefa-desc-input" value="${descDefault}" style="width:100%;padding:7px 10px;border:1.5px solid #e8e8e5;border-radius:6px;font-size:12px;font-family:inherit;outline:none;margin-bottom:8px">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:4px">Responsável</div>
+              <input id="tarefa-resp-input" value="${ME?.nome||''}" style="width:100%;padding:7px 10px;border:1.5px solid #e8e8e5;border-radius:6px;font-size:12px;font-family:inherit;outline:none">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:500;color:#444;margin-bottom:4px">Prazo (opcional)</div>
+              <input id="tarefa-prazo-input" type="date" style="width:100%;padding:7px 10px;border:1.5px solid #e8e8e5;border-radius:6px;font-size:12px;font-family:inherit;outline:none">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:14px">
+        <button onclick="document.getElementById('modal-tarefa-os').remove();abrirOS('${osId}')" style="padding:8px 16px;border:1px solid #e8e8e5;border-radius:7px;background:#fff;font-size:12px;cursor:pointer;font-family:inherit">Não, só concluir</button>
+        <button onclick="criarTarefaDeOS('${osId}')" style="padding:8px 16px;border:none;border-radius:7px;background:#1a1a1a;color:#fff;font-size:12px;font-weight:500;cursor:pointer;font-family:inherit">Concluir e criar tarefa</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function toggleTarefaOpt() {
+  const opt = document.getElementById('tarefa-opt');
+  const check = document.getElementById('tarefa-check');
+  const form = document.getElementById('tarefa-form');
+  const isOn = check.style.background === 'rgb(37, 99, 235)' || check.style.background === '#2563eb';
+  if (isOn) {
+    check.style.background = '#fff'; check.style.borderColor = '#e8e8e5'; check.textContent = '';
+    opt.style.borderColor = '#e8e8e5'; opt.style.background = '#fff';
+    form.style.display = 'none';
+  } else {
+    check.style.background = '#2563eb'; check.style.borderColor = '#2563eb'; check.textContent = '✓';
+    opt.style.borderColor = '#2563eb'; opt.style.background = '#eff6ff';
+    form.style.display = 'block';
+  }
+}
+
+async function criarTarefaDeOS(osId) {
+  const os = osData.find(o => o.id === osId);
+  const desc = document.getElementById('tarefa-desc-input')?.value.trim();
+  const resp = document.getElementById('tarefa-resp-input')?.value.trim();
+  const prazo = document.getElementById('tarefa-prazo-input')?.value;
+  const criarTarefa = document.getElementById('tarefa-check')?.textContent === '✓';
+
+  document.getElementById('modal-tarefa-os').remove();
+
+  if (criarTarefa && desc) {
+    try {
+      await sbPost('tarefas', {
+        titulo: desc,
+        descricao: 'Gerada automaticamente ao concluir OS #' + (os?.numero||osId.substring(0,6)),
+        cliente_nome: os?.cliente_nome || os?.cliente || '',
+        responsavel: resp || ME?.nome || '',
+        prazo: prazo || null,
+        status: 'pendente',
+        prioridade: 'media',
+        origem: 'os_concluida',
+        os_gerada_id: osId
+      });
+      toast('Tarefa criada no Kanban! 📋', 'ok');
+    } catch(e) {
+      toast('OS concluída, mas erro ao criar tarefa: ' + e.message, 'err');
+    }
+  }
+  abrirOS(osId);
 }
 
 async function reabrirOS(osId) {
