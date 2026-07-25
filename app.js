@@ -874,6 +874,7 @@ const I18N = {
   planta_relatorio_col_dispositivo: { en: 'Device', pt: 'Dispositivo' },
   planta_relatorio_col_qtd: { en: 'Qty', pt: 'Qtd' },
   planta_relatorio_croqui_legenda: { en: 'Numbers match the detailed list below', pt: 'Os números batem com a lista detalhada a seguir' },
+  planta_relatorio_sem_ponto: { en: 'No point assigned', pt: 'Sem ponto definido' },
   planta_enviar_os_titulo: { en: 'Send floor plan to Work Order', pt: 'Enviar planta para OS' },
   planta_enviando_os: { en: 'Sending to work order...', pt: 'Enviando pra OS...' },
   planta_enviado_os_sucesso: { en: 'Floor plan linked to the work order', pt: 'Planta vinculada à OS' },
@@ -8000,6 +8001,85 @@ function toggleLinhasPlanta() {
   renderLinhasPlanta();
 }
 
+// Convencao de desenho tecnico: quando o trecho HORIZONTAL de uma rota de
+// cabeamento cruza o trecho VERTICAL de outra rota de categoria/rack
+// diferente, em vez de deixar as duas linhas se tocando retas (parecendo uma
+// conexao entre elas), o horizontal da uma "alca" (meia-lua) por cima do
+// cruzamento. Recebe uma lista de trechos {grupo, dx, dy, mx, my} (dx,dy =
+// posicao do dispositivo; mx,my = ponto de fusao da categoria dele) e devolve
+// a mesma lista com um array `furos` (posicoes x do cruzamento, no trecho
+// horizontal desse dispositivo) adicionado em cada trecho.
+function calcularAlcasCruzamentoPlanta(trechos) {
+  const folga = 0.6;
+  trechos.forEach(function(t) { t.furos = []; });
+  trechos.forEach(function(h, i) {
+    const hy = h.my;
+    const hx1 = Math.min(h.dx, h.mx), hx2 = Math.max(h.dx, h.mx);
+    if (hx2 - hx1 < folga * 2) return;
+    trechos.forEach(function(v, j) {
+      if (i === j || v.grupo === h.grupo) return;
+      const vx = v.dx;
+      const vy1 = Math.min(v.dy, v.my), vy2 = Math.max(v.dy, v.my);
+      if (vy2 - vy1 < folga * 2) return;
+      if (vx > hx1 + folga && vx < hx2 - folga && hy > vy1 + folga && hy < vy2 - folga) {
+        h.furos.push(vx);
+      }
+    });
+    h.furos.sort(function(a, b) { return a - b; });
+  });
+  return trechos;
+}
+
+// Monta o "d" de um <path> SVG para o trecho horizontal (y constante), pulando
+// com uma alca por cima de cada cruzamento marcado em `furos`.
+function pathHorizontalComAlcasPlanta(x1, x2, y, furos, raio) {
+  const dir = x2 >= x1 ? 1 : -1;
+  const sweep = dir > 0 ? 0 : 1;
+  const ordenados = (furos || []).slice().sort(function(a, b) { return dir * (a - b); });
+  let d = 'M ' + x1 + ' ' + y;
+  ordenados.forEach(function(fx) {
+    const antes = fx - dir * raio;
+    const depois = fx + dir * raio;
+    d += ' L ' + antes + ' ' + y;
+    d += ' A ' + raio + ' ' + raio + ' 0 0 ' + sweep + ' ' + depois + ' ' + y;
+  });
+  d += ' L ' + x2 + ' ' + y;
+  return d;
+}
+
+// Mesma alca, mas desenhada com 2 curvas de bezier no PDF (jsPDF nao tem um
+// comando nativo de arco de circulo aberto) - kappa e a constante padrao pra
+// aproximar um quarto de circulo com bezier cubica.
+function desenharAlcaCruzamentoPDF(doc, fx, y, raio) {
+  const k = 0.5522847498;
+  const S = { x: fx - raio, y: y };
+  const TOPO = { x: fx, y: y - raio };
+  const E = { x: fx + raio, y: y };
+  const P1a = { x: S.x, y: S.y - k * raio };
+  const P2a = { x: TOPO.x - k * raio, y: TOPO.y };
+  const P1b = { x: TOPO.x + k * raio, y: TOPO.y };
+  const P2b = { x: E.x, y: E.y - k * raio };
+  doc.lines([
+    [P1a.x - S.x, P1a.y - S.y, P2a.x - S.x, P2a.y - S.y, TOPO.x - S.x, TOPO.y - S.y],
+    [P1b.x - TOPO.x, P1b.y - TOPO.y, P2b.x - TOPO.x, P2b.y - TOPO.y, E.x - TOPO.x, E.y - TOPO.y]
+  ], S.x, S.y, [1, 1], 'S', false);
+}
+
+// Desenha o trecho horizontal no PDF (linha reta ou com alcas nos cruzamentos).
+function desenharHorizontalComAlcasPDF(doc, x1, x2, y, furos, raio) {
+  const dir = x2 >= x1 ? 1 : -1;
+  const ordenados = (furos || []).slice().sort(function(a, b) { return dir * (a - b); });
+  let atual = x1;
+  ordenados.forEach(function(fx) {
+    const antes = fx - dir * raio;
+    const depois = fx + dir * raio;
+    doc.line(atual, y, antes, y);
+    desenharAlcaCruzamentoPDF(doc, fx, y, raio);
+    atual = depois;
+  });
+  doc.line(atual, y, x2, y);
+}
+
 // Desenha as linhas de roteamento de cabeamento em coordenadas de pixel reais
 // (viewBox do SVG casado com o tamanho do canvas), para o tracado nao distorcer
 // em plantas que nao sao quadradas. Cada dispositivo manda uma linha pontilhada
@@ -8031,6 +8111,12 @@ function renderLinhasPlanta() {
   });
 
   const NS = 'http://www.w3.org/2000/svg';
+
+  // Primeiro monta um trecho por dispositivo (com o grupo = rack + categoria
+  // dele) pra poder calcular os cruzamentos ENTRE grupos diferentes antes de
+  // desenhar qualquer coisa - so assim da pra saber onde colocar as alcas.
+  const troncos = []; // { cor, px, py, mx, my }
+  const trechos = []; // { grupo, dx, dy, mx, my, cor }
   Object.keys(grupos).forEach(function(pontoId) {
     const ponto = pontosPorId[pontoId];
     if (!ponto) return;
@@ -8041,29 +8127,50 @@ function renderLinhasPlanta() {
       const info = grupos[pontoId][nome];
       const cor = (PLANTA_CORES[info.cor] || PLANTA_CORES.gray).text;
       const angulo = (-60 + idx * 40) * Math.PI / 180;
-      const raio = 24;
-      const mx = px + Math.cos(angulo) * raio;
-      const my = py + Math.sin(angulo) * raio;
+      const raioManifold = 24;
+      const mx = px + Math.cos(angulo) * raioManifold;
+      const my = py + Math.sin(angulo) * raioManifold;
+      const grupo = pontoId + '|' + nome;
+      troncos.push({ cor: cor, px: px, py: py, mx: mx, my: my });
       info.marcadores.forEach(function(m) {
         const dx = (m.x_pct / 100) * w;
         const dy = (m.y_pct / 100) * h;
-        const linha = document.createElementNS(NS, 'polyline');
-        linha.setAttribute('points', dx + ',' + dy + ' ' + dx + ',' + my + ' ' + mx + ',' + my);
-        linha.setAttribute('fill', 'none');
-        linha.setAttribute('stroke', cor);
-        linha.setAttribute('stroke-width', '1.6');
-        linha.setAttribute('stroke-dasharray', '4,3');
-        linha.setAttribute('opacity', '0.75');
-        svg.appendChild(linha);
+        trechos.push({ grupo: grupo, dx: dx, dy: dy, mx: mx, my: my, cor: cor });
       });
-      const tronco = document.createElementNS(NS, 'line');
-      tronco.setAttribute('x1', mx); tronco.setAttribute('y1', my);
-      tronco.setAttribute('x2', px); tronco.setAttribute('y2', py);
-      tronco.setAttribute('stroke', cor);
-      tronco.setAttribute('stroke-width', '2.4');
-      tronco.setAttribute('stroke-dasharray', '4,3');
-      svg.appendChild(tronco);
     });
+  });
+
+  calcularAlcasCruzamentoPlanta(trechos);
+  const raioAlca = 5;
+
+  trechos.forEach(function(t) {
+    const vertical = document.createElementNS(NS, 'line');
+    vertical.setAttribute('x1', t.dx); vertical.setAttribute('y1', t.dy);
+    vertical.setAttribute('x2', t.dx); vertical.setAttribute('y2', t.my);
+    vertical.setAttribute('stroke', t.cor);
+    vertical.setAttribute('stroke-width', '1.6');
+    vertical.setAttribute('stroke-dasharray', '4,3');
+    vertical.setAttribute('opacity', '0.75');
+    svg.appendChild(vertical);
+
+    const horizontal = document.createElementNS(NS, 'path');
+    horizontal.setAttribute('d', pathHorizontalComAlcasPlanta(t.dx, t.mx, t.my, t.furos, raioAlca));
+    horizontal.setAttribute('fill', 'none');
+    horizontal.setAttribute('stroke', t.cor);
+    horizontal.setAttribute('stroke-width', '1.6');
+    horizontal.setAttribute('stroke-dasharray', '4,3');
+    horizontal.setAttribute('opacity', '0.75');
+    svg.appendChild(horizontal);
+  });
+
+  troncos.forEach(function(t) {
+    const tronco = document.createElementNS(NS, 'line');
+    tronco.setAttribute('x1', t.mx); tronco.setAttribute('y1', t.my);
+    tronco.setAttribute('x2', t.px); tronco.setAttribute('y2', t.py);
+    tronco.setAttribute('stroke', t.cor);
+    tronco.setAttribute('stroke-width', '2.4');
+    tronco.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(tronco);
   });
 }
 
@@ -8301,6 +8408,32 @@ async function construirRelatorioPlantaPDF() {
 
   const marcadores = (plantaAtual.marcadores || []).slice();
 
+  // Agrupa os marcadores por ponto de equipamento (rack), na ordem em que os
+  // pontos foram criados - o relatorio separa a "Resumo por tipo" e a "Lista
+  // detalhada" por rack em vez de uma lista unica, pra facilitar a instalacao.
+  // Marcadores sem ponto atribuido (ou apontando pra um ponto ja excluido)
+  // caem num grupo "Sem ponto definido" no final. O indice original (idx) e
+  // preservado pra numeracao continuar batendo com os circulos do croqui.
+  const pontosRelatorio = plantaAtual.pontos || [];
+  const pontosPorIdPdf = {};
+  pontosRelatorio.forEach(function(p) { pontosPorIdPdf[p.id] = p; });
+  function agruparPorPontoPlanta(lista) {
+    const porPonto = {};
+    lista.forEach(function(item) {
+      const chave = (item.marcador.ponto_id && pontosPorIdPdf[item.marcador.ponto_id]) ? item.marcador.ponto_id : '__sem_ponto__';
+      if (!porPonto[chave]) porPonto[chave] = [];
+      porPonto[chave].push(item);
+    });
+    const grupos = [];
+    pontosRelatorio.forEach(function(p) {
+      if (porPonto[p.id]) grupos.push({ nome: p.nome, itens: porPonto[p.id] });
+    });
+    if (porPonto['__sem_ponto__']) grupos.push({ nome: tr('planta_relatorio_sem_ponto'), itens: porPonto['__sem_ponto__'] });
+    return grupos;
+  }
+  const marcadoresComIdx = marcadores.map(function(m, idx) { return { marcador: m, idx: idx }; });
+  const gruposRack = pontosRelatorio.length ? agruparPorPontoPlanta(marcadoresComIdx) : [{ nome: null, itens: marcadoresComIdx }];
+
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const pageW = doc.internal.pageSize.getWidth();
@@ -8332,7 +8465,7 @@ async function construirRelatorioPlantaPDF() {
   doc.text(tr('planta_relatorio_data') + ': ' + dataHoje + '   ·   ' + tr('planta_relatorio_total_dispositivos') + ': ' + marcadores.length, margin, y);
   y += 34;
 
-  // ── Resumo por tipo (tabela com listras, quantidade alinhada a direita) ──
+  // ── Resumo por tipo, separado por rack (tabela com listras por grupo) ──
   doc.setFontSize(13);
   doc.setTextColor(20, 20, 20);
   doc.text(tr('planta_relatorio_resumo_titulo'), margin, y);
@@ -8346,47 +8479,59 @@ async function construirRelatorioPlantaPDF() {
     doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
     y += 56;
   } else {
-    const contagem = {};
-    marcadores.forEach(function(m) {
-      const key = m.nome;
-      if (!contagem[key]) contagem[key] = { nome: m.nome, cor: m.cor, qtd: 0 };
-      contagem[key].qtd++;
-    });
-    const resumo = Object.values(contagem).sort(function(a, b) { return b.qtd - a.qtd; });
     const linhaAltura = 24;
     const tabelaW = pageW - margin * 2;
 
-    // cabecalho da tabela
-    doc.setFontSize(8.5);
-    doc.setTextColor(150);
-    doc.text(tr('planta_relatorio_col_dispositivo').toUpperCase(), margin + 18, y);
-    doc.text(tr('planta_relatorio_col_qtd').toUpperCase(), pageW - margin, y, { align: 'right' });
-    y += 8;
-    doc.setDrawColor(225, 225, 220);
-    doc.setLineWidth(1);
-    doc.line(margin, y, pageW - margin, y);
-    y += linhaAltura - 8;
-
-    resumo.forEach(function(item, i) {
-      garantirEspaco(linhaAltura, plantaAtual.nome);
-      if (i % 2 === 0) {
-        doc.setFillColor(249, 249, 247);
-        doc.rect(margin, y - 16, tabelaW, linhaAltura, 'F');
+    gruposRack.forEach(function(grupo) {
+      garantirEspaco(40, plantaAtual.nome);
+      if (grupo.nome) {
+        doc.setFontSize(10.5);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(20, 20, 20);
+        doc.text(grupo.nome, margin, y);
+        doc.setFont(undefined, 'normal');
+        y += 16;
       }
-      const cor = PLANTA_CORES[item.cor] || PLANTA_CORES.gray;
-      const rgb = hexParaRgbPlanta(cor.text);
-      doc.setFillColor(rgb.r, rgb.g, rgb.b);
-      doc.circle(margin + 9, y - 5, 5, 'F');
-      doc.setFontSize(10.5);
-      doc.setTextColor(30);
-      doc.text(item.nome, margin + 22, y);
-      doc.setFontSize(10.5);
-      doc.setTextColor(20, 20, 20);
-      const qtdTxt = String(item.qtd) + ' ' + (item.qtd === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
-      doc.text(qtdTxt, pageW - margin, y, { align: 'right' });
-      y += linhaAltura;
+
+      const contagem = {};
+      grupo.itens.forEach(function(item) {
+        const m = item.marcador;
+        if (!contagem[m.nome]) contagem[m.nome] = { nome: m.nome, cor: m.cor, qtd: 0 };
+        contagem[m.nome].qtd++;
+      });
+      const resumo = Object.values(contagem).sort(function(a, b) { return b.qtd - a.qtd; });
+
+      doc.setFontSize(8.5);
+      doc.setTextColor(150);
+      doc.text(tr('planta_relatorio_col_dispositivo').toUpperCase(), margin + 18, y);
+      doc.text(tr('planta_relatorio_col_qtd').toUpperCase(), pageW - margin, y, { align: 'right' });
+      y += 8;
+      doc.setDrawColor(225, 225, 220);
+      doc.setLineWidth(1);
+      doc.line(margin, y, pageW - margin, y);
+      y += linhaAltura - 8;
+
+      resumo.forEach(function(item, i) {
+        garantirEspaco(linhaAltura, plantaAtual.nome);
+        if (i % 2 === 0) {
+          doc.setFillColor(249, 249, 247);
+          doc.rect(margin, y - 16, tabelaW, linhaAltura, 'F');
+        }
+        const cor = PLANTA_CORES[item.cor] || PLANTA_CORES.gray;
+        const rgb = hexParaRgbPlanta(cor.text);
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.circle(margin + 9, y - 5, 5, 'F');
+        doc.setFontSize(10.5);
+        doc.setTextColor(30);
+        doc.text(item.nome, margin + 22, y);
+        doc.setFontSize(10.5);
+        doc.setTextColor(20, 20, 20);
+        const qtdTxt = String(item.qtd) + ' ' + (item.qtd === 1 ? tr('planta_relatorio_unidade') : tr('planta_relatorio_unidades'));
+        doc.text(qtdTxt, pageW - margin, y, { align: 'right' });
+        y += linhaAltura;
+      });
+      y += 18;
     });
-    y += 14;
   }
 
   // ── Croqui: planta com marcadores numerados (referencia visual pra equipe) ──
@@ -8415,21 +8560,20 @@ async function construirRelatorioPlantaPDF() {
   doc.rect(imgX - 1, imgY - 1, drawW + 2, drawH + 2);
   doc.addImage(imgDataUrl, 'PNG', imgX, imgY, drawW, drawH);
 
-  // ── Rotas de cabeamento (linhas pontilhadas ate o ponto de equipamento) ──
+  // ── Rotas de cabeamento (linhas pontilhadas ate o ponto de equipamento,
+  // com uma alca por cima onde uma rota cruza a de outro rack/categoria) ──
   // desenhadas ANTES dos circulos numerados, pra ficarem por baixo deles no croqui.
-  const pontosRelatorio = plantaAtual.pontos || [];
-  const marcadoresComPonto = marcadores.filter(function(m) { return m.ponto_id; });
+  const marcadoresComPonto = marcadores.filter(function(m) { return m.ponto_id && pontosPorIdPdf[m.ponto_id]; });
   if (pontosRelatorio.length && marcadoresComPonto.length) {
-    const pontosPorIdPdf = {};
-    pontosRelatorio.forEach(function(p) { pontosPorIdPdf[p.id] = p; });
     const gruposPdf = {};
     marcadoresComPonto.forEach(function(m) {
-      if (!pontosPorIdPdf[m.ponto_id]) return;
       if (!gruposPdf[m.ponto_id]) gruposPdf[m.ponto_id] = {};
       if (!gruposPdf[m.ponto_id][m.nome]) gruposPdf[m.ponto_id][m.nome] = { cor: m.cor, marcadores: [] };
       gruposPdf[m.ponto_id][m.nome].marcadores.push(m);
     });
-    doc.setLineDashPattern([2.2, 1.6], 0);
+
+    const troncosPdf = [];
+    const trechosPdf = [];
     Object.keys(gruposPdf).forEach(function(pontoId) {
       const ponto = pontosPorIdPdf[pontoId];
       const px = imgX + (ponto.x_pct / 100) * drawW;
@@ -8438,22 +8582,36 @@ async function construirRelatorioPlantaPDF() {
       categorias.forEach(function(nome, idx) {
         const info = gruposPdf[pontoId][nome];
         const cor = PLANTA_CORES[info.cor] || PLANTA_CORES.gray;
-        const rgb = hexParaRgbPlanta(cor.text);
-        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
         const angulo = (-60 + idx * 40) * Math.PI / 180;
-        const raio = 16;
-        const mx = px + Math.cos(angulo) * raio;
-        const my = py + Math.sin(angulo) * raio;
-        doc.setLineWidth(0.8);
+        const raioManifold = 16;
+        const mx = px + Math.cos(angulo) * raioManifold;
+        const my = py + Math.sin(angulo) * raioManifold;
+        const grupo = pontoId + '|' + nome;
+        troncosPdf.push({ cor: cor, px: px, py: py, mx: mx, my: my });
         info.marcadores.forEach(function(m) {
           const dx = imgX + (m.x_pct / 100) * drawW;
           const dy = imgY + (m.y_pct / 100) * drawH;
-          doc.line(dx, dy, dx, my);
-          doc.line(dx, my, mx, my);
+          trechosPdf.push({ grupo: grupo, dx: dx, dy: dy, mx: mx, my: my, cor: cor });
         });
-        doc.setLineWidth(1.3);
-        doc.line(mx, my, px, py);
       });
+    });
+
+    calcularAlcasCruzamentoPlanta(trechosPdf);
+    const raioAlcaPdf = 3.2;
+
+    doc.setLineDashPattern([2.2, 1.6], 0);
+    trechosPdf.forEach(function(t) {
+      const rgb = hexParaRgbPlanta(t.cor.text);
+      doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+      doc.setLineWidth(0.8);
+      doc.line(t.dx, t.dy, t.dx, t.my);
+      desenharHorizontalComAlcasPDF(doc, t.dx, t.mx, t.my, t.furos, raioAlcaPdf);
+    });
+    troncosPdf.forEach(function(t) {
+      const rgb = hexParaRgbPlanta(t.cor.text);
+      doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+      doc.setLineWidth(1.3);
+      doc.line(t.mx, t.my, t.px, t.py);
     });
     doc.setLineDashPattern([], 0);
 
@@ -8484,7 +8642,8 @@ async function construirRelatorioPlantaPDF() {
     doc.text(String(idx + 1), px, py + 2.8, { align: 'center' });
   });
 
-  // ── Lista detalhada: cada dispositivo num "card" proprio, numeracao bate com o croqui ──
+  // ── Lista detalhada, separada por rack: cada dispositivo num "card" proprio,
+  // numeracao bate com o croqui (o indice original e preservado no agrupamento) ──
   doc.addPage();
   y = desenharCabecalhoLevePDF(doc, plantaAtual.nome);
   y += 16;
@@ -8501,42 +8660,55 @@ async function construirRelatorioPlantaPDF() {
     doc.text(tr('planta_relatorio_sem_dispositivos'), margin + 14, y + 24);
   } else {
     const larguraCard = pageW - margin * 2;
-    marcadores.forEach(function(m, idx) {
-      const obsTexto = (m.observacoes && m.observacoes.trim()) ? m.observacoes.trim() : tr('planta_relatorio_sem_obs');
-      const linhas = doc.splitTextToSize(obsTexto, larguraCard - 34);
-      const alturaCard = 22 + linhas.length * 12 + 14;
-      garantirEspaco(alturaCard + 8, plantaAtual.nome);
+    gruposRack.forEach(function(grupo) {
+      garantirEspaco(30, plantaAtual.nome);
+      if (grupo.nome) {
+        doc.setFontSize(11.5);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(20, 20, 20);
+        doc.text(grupo.nome, margin, y);
+        doc.setFont(undefined, 'normal');
+        y += 20;
+      }
+      grupo.itens.forEach(function(item) {
+        const m = item.marcador;
+        const idx = item.idx;
+        const obsTexto = (m.observacoes && m.observacoes.trim()) ? m.observacoes.trim() : tr('planta_relatorio_sem_obs');
+        const linhas = doc.splitTextToSize(obsTexto, larguraCard - 34);
+        const alturaCard = 22 + linhas.length * 12 + 14;
+        garantirEspaco(alturaCard + 8, plantaAtual.nome);
 
-      const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
-      const rgb = hexParaRgbPlanta(cor.text);
+        const cor = PLANTA_CORES[m.cor] || PLANTA_CORES.gray;
+        const rgb = hexParaRgbPlanta(cor.text);
 
-      doc.setFillColor(249, 249, 247);
-      doc.roundedRect(margin, y - 16, larguraCard, alturaCard, 6, 6, 'F');
+        doc.setFillColor(249, 249, 247);
+        doc.roundedRect(margin, y - 16, larguraCard, alturaCard, 6, 6, 'F');
 
-      doc.setFillColor(rgb.r, rgb.g, rgb.b);
-      doc.circle(margin + 17, y - 3, 9, 'F');
-      doc.setFontSize(9);
-      doc.setTextColor(255, 255, 255);
-      doc.text(String(idx + 1), margin + 17, y, { align: 'center' });
+        doc.setFillColor(rgb.r, rgb.g, rgb.b);
+        doc.circle(margin + 17, y - 3, 9, 'F');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        doc.text(String(idx + 1), margin + 17, y, { align: 'center' });
 
-      doc.setFontSize(11.5);
-      doc.setFont(undefined, 'bold');
-      doc.setTextColor(20, 20, 20);
-      doc.text(m.nome, margin + 34, y);
-      doc.setFont(undefined, 'normal');
+        doc.setFontSize(11.5);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(20, 20, 20);
+        doc.text(m.nome, margin + 34, y);
+        doc.setFont(undefined, 'normal');
 
-      doc.setFontSize(9.5);
-      doc.setTextColor(m.observacoes && m.observacoes.trim() ? 90 : 165);
-      doc.text(linhas, margin + 34, y + 16);
+        doc.setFontSize(9.5);
+        doc.setTextColor(m.observacoes && m.observacoes.trim() ? 90 : 165);
+        doc.text(linhas, margin + 34, y + 16);
 
-      y += alturaCard + 8;
+        y += alturaCard + 8;
+      });
+      y += 6;
     });
   }
 
   numerarPaginasPDF(doc);
   return doc;
 }
-
 async function gerarRelatorioPlanta() {
   if (!plantaAtual) return;
   const btn = document.getElementById('planta-relatorio-btn');
