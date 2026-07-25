@@ -3448,6 +3448,8 @@ async function finalizarStatusConcluido(osId) {
     if (os) { os.status = 'concluida'; os.concluida_em = agora; }
     toast(tr('os_concluida_sucesso'), 'ok');
     abrirOS(osId);
+    // Recarrega a lista para refletir o novo status
+    setTimeout(() => carregarOS && carregarOS(), 500);
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
