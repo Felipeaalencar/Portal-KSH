@@ -5842,6 +5842,10 @@ async function editarOS(id) {
   await garantirTecnicosAtivosCache();
   renderEditOsTecnicoChips();
   document.getElementById('edit-os-desc').value = os.descricao||'';
+  // Data de abertura editável
+  const dataAbertura = os.created_at ? new Date(os.created_at).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+  const dataEl = document.getElementById('edit-os-data-abertura');
+  if (dataEl) dataEl.value = dataAbertura;
   document.getElementById('edit-os-valor-orcado').value = os.valor_orcado != null ? os.valor_orcado : '';
   document.getElementById('edit-os-cli-info').textContent = tr('cliente_colon') + (os.cliente_nome||os.cliente||'—');
   abrirModal('m-edit-os');
@@ -5858,7 +5862,8 @@ async function salvarEditOS() {
     tecnico_nome: editOsTecnicosSelecionados.join(', ')||null,
     tecnicos: editOsTecnicosSelecionados,
     descricao: document.getElementById('edit-os-desc').value.trim()||null,
-    valor_orcado: document.getElementById('edit-os-valor-orcado')?.value ? parseFloat(document.getElementById('edit-os-valor-orcado').value) : null
+    valor_orcado: document.getElementById('edit-os-valor-orcado')?.value ? parseFloat(document.getElementById('edit-os-valor-orcado').value) : null,
+    created_at: document.getElementById('edit-os-data-abertura')?.value ? new Date(document.getElementById('edit-os-data-abertura').value + 'T00:00:00').toISOString() : undefined
   };
   if (statusEditavel) body.status = statusNovo;
   try {
