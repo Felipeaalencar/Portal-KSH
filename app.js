@@ -2873,7 +2873,10 @@ async function carregarOS() {
 function filtrarOS() {
   const q = (document.getElementById('os-busca')?.value||'').toLowerCase();
   const s = document.getElementById('os-filtro')?.value||'';
-  renderOSLista(osData.filter(o => (!s||o.status===s) && (!q||(o.titulo||'').toLowerCase().includes(q)||(o.cliente||o.cliente_nome||'').toLowerCase().includes(q)||String(o.numero||'').includes(q))));
+  renderOSLista(osData.filter(o => {
+    if (s === 'em_aberto') return o.status !== 'concluida';
+    return true;
+  }).filter(o => (!s||o.status===s) && (!q||(o.titulo||'').toLowerCase().includes(q)||(o.cliente||o.cliente_nome||'').toLowerCase().includes(q)||String(o.numero||'').includes(q))));
 }
 
 function renderOSLista(lista) {
