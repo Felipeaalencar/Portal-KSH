@@ -3367,21 +3367,8 @@ async function gerarResumoTrabalhoOS(osId) {
   }).join('\n');
 
   const statusEl = document.getElementById('resumo-ia-status-' + osId);
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = tr('os_gerando'); }
-  try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Erro');
-    if (statusEl) statusEl.style.display = 'none';
-    mostrarPreviaResumoOS(osId, d.resumo || texto);
-  } catch(e) {
-    if (statusEl) statusEl.style.display = 'none';
-    toast(tr('erro_prefix') + e.message, 'err');
-  }
+  if (statusEl) statusEl.style.display = 'none';
+  mostrarPreviaResumoOS(osId, texto);
 }
 
 function mostrarPreviaResumoOS(osId, resumo) {
@@ -4497,22 +4484,9 @@ async function gerarResumoNota(osId) {
   const btn = document.getElementById('nota-btn-' + osId);
   if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
   try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    if (!r.ok) {
-      let detalhe = '';
-      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
-      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
-    }
-    const d = await r.json();
-    mostrarPreviaNota(osId, d.resumo || texto);
+    mostrarPreviaNota(osId, texto);
   } catch(e) {
-    // IA ainda não disponível: mostra o motivo (debug) e não trava o técnico, salva a anotação direto
-    console.error('resumo-nota falhou:', e);
-    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
+    console.error('gerarResumoNota erro:', e);
     await salvarNotaDireta(osId, texto);
   } finally {
     if (btn) { btn.textContent = tr('os_enviar'); btn.disabled = false; }
@@ -4661,21 +4635,9 @@ async function resumirNotepad(osId) {
   const btn = document.getElementById('notepad-resumir-' + osId);
   if (btn) { btn.textContent = tr('os_gerando'); btn.disabled = true; }
   try {
-    const r = await fetch(SB_URL + '/functions/v1/resumo-nota', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ME.token, 'apikey': SB_KEY },
-      body: JSON.stringify({ texto })
-    });
-    if (!r.ok) {
-      let detalhe = '';
-      try { const dj = await r.json(); detalhe = dj.error || ''; } catch(e2) {}
-      throw new Error('HTTP ' + r.status + (detalhe ? ' - ' + detalhe : ''));
-    }
-    const d = await r.json();
-    mostrarPreviaNotepad(osId, d.resumo || texto);
+    mostrarPreviaNotepad(osId, texto);
   } catch(e) {
-    console.error('resumo-nota (notepad) falhou:', e);
-    toast((LANG==='pt' ? 'IA indisponível: ' : 'AI unavailable: ') + e.message, 'err');
+    console.error('resumirNotepad erro:', e);
   } finally {
     if (btn) { btn.textContent = tr('os_notepad_resumir'); btn.disabled = false; }
   }
