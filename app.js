@@ -2835,6 +2835,7 @@ async function renderKSHCam() {
   <div style="display:flex;gap:8px;margin-bottom:14px">
     <input placeholder="${tr('os_search_ph')}" style="flex:1;padding:7px 11px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;outline:none" id="os-busca" oninput="filtrarOS()">
     <select style="padding:7px 10px;border:1px solid #e8e8e5;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;outline:none" id="os-filtro" onchange="filtrarOS()">
+      <option value="em_aberto" selected>Em aberto</option>
       <option value="">${tr('os_filtro_todos')}</option>
       <option value="aberta">${tr('status_aberta')}</option>
       <option value="agendada">${tr('status_agendada')}</option>
@@ -2873,7 +2874,11 @@ async function carregarOS() {
 function filtrarOS() {
   const q = (document.getElementById('os-busca')?.value||'').toLowerCase();
   const s = document.getElementById('os-filtro')?.value||'';
-  renderOSLista(osData.filter(o => (!s||o.status===s) && (!q||(o.titulo||'').toLowerCase().includes(q)||(o.cliente||o.cliente_nome||'').toLowerCase().includes(q)||String(o.numero||'').includes(q))));
+  renderOSLista(osData.filter(o => {
+    if (s === 'em_aberto') return o.status !== 'concluida';
+    if (s) return o.status === s;
+    return true;
+  }).filter(o => (!q||(o.titulo||'').toLowerCase().includes(q)||(o.cliente||o.cliente_nome||'').toLowerCase().includes(q)||String(o.numero||'').includes(q))));
 }
 
 function renderOSLista(lista) {
