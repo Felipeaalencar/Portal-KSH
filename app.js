@@ -5465,7 +5465,7 @@ function renderDashRent(periodo, tecFiltro) {
   else if (periodo === 'mes') d0.setMonth(agora.getMonth() - 1);
   else d0.setMonth(agora.getMonth() - 3);
 
-  let osF = os.filter(o => new Date(o.created_at) >= d0);
+  let osF = os.filter(o => new Date(o.created_at) >= d0).sort((a,b)=>(a.numero||0)-(b.numero||0));
   if (tecFiltro) osF = osF.filter(o => (o.tecnico_nome||'').includes(tecFiltro));
 
   const linhas = osF.map(o => {
@@ -5491,8 +5491,8 @@ function renderDashRent(periodo, tecFiltro) {
     if (!porTec[t]) porTec[t]={rec:0,custo:0};
     porTec[t].rec+=l.rec; porTec[t].custo+=l.custo;
   });
-  const tNomes = Object.keys(porTec).slice(0,4);
-  const tMarg  = tNomes.map(t => porTec[t].rec>0 ? Math.round((porTec[t].rec-porTec[t].custo)/porTec[t].rec*100) : 0);
+  const tOrd = Object.keys(porTec).map(t=>({t,m:porTec[t].rec>0?Math.round((porTec[t].rec-porTec[t].custo)/porTec[t].rec*100):0})).sort((a,b)=>b.m-a.m).slice(0,4); const tNomes = tOrd.map(x=>x.t);
+  const tMarg  = tOrd.map(x=>x.m);
 
   const fmt = v => '$' + Number(v).toLocaleString('en-US',{maximumFractionDigits:0});
   const mc  = m => m>=60?'#0ca30c':m>=40?'#fab219':'#d03b3b';
@@ -5566,10 +5566,10 @@ function renderDashRent(periodo, tecFiltro) {
 
   const l8 = linhas.slice(0,8);
   if (l8.length && document.getElementById('rent-c1')) {
-    new Chart(document.getElementById('rent-c1'), { type:'bar', data:{ labels:l8.map(l=>'#'+(l.os.numero||'?')), datasets:[{ label:'Receita', data:l8.map(l=>l.rec), backgroundColor:'#2a78d6', borderRadius:3 },{ label:'Custo', data:l8.map(l=>l.custo), backgroundColor:'#eb6834', borderRadius:3 }] }, options:{...baseOpts, scales:{ x:{grid:{color:gridC},ticks:{color:textC,font:{size:10}}}, y:{grid:{color:gridC},ticks:{color:textC,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'}} }} });
+    new Chart(document.getElementById('rent-c1'), { type:'bar', data:{ labels:l8.map(l=>'#'+(l.os.numero||'?')), datasets:[{ label:'Receita', data:l8.map(l=>l.rec), backgroundColor:'#2a78d6', borderRadius:3 },{ label:'Custo', data:l8.map(l=>l.custo), backgroundColor:'#eb6834', borderRadius:3 }] }, options:{...baseOpts, plugins:{legend:{display:true,position:'top',labels:{color:textC,boxWidth:10,font:{size:10}}}}, scales:{ x:{grid:{color:gridC},ticks:{color:textC,font:{size:10}}}, y:{grid:{color:gridC},ticks:{color:textC,font:{size:10},callback:v=>'$'+Math.round(v/1000)+'k'}} }} });
   }
   if (tNomes.length && document.getElementById('rent-c2')) {
-    new Chart(document.getElementById('rent-c2'), { type:'bar', data:{ labels:tNomes, datasets:[{ data:tMarg, backgroundColor:'#2a78d6', borderRadius:3 }] }, options:{...baseOpts, indexAxis:'y', scales:{ x:{grid:{color:gridC},ticks:{color:textC,font:{size:10},callback:v=>v+'%'},min:0,max:100}, y:{grid:{color:gridC},ticks:{color:textC,font:{size:10}}} }} });
+    new Chart(document.getElementById('rent-c2'), { type:'bar', data:{ labels:tNomes, datasets:[{ data:tMarg, backgroundColor:tMarg.map(mc), borderRadius:3 }] }, options:{...baseOpts, indexAxis:'y', scales:{ x:{grid:{color:gridC},ticks:{color:textC,font:{size:10},callback:v=>v+'%'},min:0,max:100}, y:{grid:{color:gridC},ticks:{color:textC,font:{size:10}}} }} });
   }
 }
 
