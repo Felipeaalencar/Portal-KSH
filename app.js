@@ -2859,7 +2859,7 @@ async function carregarOS() {
   if (!el) return;
   try {
     osData = await sbGet('ordens_servico?order=created_at.desc');
-    renderOSLista(osData);
+    filtrarOS();
     if (document.getElementById('kpi-tot')) {
       document.getElementById('kpi-tot').textContent = osData.length;
       document.getElementById('kpi-ab').textContent = osData.filter(o=>o.status==='aberta').length;
