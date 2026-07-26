@@ -2669,13 +2669,13 @@ function togglePermSecaoTec(label) {
 }
 
 function atualizarVisibilidadePermTec() {
-  const funcao = document.getElementById('tec-funcao')?.value;
+  const funcao = document.getElementById('tec-funcao')?.value; const email = document.getElementById('tec-email')?.value.trim();
   const locked = document.getElementById('tec-perm-locked');
   const tree = document.getElementById('tec-perm-tree');
   if (!locked || !tree) return;
-  if (funcao === 'Gestor') {
+  if (funcao === 'Gestor' || !email) {
     locked.style.display = 'block';
-    locked.innerHTML = '🔒 ' + tr('perm_acesso_total');
+    locked.innerHTML = funcao==='Gestor' ? ('🔒 ' + tr('perm_acesso_total')) : tr('perm_sem_email');
     tree.style.display = 'none';
   } else {
     locked.style.display = 'none';
@@ -2685,7 +2685,7 @@ function atualizarVisibilidadePermTec() {
 }
 
 async function upsertUsuarioPermissoes(email, nome, funcao) {
-  if (!email) return;
+  if (!email) { toast(tr('perm_sem_email'), 'err'); return; }
   const paginas = funcao === 'Gestor' ? [] : Object.keys(tecPermEstado).filter(id => tecPermEstado[id]);
   try {
     const rows = await sbGet('usuarios?email=eq.' + encodeURIComponent(email) + '&limit=1');
