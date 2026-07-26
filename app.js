@@ -5440,13 +5440,13 @@ async function renderRentabilidadeOS() {
   const el = document.getElementById('mod-content');
   el.innerHTML = '<div style="text-align:center;padding:40px">Carregando...</div>';
   try {
-    const [os, gastos, despesas, tecnicos] = await Promise.all([
+    const [os, gastos, despesas, tecnicos, dias] = await Promise.all([
       sbGet('ordens_servico?status=eq.concluida&order=created_at.desc'),
       sbGet('os_gastos?order=criado_em.desc'),
       sbGet('os_despesas?order=criado_em.desc'),
-      sbGet('tecnicos?order=nome')
+      sbGet('tecnicos?order=nome'), sbGet('os_dias?order=data.asc')
     ]);
-    rentabilidadeData = { os, gastos, despesas, tecnicos };
+    rentabilidadeData = { os, gastos, despesas, tecnicos, dias };
     renderDashRent('quinzena', null);
   } catch(e) {
     const el2 = document.getElementById('mod-content');
@@ -5456,7 +5456,7 @@ async function renderRentabilidadeOS() {
 
 function renderDashRent(periodo, tecFiltro) {
   if (!rentabilidadeData) return;
-  const { os, gastos, despesas, tecnicos } = rentabilidadeData;
+  const { os, gastos, despesas, tecnicos, dias } = rentabilidadeData;
   const el = document.getElementById('mod-content');
   const agora = new Date();
   let d0 = new Date(agora);
@@ -5470,7 +5470,7 @@ function renderDashRent(periodo, tecFiltro) {
 
   const linhas = osF.map(o => {
     const rec = Number(o.valor_orcado||0);
-    const mo  = Number(o.custo_mao_obra||0);
+    const mo  = calcularResumoValores((dias||[]).filter(d=>d.os_id===o.id), [], tecnicos).totalMaoObra;
     const desp = despesas.filter(d => d.os_id===o.id).reduce((s,d)=>s+Number(d.valor||0),0)
                + gastos.filter(g => g.os_id===o.id).reduce((s,g)=>s+Number(g.valor||0),0);
     const custo = mo + desp;
@@ -5613,7 +5613,7 @@ function exportarRentCSV() {
   const header = 'OS,Cliente,Tecnico,Receita,Mao de obra,Despesas,Lucro,Margem,Cobranca';
   const rows = rentabilidadeData.os.map(o => {
     const rec  = Number(o.valor_orcado||0);
-    const mo   = Number(o.custo_mao_obra||0);
+    const mo   = calcularResumoValores((rentabilidadeData.dias||[]).filter(d=>d.os_id===o.id), [], rentabilidadeData.tecnicos).totalMaoObra;
     const desp = (rentabilidadeData.despesas||[]).filter(d=>d.os_id===o.id).reduce((s,d)=>s+Number(d.valor||0),0);
     const lucro = rec - mo - desp;
     const margem = rec > 0 ? Math.round(lucro/rec*100)+'%' : '';
