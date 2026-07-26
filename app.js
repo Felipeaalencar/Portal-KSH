@@ -5469,7 +5469,7 @@ function renderDashRent(periodo, tecFiltro) {
   if (tecFiltro) osF = osF.filter(o => (o.tecnico_nome||'').includes(tecFiltro));
 
   const linhas = osF.map(o => {
-    const rec = Number(o.valor_venda||0);
+    const rec = Number(o.valor_orcado||0);
     const mo  = Number(o.custo_mao_obra||0);
     const desp = despesas.filter(d => d.os_id===o.id).reduce((s,d)=>s+Number(d.valor||0),0)
                + gastos.filter(g => g.os_id===o.id).reduce((s,g)=>s+Number(g.valor||0),0);
@@ -5483,7 +5483,7 @@ function renderDashRent(periodo, tecFiltro) {
   const totCusto= linhas.reduce((s,l)=>s+l.custo,0);
   const totLucro= totRec - totCusto;
   const margM   = totRec > 0 ? Math.round(totLucro/totRec*100) : 0;
-  const aRec    = linhas.filter(l=>l.os.cobranca==='a_cobrar').reduce((s,l)=>s+l.rec,0);
+  const aRec    = linhas.filter(l=>l.os.status_cobranca==='a_cobrar').reduce((s,l)=>s+l.rec,0);
 
   const porTec = {};
   linhas.forEach(l => {
@@ -5518,7 +5518,7 @@ function renderDashRent(periodo, tecFiltro) {
     +'<td style="padding:8px 12px;text-align:right;color:var(--text-secondary)">'+fmt(l.desp)+' <button data-osid="'+l.os.id+'" class="btn-ver-desp" style="padding:1px 6px;border:0.5px solid var(--border);border-radius:4px;font-size:10px;cursor:pointer;background:none;color:var(--text-muted);font-family:inherit">ver</button></td>'
     +'<td style="padding:8px 12px;text-align:right;font-weight:500;color:'+(l.lucro>=0?'#0ca30c':'#d03b3b')+'">'+fmt(l.lucro)+'</td>'
     +'<td style="padding:8px 12px;text-align:right">'+(l.margem!==null?'<span style="font-weight:500;color:'+mc(l.margem)+'">'+l.margem+'%</span>':'<span style="color:var(--text-muted)">—</span>')+'</td>'
-    +'<td style="padding:8px 12px;text-align:center">'+ct(l.os.cobranca)+'</td>'
+    +'<td style="padding:8px 12px;text-align:center">'+ct(l.os.status_cobranca)+'</td>'
     +'</tr>'
   ).join('') : '<tr><td colspan="9" style="padding:40px;text-align:center;color:var(--text-muted)">Nenhuma OS neste período</td></tr>';
 
@@ -5534,7 +5534,7 @@ function renderDashRent(periodo, tecFiltro) {
     +'<div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">RECEITA</div><div style="font-size:20px;font-weight:500">'+fmt(totRec)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px">'+linhas.length+' OS</div></div>'
     +'<div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">CUSTO TOTAL</div><div style="font-size:20px;font-weight:500">'+fmt(totCusto)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px">MO + despesas</div></div>'
     +'<div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">MARGEM MÉDIA</div><div style="font-size:20px;font-weight:500;color:'+mc(margM)+'">'+margM+'%</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px">Lucro: '+fmt(totLucro)+'</div></div>'
-    +'<div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">A RECEBER</div><div style="font-size:20px;font-weight:500;color:'+(aRec>0?'#d03b3b':'#0ca30c')+'">'+fmt(aRec)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px">'+linhas.filter(l=>l.os.cobranca==='a_cobrar').length+' pendentes</div></div>'
+    +'<div style="background:var(--surface-1);border-radius:var(--radius);padding:12px 14px"><div style="font-size:10px;color:var(--text-muted);margin-bottom:4px">A RECEBER</div><div style="font-size:20px;font-weight:500;color:'+(aRec>0?'#d03b3b':'#0ca30c')+'">'+fmt(aRec)+'</div><div style="font-size:10px;color:var(--text-muted);margin-top:3px">'+linhas.filter(l=>l.os.status_cobranca==='a_cobrar').length+' pendentes</div></div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">'
     +'<div style="background:var(--surface-2);border:0.5px solid var(--border);border-radius:12px;padding:14px"><div style="font-size:11px;font-weight:500;color:var(--text-secondary);margin-bottom:10px">Receita vs Custo por OS</div><div style="position:relative;height:160px"><canvas id="rent-c1" role="img" aria-label="Receita vs custo">Receita e custo por OS.</canvas></div></div>'
@@ -5612,12 +5612,12 @@ function exportarRentCSV() {
   if (!rentabilidadeData || !rentabilidadeData.os) return;
   const header = 'OS,Cliente,Tecnico,Receita,Mao de obra,Despesas,Lucro,Margem,Cobranca';
   const rows = rentabilidadeData.os.map(o => {
-    const rec  = Number(o.valor_venda||0);
+    const rec  = Number(o.valor_orcado||0);
     const mo   = Number(o.custo_mao_obra||0);
     const desp = (rentabilidadeData.despesas||[]).filter(d=>d.os_id===o.id).reduce((s,d)=>s+Number(d.valor||0),0);
     const lucro = rec - mo - desp;
     const margem = rec > 0 ? Math.round(lucro/rec*100)+'%' : '';
-    return ['#'+(o.numero||''), o.cliente_nome||o.cliente||'', o.tecnico_nome||'', rec, mo, desp, lucro, margem, o.cobranca||''].join(',');
+    return ['#'+(o.numero||''), o.cliente_nome||o.cliente||'', o.tecnico_nome||'', rec, mo, desp, lucro, margem, o.status_cobranca||''].join(',');
   });
   const csv = [header].concat(rows).join('\n');
   const a = document.createElement('a');
