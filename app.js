@@ -1217,7 +1217,7 @@ function loadModule(id) {
   else if (id === 'documentos') renderDocumentos();
   else if (id === 'fin-cadastros') renderCadastros(); else if (id === 'desp-lancar') renderDespesasGerais();
   else if (id === 'projetos-rack') renderRacks();
-  else if (id === 'projetos-planta') renderPlantas();
+  else if (id === 'projetos-planta') renderPlantas(); else if (id === 'fin-frota') renderFrota();
   else el.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;padding:60px;color:#bbb;gap:10px"><div style="font-size:36px">🚧</div><div style="font-size:14px;font-weight:500;color:#555">Em desenvolvimento</div></div>';
 }
 
