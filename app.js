@@ -8882,7 +8882,7 @@ const PERMISSOES_ESTRUTURA = [
       { id: 'fin-custeio', label: 'Custeio' },
       { id: 'fin-rentabilidade', label: 'Rentabilidade por OS' },
       { id: 'desp-lancar', label: 'Despesas · Lançar' },
-      { id: 'desp-aprovar', label: 'Despesas · Aprovar' },
+      
       { id: 'fin-frota', label: 'Controle de frota' },
       { id: 'fin-cadastros', label: 'Cadastros' }
   ]},
