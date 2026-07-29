@@ -4325,7 +4325,7 @@ async function gerarResumoPDF(osId) {
       doc.setTextColor(20);
       doc.setFontSize(11);
       y += 14;
-      const linhas = doc.splitTextToSize(String(valor), pageW - margin*2);
+      const linhasReais = doc.splitTextToSize(String(valor), pageW - margin*2); linhasReais.forEach(function(linha){ if (y > 780) { doc.addPage(); y = 50; } doc.text(linha, margin, y); y += 14; }); const linhas = [];
       doc.text(linhas, margin, y);
       y += linhas.length * 14 + 10;
     }
@@ -4344,7 +4344,7 @@ async function gerarResumoPDF(osId) {
       notas.forEach(n => {
         if (y > 760) { doc.addPage(); y = 50; }
         const dataStr = new Date(n.criado_em || n.created_at).toLocaleString(LANG==='pt'?'pt-BR':'en-US');
-        const linhas = doc.splitTextToSize('- ' + n.texto + '  (' + (n.autor||'—') + ', ' + dataStr + ')', pageW - margin*2);
+        const linhasReais = doc.splitTextToSize('- ' + n.texto + '  (' + (n.autor||'—') + ', ' + dataStr + ')', pageW - margin*2); linhasReais.forEach(function(linha){ if (y > 780) { doc.addPage(); y = 50; } doc.text(linha, margin, y); y += 13; }); const linhas = [];
         doc.text(linhas, margin, y);
         y += linhas.length * 13 + 6;
       });
@@ -4382,7 +4382,7 @@ async function gerarResumoPDF(osId) {
             if (y + imgH > 780) { doc.addPage(); y = 50; col = 0; }
             const x = margin + col * (imgW + 20);
             const fmt = blob.type && blob.type.includes('png') ? 'PNG' : 'JPEG';
-            doc.addImage(dataUrl, fmt, x, y, imgW, imgH);
+            var _ip; try { _ip = doc.getImageProperties(dataUrl); } catch(_e) { _ip = null; } var _dw = imgW, _dh = imgH, _ox = 0, _oy = 0; if (_ip && _ip.width && _ip.height) { var _esc = Math.min(imgW/_ip.width, imgH/_ip.height); _dw = _ip.width*_esc; _dh = _ip.height*_esc; _ox = (imgW-_dw)/2; _oy = (imgH-_dh)/2; } doc.addImage(dataUrl, fmt, x+_ox, y+_oy, _dw, _dh);
             col++;
             if (col >= 2) { col = 0; y += imgH + 14; }
           } catch(e) { console.error('foto pdf falhou', e); }
