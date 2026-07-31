@@ -4458,20 +4458,7 @@ async function renderNotasOS(osId) {
   } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
 }
 
-async function editarNotaOS(notaId, osId) {
-  try {
-    const rows = await sbGet('os_notas?id=eq.' + notaId);
-    const n = rows[0];
-    if (!n) return;
-    const novoTexto = prompt(tr('nota_editar_prompt'), n.texto);
-    if (novoTexto === null) return;
-    const texto = novoTexto.trim();
-    if (!texto) { toast(tr('nota_texto_obrigatorio'), 'err'); return; }
-    await sbPatch('os_notas?id=eq.' + notaId, { texto });
-    await renderNotasOS(osId);
-    toast(tr('nota_atualizada'), 'ok');
-  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
-}
+async function editarNotaOS(notaId, osId) { try { const rows = await sbGet('os_notas?id=eq.' + notaId); const n = rows[0]; if (!n) return; document.getElementById('nota-editar-texto').value = n.texto; document.getElementById('nota-editar-texto').dataset.notaId = notaId; document.getElementById('nota-editar-texto').dataset.osId = osId; abrirModal('m-nota-editar'); } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); } } async function salvarNotaEditada() { const el = document.getElementById('nota-editar-texto'); const texto = el.value.trim(); if (!texto) { toast(tr('nota_texto_obrigatorio'), 'err'); return; } const notaId = el.dataset.notaId, osId = el.dataset.osId; try { await sbPatch('os_notas?id=eq.' + notaId, { texto }); fecharModal('m-nota-editar'); await renderNotasOS(osId); toast(tr('nota_atualizada'), 'ok'); } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); } }
 
 async function excluirNotaOS(notaId, osId) {
   if (!confirm(tr('nota_excluir_confirm'))) return;
