@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kilian Smart Homes — Plantas dos Projetos</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size:13px;height:100vh;overflow:hidden}
+/* LOGIN */
+#v-login{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:20px;background:#f0f0ed}
+.l-brand{text-align:center;display:flex;flex-direction:column;align-items:center;gap:10px}
+.l-brand img{width:52px;height:52px;object-fit:contain}
+.l-brand-name{font-size:16px;font-weight:700;letter-spacing:-.5px}
+.l-brand-sub{font-size:11px;color:#999}
+.l-card{background:#fff;border-radius:12px;padding:28px 30px;width:320px;box-shadow:0 1px 4px rgba(0,0,0,.07),0 8px 20px rgba(0,0,0,.05)}
+.l-card h2{font-size:16px;font-weight:700;margin-bottom:3px}
+.l-card p{font-size:12px;color:#888;margin-bottom:20px}
+.l-lbl{font-size:11px;font-weight:500;color:#444;margin-bottom:5px;display:block}
+.l-field{display:flex;align-items:center;gap:8px;background:#f5f5f3;border:1.5px solid #e8e8e5;border-radius:8px;padding:8px 11px;margin-bottom:11px;transition:border .15s}
+.l-field:focus-within{border-color:#1a1a1a}
+.l-field input{border:none;background:none;font-size:13px;color:#1a1a1a;width:100%;outline:none;font-family:inherit}
+.l-field input::placeholder{color:#bbb}
+.l-ic{color:#bbb;font-size:12px}
+.l-btn{width:100%;background:#1a1a1a;color:#fff;border:none;border-radius:8px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.l-btn:hover{opacity:.85}
+.l-btn:disabled{opacity:.5;cursor:not-allowed}
+.l-err{font-size:12px;text-align:center;margin-top:8px;display:none}
+.l-link{text-align:center;margin-top:10px;font-size:11px;color:#aaa;cursor:pointer;text-decoration:underline}
+.l-foot{font-size:11px;color:#ccc}
+/* APP */
+#v-app{display:none;height:100vh;flex-direction:row}
+/* SIDEBAR */
+.sb{width:200px;background:#131313;display:flex;flex-direction:column;flex-shrink:0;height:100vh}
+.sb-brand{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid #222}
+.sb-brand-left{display:flex;align-items:center;gap:8px}
+.sb-brand-left img{width:20px;height:20px;object-fit:contain;filter:brightness(10)}
+.sb-brand-name{font-size:13px;font-weight:700;color:#fff;letter-spacing:-.3px}
+.sb-nav{flex:1;overflow-y:auto;padding:6px 0}
+.sb-nav::-webkit-scrollbar{width:3px}
+.sb-nav::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:99px}
+.sb-sec{font-size:9px;font-weight:600;color:#444;letter-spacing:.8px;text-transform:uppercase;padding:10px 16px 3px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none}
+.sb-sec-body{overflow:hidden;transition:max-height .2s ease}
+.sb-item{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;color:#888;cursor:pointer;font-size:12px;border:none;background:none;width:100%;text-align:left;font-family:inherit;transition:all .1s;position:relative}
+.sb-item:hover{background:#1c1c1c;color:#e0e0e0}
+.sb-item.on{background:#1c1c1c;color:#fff;font-weight:500}
+.sb-item.on::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:2px;background:#fff;border-radius:0 2px 2px 0}
+.sb-grp-hd{display:flex;align-items:center;justify-content:space-between;padding:6px 16px;color:#888;cursor:pointer;font-size:12px;user-select:none;transition:all .1s}
+.sb-grp-hd:hover{background:#1c1c1c;color:#e0e0e0}
+.sb-grp-hd.on{color:#fff}
+.sb-grp-arr{font-size:10px;color:#444;transition:transform .2s}
+.sb-grp-hd.on .sb-grp-arr{transform:rotate(90deg)}
+.sb-grp-body{overflow:hidden;max-height:0;transition:max-height .2s ease}
+.sb-grp-body.on{max-height:300px}
+.sb-child{display:flex;align-items:center;justify-content:space-between;padding:5px 16px 5px 28px;color:#666;cursor:pointer;font-size:11.5px;border:none;background:none;width:100%;text-align:left;font-family:inherit;transition:all .1s;position:relative}
+.sb-child:hover{background:#1c1c1c;color:#e0e0e0}
+.sb-child.on{color:#fff;font-weight:500}
+.sb-child.on::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:2px;background:#fff;border-radius:0 2px 2px 0}
+.sb-foot{padding:10px 14px;border-top:1px solid #222;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sb-av{width:26px;height:26px;border-radius:50%;background:#222;color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+.sb-uname{font-size:11px;font-weight:600;color:#fff;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sb-urole{font-size:10px;color:#555}
+.sb-logout{color:#555;border:none;background:none;cursor:pointer;font-size:12px;padding:3px;border-radius:4px}
+.sb-logout:hover{color:#ff6b6b}
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:11px 24px;background:#fff;border-bottom:1px solid #e8e8e5;flex-shrink:0}
+.bc{font-size:11px;color:#bbb}
+.bc b{color:#1a1a1a;font-weight:500}
+.tb-act{display:flex;gap:8px}
+.btn-sec{padding:6px 12px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:#555}
+.btn-sec:hover{background:#f5f5f3}
+.btn-pri{padding:6px 12px;border:none;border-radius:6px;background:#1a1a1a;font-size:11px;font-weight:500;cursor:pointer;font-family:inherit;color:#fff}
+.btn-pri:hover{opacity:.85}
+/* PAGES */
+.page{display:none;flex:1;overflow-y:auto}
+.page.on{display:block}
+/* HOME */
+.home-wrap{padding:24px}
+.wb{background:#1a1a1a;color:#fff;border-radius:12px;padding:20px 24px;margin-bottom:22px;display:flex;align-items:center;justify-content:space-between}
+.wb-title{font-size:15px;font-weight:700;margin-bottom:3px}
+.wb-sub{font-size:11px;opacity:.45}
+.wb-stats{display:flex;gap:22px}
+.wb-stat-val{font-size:20px;font-weight:700;text-align:center}
+.wb-stat-lbl{font-size:9px;opacity:.35;letter-spacing:.5px;text-align:center}
+.h-sec{font-size:10px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;margin-top:20px}
+.h-sec:first-of-type{margin-top:0}
+.h-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.h-card{background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:16px;cursor:pointer;transition:all .15s}
+.h-card:hover{border-color:#1a1a1a;box-shadow:0 2px 10px rgba(0,0,0,.06);transform:translateY(-1px)}
+.h-card-title{font-size:13px;font-weight:600;margin-bottom:4px}
+.h-card-desc{font-size:11px;color:#888;line-height:1.4;margin-bottom:10px}
+.badge{font-size:10px;padding:2px 8px;border-radius:99px;font-weight:500;display:inline-flex;align-items:center;gap:3px}
+.bg{background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0}
+.bb{background:#eff6ff;color:#2563eb;border:1px solid #bfdbfe}
+.ba{background:#fffbeb;color:#d97706;border:1px solid #fde68a}
+/* MOD PAGE */
+.mod-wrap{padding:24px}
+.mod-title{font-size:20px;font-weight:700;margin-bottom:4px}
+.mod-sub{font-size:12px;color:#888;margin-bottom:20px}
+/* KPIS */
+.kpis{display:grid;gap:10px;margin-bottom:16px}
+.kpis-4{grid-template-columns:repeat(4,1fr)}
+.kpis-3{grid-template-columns:repeat(3,1fr)}
+.kpi{background:#fff;border:1px solid #e8e8e5;border-radius:10px;padding:14px 16px}
+.kpi-l{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-v{font-size:20px;font-weight:700}
+/* TABLE */
+.tbl-wrap{background:#fff;border:1px solid #e8e8e5;border-radius:10px;overflow:hidden}
+.tbl{width:100%;border-collapse:collapse;font-size:12px}
+.tbl th{padding:10px 14px;text-align:left;font-weight:500;color:#888;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #e8e8e5;background:#f9f9f7}
+.tbl td{padding:10px 14px;border-bottom:1px solid #f5f5f3}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:#f9f9f7}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1000;align-items:center;justify-content:center}
+.modal-box{background:#fff;border-radius:12px;padding:24px;width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.15)}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-hd-title{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;cursor:pointer;font-size:20px;color:#bbb;line-height:1}
+.f-lbl{font-size:11px;font-weight:500;color:#444;margin-bottom:5px;display:block}
+.f-inp{width:100%;padding:8px 11px;border:1.5px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;transition:border .15s}
+.f-inp:focus{border-color:#1a1a1a}
+.f-ta{width:100%;padding:8px 11px;border:1.5px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;height:80px;resize:vertical}
+.f-ta:focus{border-color:#1a1a1a}
+.f-sel{width:100%;padding:8px 11px;border:1.5px solid #e8e8e5;border-radius:7px;font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;background:#fff}
+.modal-btns{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;border-radius:8px;padding:9px 16px;font-size:12px;z-index:9999;opacity:0;transition:opacity .25s;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1}
+.toast.ok{background:#16a34a}
+.toast.err{background:#e74c3c}
+/* STATUS */
+.status-pill{font-size:11px;font-weight:500;padding:2px 8px;border-radius:99px}
+.sb-toggle{display:none;background:none;border:none;color:#1a1a1a;font-size:20px;cursor:pointer;padding:4px 8px 4px 0;line-height:1}
+.sb-lang{display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 0;border-top:1px solid #222}
+.lang-btn{background:none;border:none;color:#555;font-size:10px;font-weight:700;letter-spacing:.3px;padding:3px 8px;border-radius:5px;cursor:pointer;font-family:inherit}
+.lang-btn.on{background:#1c1c1c;color:#fff}
+.sb-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:998}
+.sb-overlay.on{display:block}
+
+@media (max-width:860px){
+  .sb-toggle{display:inline-block}
+  .sb{position:fixed;top:0;left:0;height:100vh;z-index:999;transform:translateX(-100%);transition:transform .2s ease;box-shadow:2px 0 16px rgba(0,0,0,.3)}
+  .sb.open{transform:translateX(0)}
+  .h-cards{grid-template-columns:1fr}
+  .kpis-4,.kpis-3{grid-template-columns:repeat(2,1fr)}
+  .modal-box{width:94vw !important;padding:18px}
+  .tbl-wrap{overflow-x:auto}
+  .tbl{min-width:520px}
+  .tbl[style*="min-width:0"]{min-width:0}
+  .rack-th-criado{display:none}
+  .wb{flex-direction:column;align-items:flex-start;gap:14px}
+  .wb-stats{width:100%;justify-content:space-between}
+  .home-wrap,.mod-wrap{padding:16px}
+  .os-grid-2{grid-template-columns:1fr !important}
+  .fotos-grid{grid-template-columns:repeat(2,1fr) !important}
+  .topbar{padding:10px 14px}
+  .l-card{width:92vw}
+}
+
+@media (max-width:420px){
+  .fotos-grid{grid-template-columns:repeat(2,1fr) !important}
+  .tb-act{flex-wrap:wrap;justify-content:flex-end}
+}
+</style>
+<style>
+  body{ background:#f5f5f3; margin:0; }
+  .ksh-topbar{ background:#1a1a1a; color:#fff; padding:14px 20px; font-size:15px; font-weight:600; display:flex; align-items:center; gap:10px; }
+  .ksh-topbar span.sub{ font-size:12px; color:#bbb; font-weight:400; }
+  .ksh-wrap{ max-width:900px; margin:0 auto; padding:20px; }
+</style>
+</head>
+<body>
+  <div class="ksh-topbar">Kilian Smart Homes <span class="sub">· Plantas dos Projetos (link público)</span></div>
+  <div class="ksh-wrap">
+    <div class="mod-wrap" id="mod-wrap">
+      <div class="mod-title" id="mod-title">Plantas dos Projetos</div>
+      <div class="mod-sub" id="mod-sub">Toque numa planta da lista pra abrir, ver e marcar os pontos de equipamento.</div>
+      <div id="mod-content"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <div class="modal-bg" id="m-planta-editor">
+  <div class="modal-box" style="width:760px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-editor-titulo" data-i18n="planta_editor_title">Planta</span><button class="modal-close" onclick="fecharModal('m-planta-editor')">×</button></div>
+    <div id="planta-editor-hint" style="font-size:12.5px;color:#666;background:#f9f9f7;border-radius:8px;padding:8px 12px;margin-bottom:10px" data-i18n="planta_hint_padrao">Escolha um dispositivo e toque na planta para posicionar. Arraste um ícone já colocado pra mover, toque nele pra anotar.</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <span id="planta-zoom-label" style="font-size:12px;color:#666;min-width:42px">100%</span>
+      <button type="button" onclick="ajustarZoomPlanta(0)" style="padding:0 10px;height:26px;border:1px solid #e8e8e5;border-radius:6px;background:#fff;cursor:pointer;font-size:11.5px" data-i18n="planta_zoom_ajustar_btn">Ajustar</button>
+      <span style="font-size:11px;color:#aaa" data-i18n="planta_zoom_hint">pinça pra dar zoom no celular, scroll do mouse no PC</span>
+    </div>
+    <div id="planta-editor-scroll" style="width:100%;max-height:62vh;overflow:auto;border:1px solid #e8e8e5;border-radius:8px;background:#f4f4f2;-webkit-overflow-scrolling:touch">
+      <div style="position:relative;width:100%;touch-action:pan-x pan-y" id="planta-editor-canvas">
+        <img id="planta-editor-img" style="display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none" draggable="false">
+        <svg id="planta-editor-linhas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></svg>
+        <div id="planta-editor-marcadores" style="position:absolute;inset:0"></div>
+        <div id="planta-editor-pontos" style="position:absolute;inset:0;pointer-events:none"></div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">
+      <button type="button" class="btn-pri" onclick="abrirBibliotecaIcones()" data-i18n="planta_escolher_dispositivo_btn">Escolher dispositivo</button>
+      <button type="button" onclick="abrirNovoPontoPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_novo_ponto_btn">+ Novo ponto</button>
+      <button type="button" id="planta-toggle-linhas-btn" onclick="toggleLinhasPlanta()" style="padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500" data-i18n="planta_ocultar_linhas_btn">Ocultar linhas</button>
+    </div>
+    <div id="planta-roteamento-painel" style="display:flex;flex-direction:column;gap:6px;margin-top:10px"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+      
+      
+      <a id="planta-ver-pdf-btn" href="#" target="_blank" style="display:none;padding:8px 14px;border:1px solid #e8e8e5;border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:500;text-decoration:none;color:inherit" data-i18n="planta_ver_pdf_original_btn">Ver PDF original</a>
+    </div>
+    <div id="planta-relatorio-status" style="display:none;font-size:12px;margin-top:8px"></div>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="fecharModal('m-planta-editor')" data-i18n="btn_fechar">Fechar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="m-planta-biblioteca">
+  <div class="modal-box" style="width:420px">
+    <div class="modal-hd"><span class="modal-hd-title" data-i18n="planta_biblioteca_title">Biblioteca de ícones</span><button class="modal-close" onclick="fecharModal('m-planta-biblioteca')">×</button></div>
+    <input class="f-inp" id="planta-icone-busca" oninput="renderizarGradeIcones(this.value)" data-i18n-placeholder="planta_buscar_icone_ph" placeholder="Buscar ícone (câmera, wifi, fechadura...)">
+    <div id="planta-icones-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:8px;max-height:320px;overflow-y:auto;margin-top:10px"></div>
+    <div style="display:flex;align-items:center;gap:10px;margin:16px 0 12px">
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+      <button type="button" onclick="toggleNovoTipoIcone()" style="background:none;border:none;color:#888;font-size:11px;cursor:pointer;text-decoration:underline" data-i18n="planta_novo_tipo_toggle">+ cadastrar novo tipo de ícone</button>
+      <div style="flex:1;height:1px;background:#e8e8e5"></div>
+    </div>
+    <div id="planta-novo-tipo-form" style="display:none">
+      <label class="f-lbl" data-i18n="label_nome_tipo_icone">Nome do dispositivo</label>
+      <input class="f-inp" id="pti-nome" data-i18n-placeholder="planta_tipo_nome_ph" placeholder="Ex: Sensor de fumaça">
+      <label class="f-lbl" data-i18n="label_emoji_tipo_icone">Ícone (emoji)</label>
+      <input class="f-inp" id="pti-emoji" maxlength="4" data-i18n-placeholder="planta_tipo_emoji_ph" placeholder="Cole um emoji, ex: 🔥" style="width:100px">
+      <label class="f-lbl" data-i18n="label_cor_tipo_icone">Cor</label>
+      <div id="pti-cores" style="display:flex;gap:8px;margin-bottom:14px"></div>
+      <div class="modal-btns">
+        <button class="btn-pri" style="width:100%" onclick="salvarNovoTipoIcone()" data-i18n="btn_cadastrar">Cadastrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="m-planta-obs">
+  <div class="modal-box" style="width:380px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-obs-titulo" data-i18n="planta_obs_title">Observação</span><button class="modal-close" onclick="fecharModal('m-planta-obs')">×</button></div>
+    <textarea class="f-inp" id="planta-obs-texto" rows="4" style="resize:vertical;font-family:inherit" data-i18n-placeholder="planta_obs_ph" placeholder="Ex: câmera apontada para o portão, senha do wifi, ajuste feito..."></textarea>
+    <div class="modal-btns">
+      <button class="btn-sec" onclick="excluirMarcadorPlantaAtual()" style="border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
+      <button class="btn-sec" onclick="fecharModal('m-planta-obs')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarObsPlanta()" data-i18n="btn_salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+<div class="modal-bg" id="m-planta-ponto-nome">
+  <div class="modal-box" style="width:360px">
+    <div class="modal-hd"><span class="modal-hd-title" id="planta-ponto-nome-titulo" data-i18n="planta_ponto_novo_title">Novo ponto</span><button class="modal-close" onclick="fecharModal('m-planta-ponto-nome')">×</button></div>
+    <label class="f-lbl" data-i18n="label_nome_ponto">Nome do ponto</label>
+    <input class="f-inp" id="ponto-nome-input" data-i18n-placeholder="planta_ponto_nome_ph" placeholder="Ex: Rack de rede, Central de som, DVR câmeras">
+    <div class="modal-btns">
+      <button class="btn-sec" id="ponto-excluir-btn" onclick="excluirPontoPlantaModal()" style="display:none;border-color:#fecaca;color:#dc2626;margin-right:auto" data-i18n="orc_excluir">Excluir</button>
+      <button class="btn-sec" onclick="fecharModal('m-planta-ponto-nome')" data-i18n="btn_cancelar">Cancelar</button>
+      <button class="btn-pri" onclick="salvarNomePontoPlanta()" data-i18n="btn_salvar">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+
+const SB_URL = 'https://ayhijjbvvsioxpdsrouq.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5aGlqamJ2dnNpb3hwZHNyb3VxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1NzU2NzcsImV4cCI6MjA5MDE1MTY3N30.SymZWfUnyPMIt0gWOunQ9OrtKIMA0FG7s0TmODRiypY';
+let AUTOR_NOME = localStorage.getItem('ksh_planta_autor') || '';
+function pedirAutorNome(){
+  if (AUTOR_NOME) return AUTOR_NOME;
+  const n = prompt('Seu nome (aparece nas marcações que você criar):', '') || 'Visitante';
+  AUTOR_NOME = n.trim() || 'Visitante';
+  localStorage.setItem('ksh_planta_autor', AUTOR_NOME);
+  return AUTOR_NOME;
+}
+function sbHeaders(){ return { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' }; }
+async function sbGet(path) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY } });
+  const d = await r.json();
+  return Array.isArray(d) ? d : [];
+}
+async function sbPost(path, body) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { method: 'POST', headers: { ...sbHeaders(), 'Prefer': 'return=representation' }, body: JSON.stringify(body) });
+  if (!r.ok) throw new Error((await r.json()).message || r.statusText);
+  return r.json();
+}
+async function sbPatch(path, body) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { method: 'PATCH', headers: sbHeaders(), body: JSON.stringify(body) });
+  if (!r.ok) throw new Error((await r.json()).message || r.statusText);
+}
+async function sbDelete(path) {
+  const r = await fetch(SB_URL + '/rest/v1/' + path, { method: 'DELETE', headers: sbHeaders() });
+  if (!r.ok) throw new Error((await r.json()).message || r.statusText);
+}
+function toast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast on' + (type ? ' ' + type : '');
+  setTimeout(() => t.className = 'toast', 3000);
+}
+function abrirModal(id) { document.getElementById(id).style.display = 'flex'; }
+function fecharModal(id) { document.getElementById(id).style.display = 'none'; }
+
+
+const TR_MAP = {"loading":"Carregando...","planta_none_found":"Nenhuma planta cadastrada ainda","planta_th_nome":"Nome","rack_th_criado":"Criado em","orc_excluir":"Excluir","erro_prefix":"Erro: ","planta_nao_encontrada":"Planta não encontrada","planta_escolha_icone_primeiro":"Escolha um dispositivo primeiro","planta_hint_marcar_ponto":"Toque na planta para posicionar o ponto de equipamento (rack, central de som, DVR...)","planta_hint_armado_prefix":"Toque na planta para posicionar:","planta_hint_padrao":"Escolha um dispositivo e toque na planta para posicionar. Arraste um ícone já colocado pra mover, toque nele pra anotar.","planta_ocultar_linhas_btn":"Ocultar linhas","planta_mostrar_linhas_btn":"Mostrar linhas","planta_ponto_excluir_confirm":"Excluir este ponto de equipamento? Os dispositivos direcionados a ele ficarão sem rota.","planta_ponto_excluido":"Ponto excluído","planta_ponto_renomear_title":"Renomear ponto","planta_ponto_novo_title":"Novo ponto","planta_ponto_nome_obrigatorio":"Informe um nome para o ponto","planta_ponto_salvo":"Ponto salvo","planta_roteamento_titulo":"Roteamento de cabeamento — direcione cada categoria de dispositivo para um ponto","planta_marcador_excluir_confirm":"Remover este dispositivo da planta?","planta_obs_salva":"Observação salva","planta_marcador_excluido":"Dispositivo removido","planta_icone_nao_encontrado":"Nenhum ícone encontrado","planta_tipo_campos_obrigatorios":"Preencha o nome e o ícone","planta_tipo_salvo":"Tipo de dispositivo cadastrado","planta_editor_title":"Planta","planta_zoom_ajustar_btn":"Ajustar","planta_zoom_hint":"pinça pra dar zoom no celular, scroll do mouse no PC","planta_escolher_dispositivo_btn":"Escolher dispositivo","planta_novo_ponto_btn":"+ Novo ponto","btn_fechar":"Fechar","planta_biblioteca_title":"Biblioteca de ícones","planta_novo_tipo_toggle":"+ cadastrar novo tipo de ícone","label_nome_tipo_icone":"Nome do dispositivo","label_emoji_tipo_icone":"Ícone (emoji)","label_cor_tipo_icone":"Cor","btn_cadastrar":"Cadastrar","planta_obs_title":"Observação","btn_cancelar":"Cancelar","btn_salvar":"Salvar","label_nome_ponto":"Nome do ponto"};
+function tr(k){ return TR_MAP[k] || k; }
+
+
+const PLANTA_CORES = {
+  blue:   { bg: '#E6F1FB', text: '#0C447C' },
+  coral:  { bg: '#FAECE7', text: '#712B13' },
+  purple: { bg: '#EEEDFE', text: '#3C3489' },
+  teal:   { bg: '#E1F5EE', text: '#085041' },
+  amber:  { bg: '#FAEEDA', text: '#633806' },
+  gray:   { bg: '#F1EFE8', text: '#444441' },
+  green:  { bg: '#E6F6EA', text: '#0F5C2E' },
+  red:    { bg: '#FCE8E8', text: '#7A1414' }
+};
+
+const PLANTA_ICONES_PADRAO = [
+  { chave: 'camera', nome: 'Câmera CFTV', emoji: '📷', cor: 'blue', kw: 'camera cftv ip analogica seguranca video vigilancia circuito fechado' },
+  { chave: 'dvr_nvr', nome: 'Gravador CFTV (DVR/NVR)', emoji: '🖥️', cor: 'gray', kw: 'dvr nvr gravador cftv storage armazenamento video servidor' },
+  { chave: 'central_alarme', nome: 'Central de alarme', emoji: '🛡️', cor: 'red', kw: 'central alarme painel seguranca monitoramento' },
+  { chave: 'teclado_alarme', nome: 'Teclado de alarme', emoji: '🔢', cor: 'coral', kw: 'teclado alarme keypad painel senha codigo' },
+  { chave: 'sirene', nome: 'Sirene', emoji: '📢', cor: 'coral', kw: 'sirene alarme sonoro alerta strobe' },
+  { chave: 'quebra_vidro', nome: 'Sensor de quebra de vidro', emoji: '🔨', cor: 'coral', kw: 'quebra vidro sensor seguranca janela' },
+  { chave: 'panico', nome: 'Botão de pânico', emoji: '🆘', cor: 'red', kw: 'panico emergencia botao sos assalto' },
+  { chave: 'acesso', nome: 'Controle de acesso', emoji: '🪪', cor: 'green', kw: 'acesso controle cartao biometria catraca leitora proximidade' },
+  { chave: 'fechadura', nome: 'Fechadura digital', emoji: '🔑', cor: 'coral', kw: 'fechadura porta digital trava smart lock eletronica' },
+  { chave: 'presenca', nome: 'Sensor de presença', emoji: '🚶', cor: 'teal', kw: 'sensor presenca movimento pir infravermelho' },
+  { chave: 'abertura', nome: 'Sensor de abertura', emoji: '🚪', cor: 'teal', kw: 'sensor porta janela abertura contato magnetico' },
+  { chave: 'som', nome: 'Caixa de som', emoji: '🔊', cor: 'purple', kw: 'som audio caixa speaker gesso embutida musica' },
+  { chave: 'interruptor', nome: 'Interruptor inteligente', emoji: '💡', cor: 'amber', kw: 'interruptor luz switch iluminacao dimmer' },
+  { chave: 'wifi', nome: 'Wi-Fi / Access Point', emoji: '📶', cor: 'teal', kw: 'wifi ap access point rede sem fio roteador' },
+  { chave: 'rack_rede', nome: 'Rack de rede', emoji: '🗄️', cor: 'gray', kw: 'rack rede switch servidor patch' },
+  { chave: 'ar_condicionado', nome: 'Ar-condicionado', emoji: '❄️', cor: 'blue', kw: 'termostato ar condicionado climatizacao hvac' },
+  { chave: 'cortina', nome: 'Cortina motorizada', emoji: '🪟', cor: 'amber', kw: 'cortina persiana motorizada automacao' },
+  { chave: 'campainha', nome: 'Campainha inteligente', emoji: '🔔', cor: 'coral', kw: 'campainha interfone video porteiro doorbell' },
+  { chave: 'tomada', nome: 'Tomada inteligente', emoji: '🔌', cor: 'amber', kw: 'tomada smart plug energia' },
+  { chave: 'tv', nome: 'TV / Display', emoji: '📺', cor: 'purple', kw: 'tv televisao display tela' },
+  { chave: 'projetor', nome: 'Projetor', emoji: '📽️', cor: 'purple', kw: 'projetor home theater cinema' },
+  { chave: 'central', nome: 'Central de automação', emoji: '🧠', cor: 'teal', kw: 'central hub controladora crestron control4' },
+  { chave: 'fumaca', nome: 'Detector de fumaça', emoji: '🔥', cor: 'red', kw: 'fumaca incendio detector alarme incendio' },
+  { chave: 'vazamento', nome: 'Detector de vazamento', emoji: '💧', cor: 'blue', kw: 'agua vazamento sensor de agua' },
+  { chave: 'nobreak', nome: 'Nobreak / UPS', emoji: '🔋', cor: 'green', kw: 'nobreak ups bateria energia' },
+  { chave: 'ponto_rede', nome: 'Ponto de rede (RJ45)', emoji: '🔲', cor: 'amber', kw: 'ponto de rede rj45 cabo ethernet' },
+  { chave: 'repetidor', nome: 'Repetidor de sinal', emoji: '📡', cor: 'amber', kw: 'repetidor sinal antena extensor' },
+  { chave: 'spot', nome: 'Spot / trilho', emoji: '💡', cor: 'amber', kw: 'spot trilho iluminacao luminaria' },
+  { chave: 'cofre', nome: 'Cofre', emoji: '🔐', cor: 'gray', kw: 'cofre seguranca protecao' },
+  { chave: 'portao', nome: 'Portão automático', emoji: '🚧', cor: 'coral', kw: 'portao automatico motor de portao' },
+  { chave: 'irrigacao', nome: 'Irrigação', emoji: '🌱', cor: 'green', kw: 'irrigacao jardim valvula' },
+  { chave: 'piscina', nome: 'Automação de piscina', emoji: '🏊', cor: 'blue', kw: 'piscina bomba automacao piscina' },
+  { chave: 'generico', nome: 'Genérico / outro', emoji: '📍', cor: 'gray', kw: 'outro generico diverso' }
+];
+
+let plantasData = [];
+
+let plantaTiposCustom = [];
+
+let plantaTiposCarregados = false;
+
+let plantaEditandoId = null;
+
+let plantaAtual = null;
+
+let plantaTipoArmado = null;
+
+let plantaMarcadorAtual = null;
+
+let plantaUltimoToquePlantaMs = 0;
+
+let plantaCorEscolhida = 'blue';
+
+const PLANTA_ZOOM_MIN = 100;
+
+const PLANTA_ZOOM_MAX = 400;
+
+let plantaZoomPct = 100;
+
+let plantaPinch = null;
+
+let plantaArmandoPonto = false;
+
+let plantaPontoEditandoId = null;
+
+let plantaPontoNovoXY = null;
+
+let plantaLinhasVisiveis = true;
+
+async function renderPlantas() {
+  const el = document.getElementById('mod-content');
+  el.innerHTML = '<div style="text-align:center;padding:40px;color:#bbb">' + tr('loading') + '</div>';
+  try {
+    plantasData = await sbGet('projetos_plantas?order=criado_em.desc');
+  } catch(e) {
+    el.innerHTML = '<div style="text-align:center;padding:40px;color:#e74c3c">' + e.message + '</div>';
+    return;
+  }
+  if (!plantasData.length) {
+    el.innerHTML = '<div style="text-align:center;color:#bbb;font-size:12px;padding:40px">' + tr('planta_none_found') + '</div>';
+    return;
+  }
+  el.innerHTML = '<div class="tbl-wrap"><table class="tbl" style="min-width:0"><thead><tr>'
+    + '<th>' + tr('planta_th_nome') + '</th>'
+    + '<th class="rack-th-criado">' + tr('rack_th_criado') + '</th>'
+    + '<th></th>'
+    + '</tr></thead><tbody>'
+    + plantasData.map(function(p) {
+        return '<tr onclick="abrirEditorPlanta(\'' + p.id + '\')" style="cursor:pointer">'
+        + '<td style="font-weight:500">' + p.nome + '</td>'
+        + '<td class="rack-th-criado">' + new Date(p.criado_em).toLocaleDateString(LANG === 'pt' ? 'pt-BR' : 'en-US') + '</td>'
+        + '<td style="text-align:right">'
+          + ''
+        + '</td>'
+      + '</tr>';
+      }).join('')
+    + '</tbody></table></div>';
+}
+
+async function abrirEditorPlanta(id) {
+  let planta;
+  try {
+    const rows = await sbGet('projetos_plantas?id=eq.' + id);
+    planta = rows[0];
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); return; }
+  if (!planta) { toast(tr('planta_nao_encontrada'), 'err'); return; }
+  let marcadores = [], pontosEquip = [];
+  try {
+    [marcadores, pontosEquip] = await Promise.all([
+      sbGet('projetos_planta_marcadores?planta_id=eq.' + id + '&order=criado_em.asc'),
+      sbGet('projetos_planta_pontos?planta_id=eq.' + id + '&order=criado_em.asc')
+    ]);
+  } catch(e) {}
+  if (!plantaTiposCarregados) {
+    try { plantaTiposCustom = await sbGet('projetos_planta_tipos_icone?order=criado_em.asc'); } catch(e) {}
+    plantaTiposCarregados = true;
+  }
+  plantaEditandoId = id;
+  plantaAtual = { ...planta, marcadores, pontos: pontosEquip, roteamento_padrao: planta.roteamento_padrao || {} };
+  document.getElementById('planta-editor-titulo').textContent = planta.nome;
+  const imgEl = document.getElementById('planta-editor-img');
+  imgEl.onload = function() { renderLinhasPlanta(); };
+  imgEl.src = planta.imagem_url;
+  const pdfBtn = document.getElementById('planta-ver-pdf-btn');
+  if (pdfBtn) {
+    if (planta.pdf_drive_url) { pdfBtn.style.display = 'inline-block'; pdfBtn.href = planta.pdf_drive_url; }
+    else pdfBtn.style.display = 'none';
+  }
+  plantaArmandoPonto = false;
+  plantaLinhasVisiveis = true;
+  atualizarBotaoLinhasPlanta();
+  desarmarTipoPlanta();
+  plantaZoomPct = 100;
+  aplicarZoomPlanta();
+  configurarCanvasPlanta();
+  configurarZoomPlanta();
+  renderMarcadoresPlanta();
+  renderPontosPlanta();
+  renderPainelRoteamentoPlanta();
+  if (imgEl.complete) renderLinhasPlanta();
+  abrirModal('m-planta-editor');
+}
+
+function ajustarZoomPlanta(direcao) {
+  plantaZoomPct = direcao === 0 ? 100 : Math.max(PLANTA_ZOOM_MIN, Math.min(PLANTA_ZOOM_MAX, plantaZoomPct + direcao * 30));
+  aplicarZoomPlanta();
+}
+
+function aplicarZoomPlanta() {
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  const label = document.getElementById('planta-zoom-label');
+  if (canvasEl) canvasEl.style.width = plantaZoomPct + '%';
+  if (label) label.textContent = Math.round(plantaZoomPct) + '%';
+}
+
+function configurarZoomPlanta() {
+  const scrollEl = document.getElementById('planta-editor-scroll');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!scrollEl || !canvasEl) return;
+
+  scrollEl.onwheel = function(e) {
+    e.preventDefault();
+    const fator = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+    aplicarZoomNoPonto(plantaZoomPct * fator, e.clientX, e.clientY);
+  };
+
+  const dedos = new Map();
+
+  canvasEl.onpointerdown = function(e) {
+    if (e.pointerType !== 'touch') return;
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2) {
+      const pts = Array.from(dedos.values());
+      plantaPinch = {
+        distInicial: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+        zoomInicial: plantaZoomPct
+      };
+    }
+  };
+  canvasEl.onpointermove = function(e) {
+    if (!dedos.has(e.pointerId)) return;
+    dedos.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (dedos.size === 2 && plantaPinch) {
+      e.preventDefault();
+      const pts = Array.from(dedos.values());
+      const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+      const midX = (pts[0].x + pts[1].x) / 2;
+      const midY = (pts[0].y + pts[1].y) / 2;
+      aplicarZoomNoPonto(plantaPinch.zoomInicial * (dist / plantaPinch.distInicial), midX, midY);
+    }
+  };
+  function soltarDedo(e) {
+    dedos.delete(e.pointerId);
+    if (dedos.size < 2 && plantaPinch) {
+      plantaPinch = null;
+      // evita que o "click" fantasma que vem logo depois da pinça crie um marcador
+      plantaUltimoToquePlantaMs = Date.now();
+    }
+  }
+  canvasEl.onpointerup = soltarDedo;
+  canvasEl.onpointercancel = soltarDedo;
+}
+
+function configurarCanvasPlanta() {
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!canvasEl) return;
+  canvasEl.onclick = function(e) {
+    if (Date.now() - plantaUltimoToquePlantaMs < 200) return;
+    if (!plantaAtual) return;
+    const rect = canvasEl.getBoundingClientRect();
+    const x = Math.max(1, Math.min(99, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(1, Math.min(99, ((e.clientY - rect.top) / rect.height) * 100));
+    if (plantaArmandoPonto) {
+      plantaArmandoPonto = false;
+      atualizarHintPlanta();
+      abrirNomePontoPlanta(null, x, y);
+      return;
+    }
+    if (!plantaTipoArmado) { toast(tr('planta_escolha_icone_primeiro'), 'err'); return; }
+    criarMarcadorPlanta(x, y);
+  };
+}
+
+function atualizarHintPlanta() {
+  const hint = document.getElementById('planta-editor-hint');
+  if (!hint) return;
+  if (plantaArmandoPonto) {
+    hint.textContent = tr('planta_hint_marcar_ponto');
+    hint.style.background = '#eef6ff';
+  } else if (plantaTipoArmado) {
+    hint.textContent = tr('planta_hint_armado_prefix') + ' ' + plantaTipoArmado.emoji + ' ' + plantaTipoArmado.nome;
+    hint.style.background = '#f9f9f7';
+  } else {
+    hint.textContent = tr('planta_hint_padrao');
+    hint.style.background = '#f9f9f7';
+  }
+}
+
+function armarTipoPlanta(tipo) {
+  plantaTipoArmado = tipo;
+  plantaArmandoPonto = false;
+  atualizarHintPlanta();
+  fecharModal('m-planta-biblioteca');
+}
+
+function desarmarTipoPlanta() {
+  plantaTipoArmado = null;
+  plantaArmandoPonto = false;
+  atualizarHintPlanta();
+}
+
+function abrirNovoPontoPlanta() {
+  plantaArmandoPonto = true;
+  plantaTipoArmado = null;
+  atualizarHintPlanta();
+}
+
+async function criarMarcadorPlanta(x, y) {
+  const tipo = plantaTipoArmado;
+  if (!tipo) return;
+  try {
+    // Se essa categoria ainda nao tem um ponto de equipamento padrao definido e
+    // ja existe pelo menos um ponto na planta, assume o primeiro como padrao -
+    // assim, se for tudo centralizado (so um rack), ja funciona sem precisar
+    // configurar nada; se tiver mais de um ponto, da pra trocar no painel depois.
+    const rot = plantaAtual.roteamento_padrao || (plantaAtual.roteamento_padrao = {});
+    if (!rot[tipo.nome] && (plantaAtual.pontos || []).length) {
+      rot[tipo.nome] = plantaAtual.pontos[0].id;
+      sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    }
+    const pontoId = rot[tipo.nome] || null;
+    const [criado] = await sbPost('projetos_planta_marcadores', {
+      planta_id: plantaEditandoId, nome: tipo.nome, cor: tipo.cor,
+      icone_chave: tipo.chave || '', emoji: tipo.chave ? '' : (tipo.emoji || ''),
+      ponto_id: pontoId,
+      x_pct: x, y_pct: y, observacoes: '', criado_por: pedirAutorNome()
+    });
+    plantaAtual.marcadores.push(criado);
+    criarElementoMarcadorPlanta(criado, document.getElementById('planta-editor-marcadores'));
+    renderLinhasPlanta();
+    renderPainelRoteamentoPlanta();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function atualizarBotaoLinhasPlanta() {
+  const btn = document.getElementById('planta-toggle-linhas-btn');
+  if (!btn) return;
+  btn.textContent = plantaLinhasVisiveis ? tr('planta_ocultar_linhas_btn') : tr('planta_mostrar_linhas_btn');
+}
+
+function renderPontosPlanta() {
+  const cont = document.getElementById('planta-editor-pontos');
+  if (!cont) return;
+  cont.innerHTML = '';
+  (plantaAtual.pontos || []).forEach(function(p) { criarElementoPontoPlanta(p, cont); });
+}
+
+function criarElementoPontoPlanta(ponto, cont) {
+  if (!cont) return;
+  // O container pai (#planta-editor-pontos) tem pointer-events:none pra nao
+  // bloquear cliques no resto do canvas (marcadores/criacao de dispositivo) nas
+  // areas vazias - por isso o wrap precisa reativar pointer-events so onde tem
+  // o badge de verdade.
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:' + ponto.x_pct + '%;top:' + ponto.y_pct + '%;transform:translate(-50%,-50%);z-index:2;pointer-events:auto';
+
+  const badge = document.createElement('div');
+  badge.style.cssText = 'min-width:34px;height:34px;padding:0 7px;border-radius:9px;background:#1a1a1a;color:#fff;display:flex;align-items:center;justify-content:center;cursor:grab;font-size:11px;font-weight:700;letter-spacing:.2px;box-shadow:0 2px 6px rgba(0,0,0,.3);touch-action:none;border:2px solid #fff';
+  badge.textContent = iniciaisPonto(ponto.nome);
+  badge.title = ponto.nome;
+
+  const xBtn = document.createElement('div');
+  xBtn.setAttribute('aria-hidden', 'true');
+  xBtn.textContent = '×';
+  xBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer';
+
+  wrap.appendChild(badge);
+  wrap.appendChild(xBtn);
+  cont.appendChild(wrap);
+
+  xBtn.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+  xBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    excluirPontoPlantaDireto(ponto, wrap);
+  });
+
+  let moveu = false;
+  badge.addEventListener('pointerdown', function(e) {
+    e.stopPropagation();
+    moveu = false;
+    const canvasEl = document.getElementById('planta-editor-canvas');
+    const rect = canvasEl.getBoundingClientRect();
+    function mover(ev) {
+      moveu = true;
+      let x = ((ev.clientX - rect.left) / rect.width) * 100;
+      let y = ((ev.clientY - rect.top) / rect.height) * 100;
+      x = Math.max(1, Math.min(99, x));
+      y = Math.max(1, Math.min(99, y));
+      wrap.style.left = x + '%';
+      wrap.style.top = y + '%';
+      ponto.x_pct = x; ponto.y_pct = y;
+      renderLinhasPlanta();
+    }
+    function soltar() {
+      document.removeEventListener('pointermove', mover);
+      document.removeEventListener('pointerup', soltar);
+      plantaUltimoToquePlantaMs = Date.now();
+      if (moveu) {
+        sbPatch('projetos_planta_pontos?id=eq.' + ponto.id, { x_pct: ponto.x_pct, y_pct: ponto.y_pct }).catch(function(){});
+      } else {
+        abrirNomePontoPlanta(ponto);
+      }
+    }
+    document.addEventListener('pointermove', mover);
+    document.addEventListener('pointerup', soltar);
+  });
+  badge.addEventListener('click', function(e) { e.stopPropagation(); });
+}
+
+async function excluirPontoPlantaDireto(ponto, wrapEl) {
+  if (!confirm(tr('planta_ponto_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_planta_pontos?id=eq.' + ponto.id);
+    plantaAtual.pontos = (plantaAtual.pontos || []).filter(function(p) { return p.id !== ponto.id; });
+    (plantaAtual.marcadores || []).forEach(function(m) { if (m.ponto_id === ponto.id) m.ponto_id = null; });
+    const rot = plantaAtual.roteamento_padrao || {};
+    Object.keys(rot).forEach(function(k) { if (rot[k] === ponto.id) delete rot[k]; });
+    sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    wrapEl.remove();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function abrirNomePontoPlanta(ponto, x, y) {
+  plantaPontoEditandoId = ponto ? ponto.id : null;
+  plantaPontoNovoXY = ponto ? null : { x: x, y: y };
+  document.getElementById('planta-ponto-nome-titulo').textContent = ponto ? tr('planta_ponto_renomear_title') : tr('planta_ponto_novo_title');
+  document.getElementById('ponto-nome-input').value = ponto ? ponto.nome : '';
+  const excluirBtn = document.getElementById('ponto-excluir-btn');
+  if (excluirBtn) excluirBtn.style.display = ponto ? 'inline-block' : 'none';
+  abrirModal('m-planta-ponto-nome');
+}
+
+async function salvarNomePontoPlanta() {
+  const nome = (document.getElementById('ponto-nome-input')?.value || '').trim();
+  if (!nome) { toast(tr('planta_ponto_nome_obrigatorio'), 'err'); return; }
+  try {
+    if (plantaPontoEditandoId) {
+      await sbPatch('projetos_planta_pontos?id=eq.' + plantaPontoEditandoId, { nome: nome });
+      const ponto = (plantaAtual.pontos || []).find(function(p) { return p.id === plantaPontoEditandoId; });
+      if (ponto) ponto.nome = nome;
+    } else {
+      const [criado] = await sbPost('projetos_planta_pontos', {
+        planta_id: plantaEditandoId, nome: nome,
+        x_pct: plantaPontoNovoXY.x, y_pct: plantaPontoNovoXY.y, criado_por: pedirAutorNome()
+      });
+      plantaAtual.pontos = plantaAtual.pontos || [];
+      plantaAtual.pontos.push(criado);
+    }
+    fecharModal('m-planta-ponto-nome');
+    renderPontosPlanta();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirPontoPlantaModal() {
+  if (!plantaPontoEditandoId) return;
+  if (!confirm(tr('planta_ponto_excluir_confirm'))) return;
+  const id = plantaPontoEditandoId;
+  try {
+    await sbDelete('projetos_planta_pontos?id=eq.' + id);
+    plantaAtual.pontos = (plantaAtual.pontos || []).filter(function(p) { return p.id !== id; });
+    (plantaAtual.marcadores || []).forEach(function(m) { if (m.ponto_id === id) m.ponto_id = null; });
+    const rot = plantaAtual.roteamento_padrao || {};
+    Object.keys(rot).forEach(function(k) { if (rot[k] === id) delete rot[k]; });
+    sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }).catch(function(){});
+    fecharModal('m-planta-ponto-nome');
+    renderPontosPlanta();
+    renderPainelRoteamentoPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_ponto_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function renderPainelRoteamentoPlanta() {
+  const cont = document.getElementById('planta-roteamento-painel');
+  if (!cont) return;
+  cont.innerHTML = '';
+  const pontos = plantaAtual.pontos || [];
+  if (!pontos.length) return;
+  const categorias = {};
+  (plantaAtual.marcadores || []).forEach(function(m) { if (!categorias[m.nome]) categorias[m.nome] = m.cor; });
+  const nomes = Object.keys(categorias);
+  if (!nomes.length) return;
+  const rot = plantaAtual.roteamento_padrao || {};
+  const titulo = document.createElement('div');
+  titulo.style.cssText = 'font-size:11.5px;color:#999;font-weight:600;margin-bottom:2px';
+  titulo.textContent = tr('planta_roteamento_titulo');
+  cont.appendChild(titulo);
+  nomes.forEach(function(nome) {
+    const cor = PLANTA_CORES[categorias[nome]] || PLANTA_CORES.gray;
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:8px;font-size:12.5px';
+    const dot = document.createElement('span');
+    dot.style.cssText = 'width:10px;height:10px;border-radius:50%;background:' + cor.text + ';flex-shrink:0';
+    const label = document.createElement('span');
+    label.style.cssText = 'flex:1';
+    label.textContent = nome;
+    const select = document.createElement('select');
+    select.style.cssText = 'padding:4px 8px;border:1px solid #e8e8e5;border-radius:6px;font-size:12px;background:#fff';
+    pontos.forEach(function(p) {
+      const opt = document.createElement('option');
+      opt.value = p.id;
+      opt.textContent = p.nome;
+      if (rot[nome] === p.id) opt.selected = true;
+      select.appendChild(opt);
+    });
+    select.onchange = function() { atribuirPontoCategoria(nome, select.value); };
+    row.appendChild(dot); row.appendChild(label); row.appendChild(select);
+    cont.appendChild(row);
+  });
+}
+
+function toggleLinhasPlanta() {
+  plantaLinhasVisiveis = !plantaLinhasVisiveis;
+  atualizarBotaoLinhasPlanta();
+  renderLinhasPlanta();
+}
+
+function calcularAlcasCruzamentoPlanta(trechos) {
+  const folga = 0.6;
+  trechos.forEach(function(t) { t.furos = []; });
+  trechos.forEach(function(h, i) {
+    const hy = h.my;
+    const hx1 = Math.min(h.dx, h.mx), hx2 = Math.max(h.dx, h.mx);
+    if (hx2 - hx1 < folga * 2) return;
+    trechos.forEach(function(v, j) {
+      if (i === j || v.grupo === h.grupo) return;
+      const vx = v.dx;
+      const vy1 = Math.min(v.dy, v.my), vy2 = Math.max(v.dy, v.my);
+      if (vy2 - vy1 < folga * 2) return;
+      if (vx > hx1 + folga && vx < hx2 - folga && hy > vy1 + folga && hy < vy2 - folga) {
+        h.furos.push(vx);
+      }
+    });
+    h.furos.sort(function(a, b) { return a - b; });
+  });
+  return trechos;
+}
+
+function pathHorizontalComAlcasPlanta(x1, x2, y, furos, raio) {
+  const dir = x2 >= x1 ? 1 : -1;
+  const sweep = dir > 0 ? 0 : 1;
+  const ordenados = (furos || []).slice().sort(function(a, b) { return dir * (a - b); });
+  let d = 'M ' + x1 + ' ' + y;
+  ordenados.forEach(function(fx) {
+    const antes = fx - dir * raio;
+    const depois = fx + dir * raio;
+    d += ' L ' + antes + ' ' + y;
+    d += ' A ' + raio + ' ' + raio + ' 0 0 ' + sweep + ' ' + depois + ' ' + y;
+  });
+  d += ' L ' + x2 + ' ' + y;
+  return d;
+}
+
+function renderLinhasPlanta() {
+  const svg = document.getElementById('planta-editor-linhas');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!svg || !canvasEl) return;
+  svg.innerHTML = '';
+  if (!plantaLinhasVisiveis || !plantaAtual) return;
+  const pontos = plantaAtual.pontos || [];
+  const marcadores = (plantaAtual.marcadores || []).filter(function(m) { return m.ponto_id; });
+  if (!pontos.length || !marcadores.length) return;
+  const w = canvasEl.offsetWidth || 1;
+  const h = canvasEl.offsetHeight || 1;
+  svg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+
+  const pontosPorId = {};
+  pontos.forEach(function(p) { pontosPorId[p.id] = p; });
+
+  const grupos = {};
+  marcadores.forEach(function(m) {
+    if (!pontosPorId[m.ponto_id]) return;
+    if (!grupos[m.ponto_id]) grupos[m.ponto_id] = {};
+    if (!grupos[m.ponto_id][m.nome]) grupos[m.ponto_id][m.nome] = { cor: m.cor, marcadores: [] };
+    grupos[m.ponto_id][m.nome].marcadores.push(m);
+  });
+
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // Primeiro monta um trecho por dispositivo (com o grupo = rack + categoria
+  // dele) pra poder calcular os cruzamentos ENTRE grupos diferentes antes de
+  // desenhar qualquer coisa - so assim da pra saber onde colocar as alcas.
+  const troncos = []; // { cor, px, py, mx, my }
+  const trechos = []; // { grupo, dx, dy, mx, my, cor }
+  Object.keys(grupos).forEach(function(pontoId) {
+    const ponto = pontosPorId[pontoId];
+    if (!ponto) return;
+    const px = (ponto.x_pct / 100) * w;
+    const py = (ponto.y_pct / 100) * h;
+    const categorias = Object.keys(grupos[pontoId]);
+    categorias.forEach(function(nome, idx) {
+      const info = grupos[pontoId][nome];
+      const cor = (PLANTA_CORES[info.cor] || PLANTA_CORES.gray).text;
+      const angulo = (-60 + idx * 40) * Math.PI / 180;
+      const raioManifold = 24;
+      const mx = px + Math.cos(angulo) * raioManifold;
+      const my = py + Math.sin(angulo) * raioManifold;
+      const grupo = pontoId + '|' + nome;
+      troncos.push({ cor: cor, px: px, py: py, mx: mx, my: my });
+      info.marcadores.forEach(function(m) {
+        const dx = (m.x_pct / 100) * w;
+        const dy = (m.y_pct / 100) * h;
+        trechos.push({ grupo: grupo, dx: dx, dy: dy, mx: mx, my: my, cor: cor });
+      });
+    });
+  });
+
+  calcularAlcasCruzamentoPlanta(trechos);
+  const raioAlca = 5;
+
+  trechos.forEach(function(t) {
+    const vertical = document.createElementNS(NS, 'line');
+    vertical.setAttribute('x1', t.dx); vertical.setAttribute('y1', t.dy);
+    vertical.setAttribute('x2', t.dx); vertical.setAttribute('y2', t.my);
+    vertical.setAttribute('stroke', t.cor);
+    vertical.setAttribute('stroke-width', '1.6');
+    vertical.setAttribute('stroke-dasharray', '4,3');
+    vertical.setAttribute('opacity', '0.75');
+    svg.appendChild(vertical);
+
+    const horizontal = document.createElementNS(NS, 'path');
+    horizontal.setAttribute('d', pathHorizontalComAlcasPlanta(t.dx, t.mx, t.my, t.furos, raioAlca));
+    horizontal.setAttribute('fill', 'none');
+    horizontal.setAttribute('stroke', t.cor);
+    horizontal.setAttribute('stroke-width', '1.6');
+    horizontal.setAttribute('stroke-dasharray', '4,3');
+    horizontal.setAttribute('opacity', '0.75');
+    svg.appendChild(horizontal);
+  });
+
+  troncos.forEach(function(t) {
+    const tronco = document.createElementNS(NS, 'line');
+    tronco.setAttribute('x1', t.mx); tronco.setAttribute('y1', t.my);
+    tronco.setAttribute('x2', t.px); tronco.setAttribute('y2', t.py);
+    tronco.setAttribute('stroke', t.cor);
+    tronco.setAttribute('stroke-width', '2.4');
+    tronco.setAttribute('stroke-dasharray', '4,3');
+    svg.appendChild(tronco);
+  });
+}
+
+function renderMarcadoresPlanta() {
+  const cont = document.getElementById('planta-editor-marcadores');
+  if (!cont) return;
+  cont.innerHTML = '';
+  (plantaAtual.marcadores || []).forEach(function(m) { criarElementoMarcadorPlanta(m, cont); });
+}
+
+function criarElementoMarcadorPlanta(marcador, cont) {
+  if (!cont) return;
+  const cor = PLANTA_CORES[marcador.cor] || PLANTA_CORES.gray;
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:absolute;left:' + marcador.x_pct + '%;top:' + marcador.y_pct + '%;transform:translate(-50%,-50%)';
+
+  const bola = document.createElement('div');
+  bola.style.cssText = 'width:30px;height:30px;border-radius:50%;background:' + cor.bg + ';border:1.5px solid ' + cor.text + ';display:flex;align-items:center;justify-content:center;cursor:grab;font-size:15px;box-shadow:0 1px 3px rgba(0,0,0,.18);touch-action:none';
+  bola.textContent = emojiDoMarcador(marcador);
+  bola.title = marcador.nome + (marcador.observacoes ? ' — ' + marcador.observacoes : '');
+
+  const xBtn = document.createElement('div');
+  xBtn.setAttribute('aria-hidden', 'true');
+  xBtn.textContent = '×';
+  xBtn.style.cssText = 'position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;line-height:1;cursor:pointer';
+
+  wrap.appendChild(bola);
+  wrap.appendChild(xBtn);
+  cont.appendChild(wrap);
+
+  xBtn.addEventListener('pointerdown', function(e) { e.stopPropagation(); });
+  xBtn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    excluirMarcadorPlanta(marcador, wrap);
+  });
+
+  let moveu = false;
+  bola.addEventListener('pointerdown', function(e) {
+    e.stopPropagation();
+    moveu = false;
+    const canvasEl = document.getElementById('planta-editor-canvas');
+    const rect = canvasEl.getBoundingClientRect();
+    function mover(ev) {
+      moveu = true;
+      let x = ((ev.clientX - rect.left) / rect.width) * 100;
+      let y = ((ev.clientY - rect.top) / rect.height) * 100;
+      x = Math.max(1, Math.min(99, x));
+      y = Math.max(1, Math.min(99, y));
+      wrap.style.left = x + '%';
+      wrap.style.top = y + '%';
+      marcador.x_pct = x; marcador.y_pct = y;
+      renderLinhasPlanta();
+    }
+    function soltar() {
+      document.removeEventListener('pointermove', mover);
+      document.removeEventListener('pointerup', soltar);
+      plantaUltimoToquePlantaMs = Date.now();
+      if (moveu) {
+        sbPatch('projetos_planta_marcadores?id=eq.' + marcador.id, { x_pct: marcador.x_pct, y_pct: marcador.y_pct }).catch(function(){});
+      } else {
+        abrirObsMarcadorPlanta(marcador);
+      }
+    }
+    document.addEventListener('pointermove', mover);
+    document.addEventListener('pointerup', soltar);
+  });
+  // Sem isso, o "click" nativo disparado apos o pointerup vaza pro canvas e
+  // cria um marcador novo em cima do que a gente acabou de tocar/mover.
+  bola.addEventListener('click', function(e) { e.stopPropagation(); });
+}
+
+async function excluirMarcadorPlanta(marcador, wrapEl) {
+  if (!confirm(tr('planta_marcador_excluir_confirm'))) return;
+  try {
+    await sbDelete('projetos_planta_marcadores?id=eq.' + marcador.id);
+    plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
+    wrapEl.remove();
+    renderLinhasPlanta();
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function abrirObsMarcadorPlanta(marcador) {
+  plantaMarcadorAtual = marcador;
+  document.getElementById('planta-obs-titulo').textContent = emojiDoMarcador(marcador) + ' ' + marcador.nome;
+  document.getElementById('planta-obs-texto').value = marcador.observacoes || '';
+  abrirModal('m-planta-obs');
+}
+
+async function salvarObsPlanta() {
+  if (!plantaMarcadorAtual) return;
+  const texto = document.getElementById('planta-obs-texto')?.value || '';
+  try {
+    await sbPatch('projetos_planta_marcadores?id=eq.' + plantaMarcadorAtual.id, { observacoes: texto });
+    plantaMarcadorAtual.observacoes = texto;
+    fecharModal('m-planta-obs');
+    toast(tr('planta_obs_salva'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+async function excluirMarcadorPlantaAtual() {
+  if (!plantaMarcadorAtual) return;
+  if (!confirm(tr('planta_marcador_excluir_confirm'))) return;
+  const marcador = plantaMarcadorAtual;
+  try {
+    await sbDelete('projetos_planta_marcadores?id=eq.' + marcador.id);
+    plantaAtual.marcadores = plantaAtual.marcadores.filter(function(m) { return m.id !== marcador.id; });
+    fecharModal('m-planta-obs');
+    renderMarcadoresPlanta();
+    renderLinhasPlanta();
+    toast(tr('planta_marcador_excluido'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function todosTiposIconePlanta() {
+  const custom = plantaTiposCustom.map(function(t) {
+    return { chave: '', id: t.id, nome: t.nome, emoji: t.emoji, cor: t.cor || 'gray', kw: (t.nome || '').toLowerCase() };
+  });
+  return PLANTA_ICONES_PADRAO.concat(custom);
+}
+
+function montarCoresPickerPlanta() {
+  plantaCorEscolhida = 'blue';
+  const cont = document.getElementById('pti-cores');
+  if (!cont) return;
+  cont.innerHTML = '';
+  Object.keys(PLANTA_CORES).forEach(function(key) {
+    const cor = PLANTA_CORES[key];
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.style.cssText = 'width:26px;height:26px;border-radius:50%;background:' + cor.bg + ';border:2px solid ' + (key === plantaCorEscolhida ? cor.text : 'transparent') + ';cursor:pointer';
+    b.onclick = function() {
+      plantaCorEscolhida = key;
+      Array.from(cont.children).forEach(function(c) { c.style.borderColor = 'transparent'; });
+      b.style.borderColor = cor.text;
+    };
+    cont.appendChild(b);
+  });
+}
+
+function hexParaRgbPlanta(hex) {
+  const h = (hex || '#888888').replace('#', '');
+  return { r: parseInt(h.substring(0, 2), 16), g: parseInt(h.substring(2, 4), 16), b: parseInt(h.substring(4, 6), 16) };
+}
+
+function abrirBibliotecaIcones() {
+  document.getElementById('planta-icone-busca').value = '';
+  document.getElementById('planta-novo-tipo-form').style.display = 'none';
+  document.getElementById('pti-nome').value = '';
+  document.getElementById('pti-emoji').value = '';
+  montarCoresPickerPlanta();
+  renderizarGradeIcones('');
+  abrirModal('m-planta-biblioteca');
+}
+
+function renderizarGradeIcones(q) {
+  const grid = document.getElementById('planta-icones-grid');
+  if (!grid) return;
+  const termo = (q || '').trim().toLowerCase();
+  const todos = todosTiposIconePlanta();
+  const filtrados = termo ? todos.filter(function(t) { return t.kw.indexOf(termo) !== -1 || t.nome.toLowerCase().indexOf(termo) !== -1; }) : todos;
+  grid.innerHTML = '';
+  if (!filtrados.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#bbb;font-size:12px;padding:20px">' + tr('planta_icone_nao_encontrado') + '</div>';
+    return;
+  }
+  filtrados.forEach(function(tipo) {
+    const cor = PLANTA_CORES[tipo.cor] || PLANTA_CORES.gray;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:10px;border:1px solid #e8e8e5;background:' + cor.bg + ';cursor:pointer';
+    btn.innerHTML = '<span style="font-size:20px">' + tipo.emoji + '</span><span style="font-size:9.5px;color:' + cor.text + ';text-align:center;line-height:1.2">' + tipo.nome + '</span>';
+    btn.onclick = function() { armarTipoPlanta(tipo); };
+    grid.appendChild(btn);
+  });
+}
+
+function toggleNovoTipoIcone() {
+  const form = document.getElementById('planta-novo-tipo-form');
+  form.style.display = form.style.display === 'none' ? 'block' : 'none';
+}
+
+async function salvarNovoTipoIcone() {
+  const nome = document.getElementById('pti-nome')?.value.trim();
+  const emoji = document.getElementById('pti-emoji')?.value.trim();
+  if (!nome || !emoji) { toast(tr('planta_tipo_campos_obrigatorios'), 'err'); return; }
+  try {
+    const [criado] = await sbPost('projetos_planta_tipos_icone', { nome, emoji, cor: plantaCorEscolhida, criado_por: ME.nome });
+    plantaTiposCustom.push(criado);
+    toggleNovoTipoIcone();
+    renderizarGradeIcones(document.getElementById('planta-icone-busca')?.value || '');
+    toast(tr('planta_tipo_salvo'), 'ok');
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function aplicarZoomNoPonto(novoZoomPct, clientX, clientY) {
+  const scrollEl = document.getElementById('planta-editor-scroll');
+  const canvasEl = document.getElementById('planta-editor-canvas');
+  if (!scrollEl || !canvasEl) return;
+  const scrollRect = scrollEl.getBoundingClientRect();
+  const oldWidth = canvasEl.offsetWidth || 1;
+  const oldHeight = canvasEl.offsetHeight || 1;
+  const cursorX = clientX - scrollRect.left;
+  const cursorY = clientY - scrollRect.top;
+  const fracX = (scrollEl.scrollLeft + cursorX) / oldWidth;
+  const fracY = (scrollEl.scrollTop + cursorY) / oldHeight;
+
+  plantaZoomPct = Math.max(PLANTA_ZOOM_MIN, Math.min(PLANTA_ZOOM_MAX, novoZoomPct));
+  aplicarZoomPlanta();
+
+  const newWidth = canvasEl.offsetWidth || 1;
+  const newHeight = canvasEl.offsetHeight || 1;
+  scrollEl.scrollLeft = fracX * newWidth - cursorX;
+  scrollEl.scrollTop = fracY * newHeight - cursorY;
+}
+
+function iniciaisPonto(nome) {
+  const partes = (nome || '').trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return '?';
+  if (partes.length === 1) return partes[0].slice(0, 2).toUpperCase();
+  return (partes[0][0] + partes[1][0]).toUpperCase();
+}
+
+async function atribuirPontoCategoria(nome, pontoId) {
+  const rot = plantaAtual.roteamento_padrao || (plantaAtual.roteamento_padrao = {});
+  rot[nome] = pontoId;
+  (plantaAtual.marcadores || []).forEach(function(m) { if (m.nome === nome) m.ponto_id = pontoId; });
+  renderLinhasPlanta();
+  try {
+    await Promise.all([
+      sbPatch('projetos_plantas?id=eq.' + plantaEditandoId, { roteamento_padrao: rot }),
+      sbPatch('projetos_planta_marcadores?planta_id=eq.' + plantaEditandoId + '&nome=eq.' + encodeURIComponent(nome), { ponto_id: pontoId })
+    ]);
+  } catch(e) { toast(tr('erro_prefix') + e.message, 'err'); }
+}
+
+function emojiDoMarcador(marcador) {
+  if (marcador.icone_chave) {
+    const padrao = PLANTA_ICONES_PADRAO.find(function(t) { return t.chave === marcador.icone_chave; });
+    if (padrao) return padrao.emoji;
+  }
+  return marcador.emoji || '📍';
+}
+
+
+window.addEventListener('load', function(){ renderPlantas(); });
+
+</script>
+</body>
+</html>
