@@ -169,7 +169,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 <script>if (window.pdfjsLib) { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js"; }</script>
-<script src="app.js?v=1785291634" defer></script>
+<script src="app.js?v=1785533025" defer></script>
 <style>
 @media print {
   body * { visibility: hidden !important; }
@@ -1076,7 +1076,7 @@ body{font-family:"DM Sans",sans-serif;background:#f5f5f3;color:#1a1a1a;font-size
   </div>
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div><div class="modal-bg" id="m-nota-editar"><div class="modal-box" style="width:460px"><div class="modal-hd"><span class="modal-hd-title">Editar anotação</span><button class="modal-close" onclick="fecharModal('m-nota-editar')">×</button></div><textarea class="f-inp" id="nota-editar-texto" rows="10" style="resize:vertical;font-family:inherit;width:100%;box-sizing:border-box"></textarea><div class="modal-btns"><button class="btn-sec" onclick="fecharModal('m-nota-editar')">Cancelar</button><button class="btn-pri" onclick="salvarNotaEditada()">Salvar</button></div></div></div>
 
 <!-- Modal Relatorio Financeiro da OS -->
 <div class="modal-bg" id="m-relatorio-os">
